@@ -22,6 +22,7 @@
 from typing import Any, Dict, Optional, List, Tuple
 
 import click
+import warnings
 
 from xcube_cci.version import version
 
@@ -108,6 +109,12 @@ def gen(request: Optional[str] = None,
                              four_d=four_d)
 
     input_config_dict = request_dict.get('input_config', {})
+    if 'datastore_id' in input_config_dict:
+        input_config_dict = dict(input_config_dict)
+        datastore_id = input_config_dict.pop('datastore_id')
+        if datastore_id != 'cciodp':
+            warnings.warn(f'Unknown datastore_id={datastore_id!r} encountered in request. Ignoring it...')
+    # _overwrite_config_params(input_config_dict, ...)
     # TODO: validate input_config_dict
 
     output_config_dict = request_dict.get('output_config', {})
