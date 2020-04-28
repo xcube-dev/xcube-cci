@@ -71,6 +71,7 @@ async def _fetch_dataset_metadata(uuid: str) -> dict:
 def _get_feature_dict_from_feature(feature: dict) -> Optional[dict]:
     fc_props = feature.get("properties", {})
     feature_dict = {}
+    feature_dict['uuid'] = feature.get("id", "").split("=")[-1]
     feature_dict['title'] = fc_props.get("title", "")
     variables = _get_variables_from_feature(feature)
     feature_dict['variables'] = variables
@@ -184,6 +185,7 @@ def _retrieve_attribute_info_from_das(das: str) -> dict:
         .replace('{\n    "    ', '{\n      "').replace(';\n        ', '",\n      "').replace('}\n    ', '},\n    '). \
         replace(',\n    },\n    ', '\n    },\n    "').replace('""', '"'). \
         replace(';\n    }\n    ', '"\n    },\n    "').replace(';\n    }\n}', '\n    }\n  }\n}')
+    json_das = prettify_dict_names(json_das)
     dict = json.loads(json_das)
     return dict['Attributes']
 
@@ -203,6 +205,15 @@ def _handle_numeric_attribute_names(das: str) -> str:
         fixed_appearance = fill_value_appearance.replace('_FillValue ', '_FillValue": "')
         fixed_appearance = fixed_appearance.replace(';\n        ', '",\n      "')
         das = das.replace(fill_value_appearance, fixed_appearance)
+    return das
+
+
+def prettify_dict_names(das: str) -> str:
+    ugly_keys = set(re.findall('"[A-Z]+[a-z]+[0-9]* [a-zA-Z_]+":', das))
+    for ugly_key in ugly_keys:
+        das = das.replace(ugly_key, f'"{ugly_key.split(" ")[1]}')
+    das = das.replace('_ChunkSizes', 'chunk_sizes')
+    das = das.replace('_FillValue', 'fill_value')
     return das
 
 
@@ -468,6 +479,11 @@ class CciOdp:
         self.error_policy = error_policy or 'fail'
         self.error_handler = error_handler
         self.enable_warnings = enable_warnings
+        with open(os.path.join(os.path.dirname(__file__), 'data/datasets_to_uuid.json')) as fp:
+            self._datasets_to_uuid = json.load(fp)
+        with open(os.path.join(os.path.dirname(__file__), 'data/datasets_to_fid.json')) as fp:
+            self._datasets_to_fid = json.load(fp)
+        self._data_sources = None
 
     def close(self):
         pass
@@ -476,26 +492,27 @@ class CciOdp:
     def token_info(self) -> Dict[str, Any]:
         return {}
 
-    # noinspection PyMethodMayBeStatic
     @property
     def dataset_names(self) -> List[str]:
-        return asyncio.run(self._fetch_dataset_names())
+        return list(self._datasets_to_uuid.keys())
 
-    def get_dataset_metadata(self, fid: str) -> dict:
-        return asyncio.run(_fetch_dataset_metadata(fid))
+    def get_dataset_metadata(self, dataset_id: str) -> dict:
+        return asyncio.run(_fetch_dataset_metadata(self._datasets_to_uuid[dataset_id]))
 
     async def _fetch_dataset_names(self):
-        catalogue = await _fetch_data_source_list_json(_OPENSEARCH_CEDA_URL, dict(parentIdentifier='cci'))
-        if catalogue:
-            self._data_sources = []
-            tasks = []
-            for catalogue_item in catalogue:
-                tasks.append(self._create_data_source(catalogue[catalogue_item], catalogue_item))
-            await asyncio.gather(*tasks)
-            return self._data_sources
+        if not self._data_sources:
+            self._data_sources = {}
+            catalogue = await _fetch_data_source_list_json(_OPENSEARCH_CEDA_URL, dict(parentIdentifier='cci'))
+            if catalogue:
+                tasks = []
+                for catalogue_item in catalogue:
+                    tasks.append(self._create_data_source(catalogue[catalogue_item], catalogue_item))
+                await asyncio.gather(*tasks)
+        return list(self._data_sources.keys())
 
     async def _create_data_source(self, json_dict: dict, datasource_id: str):
-        meta_info = await _fetch_meta_info(datasource_id, json_dict['odd_url'], json_dict['metadata_url'])
+        meta_info = await _fetch_meta_info(datasource_id, json_dict['odd_url'], json_dict['metadata_url'],
+                                           json_dict['variables'], False)
         time_frequencies = self._get_as_list(meta_info, 'time_frequency', 'time_frequencies')
         processing_levels = self._get_as_list(meta_info, 'processing_level', 'processing_levels')
         data_types = self._get_as_list(meta_info, 'data_type', 'data_types')
@@ -520,7 +537,12 @@ class CciOdp:
                 if pretty_id in self._data_sources:
                     _LOG.warning(f'Data source {pretty_id} already included. Will omit this one.')
                     continue
-                self._data_sources.append(pretty_id)
+                meta_info = meta_info.copy()
+                meta_info.update(json_dict)
+                self._adjust_json_dict(meta_info, value_tuple)
+                meta_info['cci_project'] = meta_info['ecv']
+                meta_info['fid'] = datasource_id
+                self._data_sources[pretty_id] = meta_info
 
     def _adjust_json_dict(self, json_dict: dict, value_tuple: tuple):
         self._adjust_json_dict_for_param(json_dict, 'time_frequency', 'time_frequencies', value_tuple[0])
@@ -540,7 +562,7 @@ class CciOdp:
         pretty_values = []
         for value in value_tuple:
             pretty_values.append(self._make_string_pretty(value))
-        return f'esacci2.{json_dict["ecv"]}.{".".join(pretty_values)}.{drs_id}'
+        return f'esacci.{json_dict["ecv"]}.{".".join(pretty_values)}.{drs_id}'
 
     def _make_string_pretty(self, string: str):
         string = string.replace(" ", "-")
@@ -563,18 +585,24 @@ class CciOdp:
         #todo implement
         pass
 
-    def get_data(self, request: Dict) -> bytes:
-        #todo make this work with different dimensions
+    def get_dimension_data(self, dataset_name: str, dimension_name: str):
+        request = dict(parentIdentifier=self._datasets_to_fid[dataset_name],
+                       startDate='1900-01-01T00:00:00',
+                       endDate='2001-12-31T00:00:00')
+        opendap_url = self._get_opendap_url(request)
+        dataset = open_url(opendap_url)
+        return dataset[dimension_name].data[:].tolist()
+
+    def get_fid_for_dataset(self, dataset_name: str) -> str:
+        return self._datasets_to_fid[dataset_name]
+
+    def _get_opendap_url(self, request: Dict):
         start_date = datetime.strptime(request['startDate'], _TIMESTAMP_FORMAT)
         end_date = datetime.strptime(request['endDate'], _TIMESTAMP_FORMAT)
-        lon_min, lat_min, lon_max, lat_max = request['bbox']
-        var_names = request['varNames']
-        request.pop('bbox')
         # todo include these when they are supported by the server
         request.pop('startDate')
         request.pop('endDate')
         feature_list = asyncio.run(_fetch_opensearch_feature_list(_OPENSEARCH_CEDA_URL, request))
-        opendap_url = None
         for feature in feature_list:
             feature_props = feature.get("properties", {})
             date = feature_props.get("date", None)
@@ -588,10 +616,17 @@ class CciOdp:
                 if 'related' in links:
                     for related_link in links['related']:
                         if related_link['title'] == 'Opendap':
-                            opendap_url = related_link['href']
-                            break
-        if not opendap_url:
-            raise ValueError('No datasets for this query found')
+                            return related_link['href']
+        raise ValueError('No datasets for this query found')
+
+    def get_data(self, request: Dict) -> bytes:
+        #todo make this work with different dimensions
+        start_date = datetime.strptime(request['startDate'], _TIMESTAMP_FORMAT)
+        end_date = datetime.strptime(request['endDate'], _TIMESTAMP_FORMAT)
+        lon_min, lat_min, lon_max, lat_max = request['bbox']
+        var_names = request['varNames']
+        request.pop('bbox')
+        opendap_url = self._get_opendap_url(request)
         dimensions_dict = {}
         with requests.get(f'{opendap_url}.ascii?time,lat,lon') as resp:
             lat_lon_data = str(resp.content, 'utf-8')
@@ -620,6 +655,5 @@ class CciOdp:
             variable_data = dataset[var][time_start_offset,
                             lat_start_offset:lat_end_offset,
                             lon_start_offset:lon_end_offset]
-            flipped = np.flip(variable_data.data[0], axis=1)
-            result[i] = flipped.flatten()
+            result[i] = variable_data.data[0].flatten()
         return result.tobytes()

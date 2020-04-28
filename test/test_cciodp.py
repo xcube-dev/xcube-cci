@@ -14,15 +14,21 @@ class CciOdpTest(unittest.TestCase):
         attribute_info = _retrieve_attribute_info_from_das(das_read)
         self.assertEqual(15, len(attribute_info))
         self.assertTrue('surface_pressure' in attribute_info)
-        self.assertTrue('Float32 _FillValue' in attribute_info['surface_pressure'])
-        self.assertEqual('NaN', attribute_info['surface_pressure']['Float32 _FillValue'])
+        self.assertTrue('fill_value' in attribute_info['surface_pressure'])
+        self.assertEqual('NaN', attribute_info['surface_pressure']['fill_value'])
 
     def test_get_data(self):
         cci_odp = CciOdp()
         request = dict(parentIdentifier='4eb4e801424a47f7b77434291921f889',
                        startDate='1997-05-01T00:00:00',
                        endDate='1997-05-01T00:00:00',
-                       bbox=(-10, 40, 10, 60),
+                       bbox=(-10.0, 40.0, 10.0, 60.0),
                        varNames=['surface_pressure', 'O3e_du_tot']
                        )
-        cci_odp.get_data(request)
+        data = cci_odp.get_data(request)
+        self.assertIsNotNone(data)
+
+    def test_dataset_names(self):
+        cci_odp = CciOdp()
+        dataset_names = cci_odp.dataset_names
+        self.assertIsNotNone(dataset_names)

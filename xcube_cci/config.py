@@ -20,7 +20,6 @@
 # SOFTWARE.
 
 import math
-import warnings
 from typing import Tuple, Union, Optional, Sequence, Dict, Any
 
 import pandas as pd
@@ -38,7 +37,6 @@ class CubeConfig:
     CCI Open Data Portal cube configuration.
 
     :param dataset_name: Dataset name. Mandatory.
-    :param fid: ID of the parent data source. Mandatory.
     :param variable_names: Variable names. Mandatory.
     :param variable_units: Variable units. Optional.
     :param variable_data_types: Variable data types. Optional.
@@ -48,7 +46,6 @@ class CubeConfig:
     :param crs:
     :param time_range:
     :param time_period:
-    :param time_tolerance:
     :param collection_id:
     :param four_d:
     :param exception_type:
@@ -56,13 +53,11 @@ class CubeConfig:
 
     def __init__(self,
                  dataset_name: str = None,
-                 fid: str = None,
                  variable_names: Sequence[str] = None,
                  variable_units: Union[str, Sequence[str]] = None,
                  variable_data_types: Union[str, Sequence[str]] = None,
                  tile_size: Union[str, Tuple[int, int]] = None,
                  geometry: Union[str, Tuple[float, float, float, float]] = None,
-                 spatial_res: float = None,
                  crs: str = None,
                  time_range: Union[str, pd.Timestamp, Tuple[str, str], Tuple[pd.Timestamp, pd.Timestamp]] = None,
                  time_period: Union[str, pd.Timedelta] = None,
@@ -75,16 +70,10 @@ class CubeConfig:
 
         if not dataset_name:
             raise exception_type('dataset name must be given')
-        if not fid:
-            raise exception_type('parent data source id must be given')
         if not variable_names:
             raise exception_type('variable names must be a given')
         if not geometry:
             raise exception_type('geometry must be given')
-        if spatial_res is None:
-            raise exception_type('spatial resolution must be given')
-        if spatial_res <= 0.0:
-            raise exception_type('spatial resolution must be a positive number')
         if not time_range:
             raise exception_type('time range must be given')
 
@@ -99,8 +88,6 @@ class CubeConfig:
             y2 = 90
             geometry = x1, y1, x2, y2
 
-        width, height = (max(1, round((x2 - x1) / spatial_res)),
-                         max(1, round((y2 - y1) / spatial_res)))
 
         if tile_size is None:
             tile_width, tile_height = None, None
@@ -114,29 +101,14 @@ class CubeConfig:
                 raise exception_type(f'invalid tile size: {tile_size}')
         else:
             tile_width, tile_height = tile_size
-        if tile_width is None and tile_height is None:
-            num_pixels_per_tile = DEFAULT_TILE_SIZE * DEFAULT_TILE_SIZE
-            tile_width = math.ceil(math.sqrt(width * num_pixels_per_tile / height))
-            tile_height = (num_pixels_per_tile + tile_width - 1) // tile_width
-        elif tile_width is None:
-            tile_width = tile_height
-        elif tile_height is None:
-            tile_height = tile_width
+        if tile_width is None:
+            tile_width = DEFAULT_TILE_SIZE
+        if tile_height is None:
+            tile_height = DEFAULT_TILE_SIZE
         if tile_width > CCI_MAX_IMAGE_SIZE:
             tile_width = CCI_MAX_IMAGE_SIZE
         if tile_height > CCI_MAX_IMAGE_SIZE:
             tile_height = CCI_MAX_IMAGE_SIZE
-
-        if width < 1.5 * tile_width:
-            tile_width = width
-        else:
-            width = self._adjust_size(width, tile_width)
-        if height < 1.5 * tile_height:
-            tile_height = height
-        else:
-            height = self._adjust_size(height, tile_height)
-
-        x2, y2 = x1 + width * spatial_res, y1 + height * spatial_res
 
         geometry = x1, y1, x2, y2
 
@@ -163,20 +135,16 @@ class CubeConfig:
             time_period = pd.to_timedelta(time_period)
 
         self._dataset_name = dataset_name
-        self._fid = fid
         self._variable_names = tuple(variable_names)
         self._variable_units = variable_units or None
         self._variable_data_types = variable_data_types or None
         self._geometry = geometry
-        self._spatial_res = spatial_res
         self._crs = crs
         self._time_range = time_range
         self._time_period = time_period
         self._collection_id = collection_id
         self._four_d = four_d
-        self._size = width, height
         self._tile_size = tile_width, tile_height
-        self._num_tiles = width // tile_width, height // tile_height
 
     @classmethod
     def from_dict(cls, cube_config_dict: Dict[str, Any], exception_type=ValueError) -> 'CubeConfig':
@@ -200,13 +168,11 @@ class CubeConfig:
         time_period = str(self.time_period) \
             if self.time_period else None
         return dict(dataset_name=self.dataset_name,
-                    fid=self.fid,
                     variable_names=self.variable_names,
                     variable_units=self.variable_units,
                     variable_data_types=self.variable_data_types,
                     tile_size=self.tile_size,
                     geometry=self.geometry,
-                    spatial_res=self.spatial_res,
                     crs=self.crs,
                     time_range=time_range,
                     time_period=time_period,
@@ -216,10 +182,6 @@ class CubeConfig:
     @property
     def dataset_name(self) -> str:
         return self._dataset_name
-
-    @property
-    def fid(self) -> str:
-        return self._fid
 
     @property
     def variable_names(self) -> Tuple[str, ...]:
@@ -242,10 +204,6 @@ class CubeConfig:
         return self._geometry
 
     @property
-    def spatial_res(self) -> float:
-        return self._spatial_res
-
-    @property
     def time_range(self) -> Tuple[pd.Timestamp, pd.Timestamp]:
         return self._time_range
 
@@ -262,16 +220,8 @@ class CubeConfig:
         return self._four_d
 
     @property
-    def size(self) -> Tuple[int, int]:
-        return self._size
-
-    @property
     def tile_size(self) -> Tuple[int, int]:
         return self._tile_size
-
-    @property
-    def num_tiles(self) -> Tuple[int, int]:
-        return self._num_tiles
 
     @property
     def is_wgs84_crs(self) -> bool:

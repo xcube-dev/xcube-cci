@@ -19,6 +19,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
+import bisect
 import itertools
 import json
 import time
@@ -65,18 +66,12 @@ class RemoteStore(MutableMapping, metaclass=ABCMeta):
         if not self._time_ranges:
             raise ValueError('Could not determine any valid time stamps')
 
-        width, height = self._cube_config.size
-        spatial_res = self._cube_config.spatial_res
-        x1, y1, x2, y2 = self._cube_config.geometry
-        x_array = np.linspace(x1 + spatial_res / 2, x2 - spatial_res / 2, width, dtype=np.float64)
-        y_array = np.linspace(y2 - spatial_res / 2, y1 + spatial_res / 2, height, dtype=np.float64)
-
         t_array = np.array([s + 0.5 * (e - s) for s, e in self._time_ranges]).astype('datetime64[s]').astype(np.int64)
         t_bnds_array = np.array(self._time_ranges).astype('datetime64[s]').astype(np.int64)
-
+        x1, y1, x2, y2 = self._cube_config.geometry
         time_coverage_start = self._time_ranges[0][0]
         time_coverage_end = self._time_ranges[-1][1]
-        #todo add processing_level from metadata
+        # todo add processing_level from metadata
         global_attrs = dict(
             Conventions='CF-1.7',
             coordinates='time_bnds',
@@ -108,31 +103,32 @@ class RemoteStore(MutableMapping, metaclass=ABCMeta):
             '.zattrs': _dict_to_bytes(global_attrs)
         }
 
-        if self._cube_config.is_wgs84_crs:
-            x_name, y_name = 'lon', 'lat'
-            x_attrs, y_attrs = ({
-                                    "_ARRAY_DIMENSIONS": ['lon'],
-                                    "units": "decimal_degrees",
-                                    "long_name": "longitude",
-                                    "standard_name": "longitude",
-                                }, {
-                                    "_ARRAY_DIMENSIONS": ['lat'],
-                                    "units": "decimal_degrees",
-                                    "long_name": "longitude",
-                                    "standard_name": "latitude",
-                                })
-        else:
-            x_name, y_name = 'x', 'y'
-            x_attrs, y_attrs = ({
-                                    "_ARRAY_DIMENSIONS": ['x'],
-                                    "long_name": "x coordinate of projection",
-                                    "standard_name": "projection_x_coordinate",
-                                }, {
-                                    "_ARRAY_DIMENSIONS": ['y'],
-                                    "long_name": "y coordinate of projection",
-                                    "standard_name": "projection_y_coordinate",
-                                })
-
+        dimensions = self.get_dimensions()
+        width = -1
+        height = -1
+        for dimension_name in dimensions:
+            if dimension_name == 'lat':
+                dim_attrs = self.get_attrs(dimension_name)
+                dim_attrs['_ARRAY_DIMENSIONS'] = dimension_name
+                dimension_data = self.get_dimension_data(dimension_name)
+                lat_start_offset = bisect.bisect_right(dimension_data, y1)
+                lat_end_offset = bisect.bisect_right(dimension_data, y2)
+                lat_array = np.array(dimension_data[lat_start_offset:lat_end_offset])
+                height = len(lat_array)
+                self._add_static_array(dimension_name,
+                                       lat_array,
+                                       dim_attrs)
+            if dimension_name == 'lon':
+                dim_attrs = self.get_attrs(dimension_name)
+                dim_attrs['_ARRAY_DIMENSIONS'] = dimension_name
+                dimension_data = self.get_dimension_data(dimension_name)
+                lon_start_offset = bisect.bisect_right(dimension_data, x1)
+                lon_end_offset = bisect.bisect_right(dimension_data, x2)
+                lon_array = np.array(dimension_data[lon_start_offset:lon_end_offset])
+                width = len(lon_array)
+                self._add_static_array(dimension_name,
+                                       lon_array,
+                                       dim_attrs)
         time_attrs = {
             "_ARRAY_DIMENSIONS": ['time'],
             "units": "seconds since 1970-01-01T00:00:00Z",
@@ -147,10 +143,18 @@ class RemoteStore(MutableMapping, metaclass=ABCMeta):
             "standard_name": "time",
         }
 
-        self._add_static_array(x_name, x_array, x_attrs)
-        self._add_static_array(y_name, y_array, y_attrs)
         self._add_static_array('time', t_array, time_attrs)
         self._add_static_array('time_bnds', t_bnds_array, time_bnds_attrs)
+
+        self._tile_width, self._tile_height = self._cube_config.tile_size
+        if width < 1.5 * self._tile_width:
+            self._tile_width = width
+        else:
+            width = self._adjust_size(width, self._tile_width)
+        if height < 1.5 * self._tile_height:
+            self._tile_height = height
+        else:
+            height = self._adjust_size(height, self._tile_height)
 
         if self._cube_config.four_d:
             if self._cube_config.is_wgs84_crs:
@@ -167,24 +171,34 @@ class RemoteStore(MutableMapping, metaclass=ABCMeta):
             var_attrs.update(_ARRAY_DIMENSIONS=var_array_dimensions, var_names=self._cube_config.variable_names)
             self._add_remote_array(DATA_ARRAY_NAME,
                                    [t_array.size, height, width, num_vars],
-                                   [1, tile_height, tile_width, num_vars],
+                                   [1, self._tile_height, self._tile_width, num_vars],
                                    var_encoding,
                                    var_attrs)
         else:
             if self._cube_config.is_wgs84_crs:
-                band_array_dimensions = ['time', 'lat', 'lon']
+                var_array_dimensions = ['time', 'lat', 'lon']
             else:
-                band_array_dimensions = ['time', 'y', 'x']
-            tile_width, tile_height = self._cube_config.tile_size
+                var_array_dimensions = ['time', 'y', 'x']
             for variable_name in self._cube_config.variable_names:
                 var_encoding = self.get_encoding(variable_name)
                 var_attrs = self.get_attrs(variable_name)
-                var_attrs.update(_ARRAY_DIMENSIONS=band_array_dimensions)
+                var_attrs.update(_ARRAY_DIMENSIONS=var_array_dimensions)
                 self._add_remote_array(variable_name,
                                        [t_array.size, height, width],
-                                       [1, tile_height, tile_width],
+                                       [1, self._tile_height, self._tile_width],
                                        var_encoding,
                                        var_attrs)
+
+    @classmethod
+    def _adjust_size(cls, size: int, tile_size: int) -> int:
+        if size > tile_size:
+            num_tiles = cls._safe_int_div(size, tile_size)
+            size = num_tiles * tile_size
+        return size
+
+    @classmethod
+    def _safe_int_div(cls, x: int, y: int) -> int:
+        return (x + y - 1) // y
 
     def get_time_ranges(self):
         time_start, time_end = self._cube_config.time_range
@@ -196,6 +210,18 @@ class RemoteStore(MutableMapping, metaclass=ABCMeta):
             request_time_ranges.append((time_now, time_next))
             time_now = time_next
         return request_time_ranges
+
+    def get_spatial_lat_res(self):
+        return self._cube_config.spatial_res
+
+    def get_spatial_lon_res(self):
+        return self._cube_config.spatial_res
+
+    def get_dimensions(self) -> dict:
+        return dict(lat=-1, lon=-1, time=-1, time_bnds=-1)
+
+    def get_dimension_data(self, dimension_name: str):
+        pass
 
     def add_observer(self, observer: Callable):
         """
@@ -221,18 +247,17 @@ class RemoteStore(MutableMapping, metaclass=ABCMeta):
         """
 
     def request_bbox(self, x_tile_index: int, y_tile_index: int) -> Tuple[float, float, float, float]:
-        x_tile_size, y_tile_size = self.cube_config.tile_size
-
-        x_index = x_tile_index * x_tile_size
-        y_index = y_tile_index * y_tile_size
+        x_index = x_tile_index * self._tile_width
+        y_index = y_tile_index * self._tile_height
 
         x01, _, _, y02 = self.cube_config.geometry
-        spatial_res = self.cube_config.spatial_res
+        spatial_lat_res = self.get_spatial_lat_res()
+        spatial_lon_res = self.get_spatial_lon_res()
 
-        x1 = x01 + spatial_res * x_index
-        x2 = x01 + spatial_res * (x_index + x_tile_size)
-        y1 = y02 - spatial_res * (y_index + y_tile_size)
-        y2 = y02 - spatial_res * y_index
+        x1 = x01 + spatial_lon_res * x_index
+        x2 = x01 + spatial_lon_res * (x_index + self._tile_width)
+        y1 = y02 - spatial_lat_res * (y_index + self._tile_height)
+        y2 = y02 - spatial_lat_res * y_index
 
         return x1, y1, x2, y2
 
@@ -425,28 +450,35 @@ class CciStore(RemoteStore):
 
     def ensure_metadata_read(self):
         if self._metadata is None:
-            self._metadata = self._cci_odp.get_dataset_metadata(self._cube_config.fid)
+            self._metadata = self._cci_odp.get_dataset_metadata(self._cube_config.dataset_name)
+
+    def get_spatial_lon_res(self):
+        self.ensure_metadata_read()
+        return self._metadata['attributes']['NC_GLOBAL']['geospatial_lon_resolution'][0]
+
+    def get_spatial_lat_res(self):
+        self.ensure_metadata_read()
+        return self._metadata['attributes']['NC_GLOBAL']['geospatial_lat_resolution'][0]
+
+    def get_dimensions(self):
+        self.ensure_metadata_read()
+        return self._metadata['dimensions']
+
+    def get_dimension_data(self, dimension_name: str):
+        return self._cci_odp.get_dimension_data(self.cube_config.dataset_name, dimension_name)
 
     def get_encoding(self, var_name: str) -> Dict[str, Any]:
         self.ensure_metadata_read()
-        #todo use actual values from the metadata
         encoding_dict = {}
-        encoding_dict['fill_value'] = 'NaN'
-        encoding_dict['dtype'] = 'Float32'
+        encoding_dict['fill_value'] = self._metadata.get('attributes', {}).get(var_name, {}).get('fill_value')
+        encoding_dict['dtype'] = self._metadata.get('variable_infos', {}).get(var_name, {}).get('data_type')
         return encoding_dict
 
     def get_attrs(self, var_name: str) -> Dict[str, Any]:
         self.ensure_metadata_read()
-        # todo use actual values from the metadata
-        var_metadata = dict(standard_name = 'surface_air_pressure',
-                            long_name = 'Pressure at the bottom of the atmosphere.',
-                            units = 'hPa',
-                            fill_value = 'NaN',
-                            chunk_sizes = [1, 180, 360],
-                            data_type = 'Float32',
-                            dimensions = ['time', 'lat', 'lon']
-                            )
-        return var_metadata
+        attrs = self._metadata.get('attributes', {}).get(var_name, {})
+        attrs.update(self._metadata.get('variable_infos', {}).get(var_name, {}))
+        return attrs
 
     def fetch_chunk(self,
                     var_name: str,
@@ -459,7 +491,8 @@ class CciStore(RemoteStore):
             var_names = self.cube_config.variable_names
         else:
             var_names = [var_name]
-        request = dict(parentIdentifier=self.cube_config.fid,
+        identifier = self._cci_odp.get_fid_for_dataset(self.cube_config.dataset_name)
+        request = dict(parentIdentifier=identifier,
                        varNames=var_names,
                        startDate=start_time.tz_localize(None).isoformat(),
                        endDate=end_time.tz_localize(None).isoformat(),

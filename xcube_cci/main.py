@@ -23,8 +23,6 @@ from typing import Any, Dict, Optional, List, Tuple
 
 import click
 
-from xcube_sh.constants import DEFAULT_CRS, DEFAULT_TIME_TOLERANCE, DEFAULT_CLIENT_ID, DEFAULT_CLIENT_SECRET, \
-    DEFAULT_SH_API_URL, DEFAULT_SH_OAUTH2_URL, DEFAULT_INSTANCE_ID, DEFAULT_TILE_SIZE
 from xcube_cci.version import version
 
 DEFAULT_GEN_OUTPUT_PATH = 'out.zarr'
@@ -34,66 +32,52 @@ DEFAULT_GEN_OUTPUT_PATH = 'out.zarr'
                # Required for parsing geometry bbox with negative coordinates
                context_settings={"ignore_unknown_options": True})
 @click.argument('request', default=None, type=str, required=False)
-@click.option('--dataset', '-d', 'dataset_name',
-              help='Dataset name. The name of a valid ESA CCI ODP dataset.')
-@click.option('--band', '-b', 'band_names',
-              help='Band name. The name of a band in given dataset. '
-                   'Can be repeated for multiple bands. Defaults to all bands of a dataset.',
-              multiple=True)
-@click.option('--tile_size', '--tile-size',
-              help='Tile size given as number of grid cells using format "<size>" or "<width>,<height>".')
-@click.option('--geom', '-g', 'geometry',
-              help='Geometry WKT, GeoJSON object, or bounding box using format "<lon1>,<lat1>,<lon2>,<lat2>". '
-                   'Coordinates must be in decimal degree.')
-@click.option('--res', '-r', 'spatial_res',
-              help="Spatial resolution in degrees.",
-              type=float)
-@click.option('--crs',
-              help=f'Coordinate reference system (CRS) URL. Defaults to "{DEFAULT_CRS}".')
-@click.option('--time', '-t', 'time_range',
-              help='Time or time range using format "date" or "<first-date>,<last-date>".')
-@click.option('--period', '-p', 'time_period',
-              help='Time (aggregation) period. Format is "<period>" or "<num><period>" '
-                   'where <num> is a positive integer and <period> is one of "H", "D", "W", "Y". '
-                   'Defaults to a period suitable for the dataset.')
-@click.option('--tolerance', '--tol', 'time_tolerance',
-              help='Time (request) tolerance. Format is "<period>" or "<num><period>" '
-                   'where <num> is a positive integer and <period> is one of "S", "M", "H". '
-                   f'Defaults to "{DEFAULT_TIME_TOLERANCE}".')
-@click.option('--output', '-o', 'output_path',
-              help=f'Output ZARR directory. Defaults to "{DEFAULT_GEN_OUTPUT_PATH}".')
-@click.option('--4d', 'four_d',
-              is_flag=True,
-              help='Write a single data 4D array "band_data" to the output. '
-                   'Will slightly increase execution speed. '
-                   'By default, bands are written to separate 3D arrays, e.g. "B01", "B02".')
-@click.option('--verbose', '-v',
-              is_flag=True,
-              help='Print information about each single ESA CCI ODP request to stdout.')
-def gen(request: Optional[str],
-        dataset_name: Optional[str],
-        band_names: Optional[Tuple],
-        tile_size: Optional[str],
-        geometry: Optional[str],
-        spatial_res: Optional[float],
-        crs: Optional[str],
-        time_range: Optional[str],
-        time_period: Optional[str],
-        time_tolerance: Optional[str],
-        output_path: Optional[str],
-        four_d: bool,
-        verbose: bool):
+# @click.option('--dataset', '-d', 'dataset_name',
+#               help='Dataset name. The name of a valid ESA CCI ODP dataset.')
+# @click.option('--band', '-b', 'band_names',
+#               help='Band name. The name of a band in given dataset. '
+#                    'Can be repeated for multiple bands. Defaults to all bands of a dataset.',
+#               multiple=True)
+# @click.option('--tile_size', '--tile-size',
+#               help='Tile size given as number of grid cells using format "<size>" or "<width>,<height>".')
+# @click.option('--geom', '-g', 'geometry',
+#               help='Geometry WKT, GeoJSON object, or bounding box using format "<lon1>,<lat1>,<lon2>,<lat2>". '
+#                    'Coordinates must be in decimal degree.')
+# @click.option('--time', '-t', 'time_range',
+#               help='Time or time range using format "date" or "<first-date>,<last-date>".')
+# @click.option('--period', '-p', 'time_period',
+#               help='Time (aggregation) period. Format is "<period>" or "<num><period>" '
+#                    'where <num> is a positive integer and <period> is one of "H", "D", "W", "Y". '
+#                    'Defaults to a period suitable for the dataset.')
+# @click.option('--output', '-o', 'output_path',
+#               help=f'Output ZARR directory. Defaults to "{DEFAULT_GEN_OUTPUT_PATH}".')
+# @click.option('--4d', 'four_d',
+#               is_flag=True,
+#               help='Write a single data 4D array "band_data" to the output. '
+#                    'Will slightly increase execution speed. '
+#                    'By default, bands are written to separate 3D arrays, e.g. "B01", "B02".')
+# @click.option('--verbose', '-v',
+#               is_flag=True,
+#               help='Print information about each single ESA CCI ODP request to stdout.')
+def gen(request: Optional[str] = None,
+        dataset_name: Optional[str] = None,
+        var_names: Optional[Tuple] = None,
+        tile_size: Optional[str] = None,
+        geometry: Optional[str] = None,
+        time_range: Optional[str] = None,
+        time_period: Optional[str] = None,
+        output_path: Optional[str] = None,
+        four_d: bool = False,
+        verbose: bool = False
+        ):
     """
-    Generate a data cube from ESA CCI ODP.
+    Generate a data cube from the ESA CCI Open Data Portal.
 
     By default, the command will create a Zarr dataset with 3D arrays
-    for each band e.g. "B01", "B02" with dimensions "time", "lat", "lon".
-    Use option "--4d" to write a single 4D array "band_data"
-    with dimensions "time", "lat", "lon", "band".
+    for each variable e.g. "surface_pressure" with dimensions "time", "lat", "lon".
 
-    Please use command "xcube sh req" to generate example request files that can be passed as REQUEST.
     REQUEST may have JSON or YAML format.
-    You can also pipe a JSON request into this command. In this case
+    You can also pipe a JSON request into this command.
     """
     import json
     import os.path
@@ -102,7 +86,7 @@ def gen(request: Optional[str],
     from xcube.core.dsio import write_dataset
     from xcube.util.perf import measure_time
     from xcube_cci.config import CubeConfig
-    # from xcube_sh.observers import Observers
+    from xcube_cci.observers import Observers
     from xcube_cci.cciodp import CciOdp
     from xcube_cci.store import CciStore
 
@@ -116,18 +100,14 @@ def gen(request: Optional[str],
     cube_config_dict = request_dict.get('cube_config', {})
     _overwrite_config_params(cube_config_dict,
                              dataset_name=dataset_name,
-                             band_names=band_names if band_names else None,  # because of multiple=True
+                             var_names=var_names if var_names else None,  # because of multiple=True
                              tile_size=tile_size,
                              geometry=geometry,
-                             spatial_res=spatial_res,
-                             crs=crs,
                              time_range=time_range,
                              time_period=time_period,
-                             time_tolerance=time_tolerance,
                              four_d=four_d)
 
     input_config_dict = request_dict.get('input_config', {})
-    # _overwrite_config_params(input_config_dict, ...)
     # TODO: validate input_config_dict
 
     output_config_dict = request_dict.get('output_config', {})
@@ -145,29 +125,29 @@ def gen(request: Optional[str],
     if not _is_bucket_url(output_path) and os.path.exists(output_path):
         raise click.ClickException(f'Output {output_path} already exists. Move it away first.')
 
-    # sentinel_hub = SentinelHub(**input_config_dict)
-    #
-    # print(f'Writing cube to {output_path}...')
-    #
-    # with measure_time() as cm:
-    #     store = SentinelHubStore(sentinel_hub, cube_config)
-        # request_collector = Observers.request_collector()
-        # store.add_observer(request_collector)
-        # if verbose:
-        #     store.add_observer(Observers.request_dumper())
-        # cube = xr.open_zarr(store)
-        # if _is_bucket_url(output_path):
-        #     client_kwargs = {k: output_config_dict.pop(k)
-        #                      for k in ('provider_access_key_id', 'provider_secret_access_key')
-        #                      if k in output_config_dict}
-        #     write_dataset(cube, output_path, format_name='zarr', client_kwargs=client_kwargs, **output_config_dict)
-        # else:
-        #     write_dataset(cube, output_path, **output_config_dict)
+    cci_odp = CciOdp()
 
-    # print(f"Cube written to {output_path}, took {'%.2f' % cm.duration} seconds.")
+    print(f'Writing cube to {output_path}...')
 
-    # if verbose:
-    #     request_collector.stats.dump()
+    with measure_time() as cm:
+        store = CciStore(cci_odp, cube_config)
+        request_collector = Observers.request_collector()
+        store.add_observer(request_collector)
+        if verbose:
+            store.add_observer(Observers.request_dumper())
+        cube = xr.open_zarr(store)
+        if _is_bucket_url(output_path):
+            client_kwargs = {k: output_config_dict.pop(k)
+                             for k in ('provider_access_key_id', 'provider_secret_access_key')
+                             if k in output_config_dict}
+            write_dataset(cube, output_path, format_name='zarr', client_kwargs=client_kwargs, **output_config_dict)
+        else:
+            write_dataset(cube, output_path, **output_config_dict)
+
+    print(f"Cube written to {output_path}, took {'%.2f' % cm.duration} seconds.")
+
+    if verbose:
+        request_collector.stats.dump()
 
 
 @click.command(name="req")
@@ -194,22 +174,14 @@ def req(output_path: str,
     import yaml
 
     input_config = dict(
-        instance_id=DEFAULT_INSTANCE_ID,
-        client_id=DEFAULT_CLIENT_ID,
-        client_secret=DEFAULT_CLIENT_SECRET,
-        api_url=DEFAULT_SH_API_URL,
-        oauth2_url=DEFAULT_SH_OAUTH2_URL
     )
     cube_config = dict(
-        dataset_name='S2L2A',
-        band_names=['B01', 'B02', 'B03'],
-        tile_size=[DEFAULT_TILE_SIZE, DEFAULT_TILE_SIZE],
+        dataset_name='esacci.OZONE.month.L3.NP.multi-sensor.multi-platform.MERGED.fv0002.r1',
+        variable_names=['surface_pressure', 'O3e_du_tot'],
+        tile_size=[20, 20],
         geometry=[7.0, 53.00, 9.0, 55.0],
-        spatial_res=1.0 / DEFAULT_TILE_SIZE,
-        crs=DEFAULT_CRS,
-        time_range=['2019-04-22', '2019-04-25'],
-        time_period='1D',
-        time_tolerance=DEFAULT_TIME_TOLERANCE
+        time_range=['1997-01-01', '1997-12-01'],
+        time_period='8D',
     )
     if is_s3_config:
         output_config = dict(
@@ -240,9 +212,8 @@ def req(output_path: str,
 @click.argument('datasets', nargs=-1)
 def info(datasets: List[str] = None):
     """
-    Print SentinelHub metadata info. If DATASETS (names of datasets) are not present,
-    the list of available dataset names are returned. Otherwise,
-    the the variables of the given datasets are returned.
+    Print CCI Opendata Portal metadata info.
+    The list of available dataset names are returned.
     """
     from xcube_cci.cciodp import CciOdp
 
@@ -258,17 +229,16 @@ def info(datasets: List[str] = None):
             for var_name in var_names:
                 # todo read variable metadata
                 vars[var_name] = {}
-                # vars[var_name] = cci_odp.METADATA.dataset_band(dataset_name, band_name, default={})
             response[dataset_name] = vars
     print(json.dumps(response, indent=2))
 
 
 # noinspection PyShadowingBuiltins,PyUnusedLocal
-@click.group(name="sh")
+@click.group(name="cci")
 @click.version_option(version)
 def cli():
     """
-    SentinelHub tools for xcube.
+    CCI Open Data Portal tools for xcube.
     """
 
 

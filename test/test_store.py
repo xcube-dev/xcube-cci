@@ -1,5 +1,3 @@
-import json
-import os
 import pandas
 import unittest
 
@@ -12,18 +10,9 @@ class CciStoreTest(unittest.TestCase):
 
     def test_get_encoding(self):
         cci_odp = CciOdp()
-        # config = CubeConfig(dataset_name='esacci.CLOUD.month.L3C.CLD_PRODUCTS.MODIS.Terra.MODIS_TERRA.2-0.r1',
-                            # fid='Z39o6XAB5l1700gahU5G',
-                            # variable_names=['cee', 'cer', 'cfc_day'],
-                            # spatial_res=50.0,
-                            # time_range=('2010-05-01', '2010-08-31'),
-                            # time_period=pandas.Timedelta('30D')
-                            # )
         config = CubeConfig(dataset_name='esacci.OZONE.month.L3.NP.multi-sensor.multi-platform.MERGED.fv0002.r1',
-                            fid='Nn9o6XAB5l1700gahU5G',
                             variable_names=['surface_pressure', 'O3_vmr', 'O3_du'],
                             geometry=(10, 10, 20, 20),
-                            spatial_res=50.0,
                             time_range=('2010-05-01', '2010-08-31'),
                             time_period=pandas.Timedelta('30D')
                             )
@@ -39,19 +28,9 @@ class CciStoreTest(unittest.TestCase):
 
     def test_get_attrs(self):
         cci_odp = CciOdp()
-        # config = CubeConfig(dataset_name='esacci.CLOUD.month.L3C.CLD_PRODUCTS.MODIS.Terra.MODIS_TERRA.2-0.r1',
-                            # fid='Z39o6XAB5l1700gahU5G',
-                            # variable_names=['cee', 'cer', 'cfc_day'],
-                            # spatial_res=50.0,
-                            # time_range=('2010-05-01', '2010-08-31'),
-                            # time_period=pandas.Timedelta('30D')
-                            # )
         config = CubeConfig(dataset_name='esacci.OZONE.month.L3.NP.multi-sensor.multi-platform.MERGED.fv0002.r1',
-                            # fid='Nn9o6XAB5l1700gahU5G',
-                            fid='4eb4e801424a47f7b77434291921f889',
                             variable_names=['surface_pressure', 'O3_vmr', 'O3_du'],
                             geometry=(10,10,20,20),
-                            spatial_res=50.0,
                             time_range=('2010-05-01', '2010-08-31'),
                             time_period=pandas.Timedelta('30D')
                             )
@@ -71,13 +50,3 @@ class CciStoreTest(unittest.TestCase):
         self.assertEqual([1, 180, 360], attrs['chunk_sizes'])
         self.assertEqual('Float32', attrs['data_type'])
         self.assertEqual(['time', 'lat', 'lon'], attrs['dimensions'])
-
-        # var_metadata = dict(standard_name = 'surface_air_pressure',
-        #                     long_name = 'Pressure at the bottom of the atmosphere.',
-        #                     units = 'hPa',
-        #                     fill_value = 'NaN',
-        #                     chunk_sizes = [1, 180, 360],
-        #                     data_type = 'Float32',
-        #                     dimensions = ['time', 'lat', 'lon']
-        #                     )
-
