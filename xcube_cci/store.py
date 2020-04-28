@@ -20,6 +20,8 @@
 # SOFTWARE.
 
 import bisect
+from datetime import datetime
+from dateutil.relativedelta import relativedelta
 import itertools
 import json
 import time
@@ -34,6 +36,7 @@ from .config import CubeConfig
 from .constants import DATA_ARRAY_NAME
 from .cciodp import CciOdp
 
+_TIMESTAMP_FORMAT = "%Y-%m-%dT%H:%M:%S"
 
 def _dict_to_bytes(d: Dict):
     return _str_to_bytes(json.dumps(d, indent=2))
@@ -87,8 +90,6 @@ class RemoteStore(MutableMapping, metaclass=ABCMeta):
             time_coverage_end=time_coverage_end.isoformat(),
             time_coverage_duration=(time_coverage_end - time_coverage_start).isoformat(),
         )
-        if self._cube_config.time_period:
-            global_attrs.update(time_coverage_resolution=self._cube_config.time_period.isoformat())
 
         if self._cube_config.is_wgs84_crs:
             x1, y2, x2, y2 = self._cube_config.geometry
@@ -161,7 +162,6 @@ class RemoteStore(MutableMapping, metaclass=ABCMeta):
                 var_array_dimensions = ['time', 'lat', 'lon', 'var']
             else:
                 var_array_dimensions = ['time', 'y', 'x', 'var']
-            tile_width, tile_height = self._cube_config.tile_size
             num_vars = len(self._cube_config.variable_names)
             self._add_static_array('variable',
                                    np.array(self._cube_config.variable_names),
@@ -200,7 +200,7 @@ class RemoteStore(MutableMapping, metaclass=ABCMeta):
     def _safe_int_div(cls, x: int, y: int) -> int:
         return (x + y - 1) // y
 
-    def get_time_ranges(self):
+    def get_time_ranges(self) -> List[Tuple]:
         time_start, time_end = self._cube_config.time_range
         time_period = self._cube_config.time_period
         request_time_ranges = []
@@ -451,6 +451,38 @@ class CciStore(RemoteStore):
     def ensure_metadata_read(self):
         if self._metadata is None:
             self._metadata = self._cci_odp.get_dataset_metadata(self._cube_config.dataset_name)
+
+    def get_time_ranges(self) -> List[Tuple]:
+        time_start, time_end = self._cube_config.time_range
+        start_time = datetime.strptime(time_start.tz_localize(None).isoformat(), _TIMESTAMP_FORMAT)
+        end_time = datetime.strptime(time_end.tz_localize(None).isoformat(), _TIMESTAMP_FORMAT)
+        time_period = self.cube_config.dataset_name.split('.')[2]
+        delta_ms = relativedelta(microseconds=1)
+        if time_period == 'day':
+            start_time = datetime(year=start_time.year, month=start_time.month, day=start_time.day)
+            end_time = datetime(year=end_time.year, month=end_time.month, day=end_time.day)
+            delta = relativedelta(days=1, microseconds=-1)
+        elif time_period == 'month':
+            start_time = datetime(year=start_time.year, month=start_time.month, day=1)
+            end_time = datetime(year=end_time.year, month=end_time.month, day=1)
+            delta = relativedelta(months=+1, microseconds=-1)
+            end_time += delta
+        elif time_period == 'year':
+            start_time = datetime(year=start_time.year, month=1, day=1)
+            end_time = datetime(year=end_time.year, month=12, day=31)
+            delta = relativedelta(years=1, microseconds=-1)
+        else:
+            # todo add support for other frequencies
+            return []
+        request_time_ranges = []
+        this = start_time
+        while this < end_time:
+            next = this + delta
+            pd_this = pd.Timestamp(datetime.strftime(this, _TIMESTAMP_FORMAT))
+            pd_next = pd.Timestamp(datetime.strftime(next, _TIMESTAMP_FORMAT))
+            request_time_ranges.append((pd_this, pd_next))
+            this = next + delta_ms
+        return request_time_ranges
 
     def get_spatial_lon_res(self):
         self.ensure_metadata_read()

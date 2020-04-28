@@ -62,15 +62,17 @@ DEFAULT_GEN_OUTPUT_PATH = 'out.zarr'
 #               help='Print information about each single ESA CCI ODP request to stdout.')
 def gen(request: Optional[str] = None,
         dataset_name: Optional[str] = None,
-        var_names: Optional[Tuple] = None,
+        band_names: Optional[Tuple] = None,
         tile_size: Optional[str] = None,
         geometry: Optional[str] = None,
+        spatial_res: Optional[float] = None,
+        crs: Optional[str] = None,
         time_range: Optional[str] = None,
         time_period: Optional[str] = None,
+        time_tolerance: Optional[str] = None,
         output_path: Optional[str] = None,
-        four_d: bool = False,
-        verbose: bool = False
-        ):
+        four_d: bool = None,
+        verbose: bool = None):
     """
     Generate a data cube from the ESA CCI Open Data Portal.
 
@@ -98,10 +100,16 @@ def gen(request: Optional[str] = None,
     else:
         request_dict = {}
 
+    if spatial_res: _warn('spatial_res')
+    if crs: _warn('crs')
+    if time_period: _warn('time_period')
+    if time_tolerance: _warn('time_tolerance')
+
     cube_config_dict = request_dict.get('cube_config', {})
+    _validate_cube_config(cube_config_dict)
     _overwrite_config_params(cube_config_dict,
                              dataset_name=dataset_name,
-                             var_names=var_names if var_names else None,  # because of multiple=True
+                             var_names=band_names if band_names else None,  # because of multiple=True
                              tile_size=tile_size,
                              geometry=geometry,
                              time_range=time_range,
@@ -155,6 +163,17 @@ def gen(request: Optional[str] = None,
 
     if verbose:
         request_collector.stats.dump()
+
+def _warn(param: str):
+    warnings.warn(f'Parameter {param} is not supported by the ESA CCI ODP Store. '
+                  'This parameter will not be considered.')
+
+def _validate_cube_config(config: dict):
+    non_supported_params = ['spatial_res', 'crs', 'time_period', 'time_tolerance']
+    for param in non_supported_params:
+        if param in config:
+            config.pop(param)
+            _warn(param)
 
 
 @click.command(name="req")

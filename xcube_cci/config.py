@@ -24,7 +24,6 @@ from typing import Tuple, Union, Optional, Sequence, Dict, Any
 
 import pandas as pd
 
-from .constants import DEFAULT_CRS
 from .constants import CCI_MAX_IMAGE_SIZE, DEFAULT_TILE_SIZE
 
 
@@ -58,15 +57,10 @@ class CubeConfig:
                  variable_data_types: Union[str, Sequence[str]] = None,
                  tile_size: Union[str, Tuple[int, int]] = None,
                  geometry: Union[str, Tuple[float, float, float, float]] = None,
-                 crs: str = None,
                  time_range: Union[str, pd.Timestamp, Tuple[str, str], Tuple[pd.Timestamp, pd.Timestamp]] = None,
-                 time_period: Union[str, pd.Timedelta] = None,
                  collection_id: str = None,
                  four_d: bool = False,
                  exception_type=ValueError):
-
-        crs = crs or DEFAULT_CRS
-        time_period = time_period or None
 
         if not dataset_name:
             raise exception_type('dataset name must be given')
@@ -131,17 +125,12 @@ class CubeConfig:
 
         time_range = start_time, end_time
 
-        if isinstance(time_period, str):
-            time_period = pd.to_timedelta(time_period)
-
         self._dataset_name = dataset_name
         self._variable_names = tuple(variable_names)
         self._variable_units = variable_units or None
         self._variable_data_types = variable_data_types or None
         self._geometry = geometry
-        self._crs = crs
         self._time_range = time_range
-        self._time_period = time_period
         self._collection_id = collection_id
         self._four_d = four_d
         self._tile_size = tile_width, tile_height
@@ -165,17 +154,13 @@ class CubeConfig:
         """Convert to JSON-serializable dictionary that can be passed to ctor as kwargs"""
         time_range = (self.time_range[0].isoformat(), self.time_range[1].isoformat()) \
             if self.time_range else None
-        time_period = str(self.time_period) \
-            if self.time_period else None
         return dict(dataset_name=self.dataset_name,
                     variable_names=self.variable_names,
                     variable_units=self.variable_units,
                     variable_data_types=self.variable_data_types,
                     tile_size=self.tile_size,
                     geometry=self.geometry,
-                    crs=self.crs,
                     time_range=time_range,
-                    time_period=time_period,
                     collection_id=self.collection_id,
                     four_d=self.four_d)
 
@@ -196,20 +181,12 @@ class CubeConfig:
         return self._variable_data_types
 
     @property
-    def crs(self) -> str:
-        return self._crs
-
-    @property
     def geometry(self) -> Tuple[float, float, float, float]:
         return self._geometry
 
     @property
     def time_range(self) -> Tuple[pd.Timestamp, pd.Timestamp]:
         return self._time_range
-
-    @property
-    def time_period(self) -> Optional[pd.Timedelta]:
-        return self._time_period
 
     @property
     def collection_id(self) -> Optional[str]:
@@ -225,7 +202,7 @@ class CubeConfig:
 
     @property
     def is_wgs84_crs(self) -> bool:
-        return self._crs.endswith('/4326') or self._crs.endswith('/WGS84')
+        return True
 
     @classmethod
     def _adjust_size(cls, size: int, tile_size: int) -> int:
