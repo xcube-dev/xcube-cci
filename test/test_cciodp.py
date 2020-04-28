@@ -32,3 +32,10 @@ class CciOdpTest(unittest.TestCase):
         cci_odp = CciOdp()
         dataset_names = cci_odp.dataset_names
         self.assertIsNotNone(dataset_names)
+
+    def test_var_names(self):
+        cci_odp = CciOdp()
+        var_names = cci_odp.var_names('esacci.OZONE.month.L3.NP.multi-sensor.multi-platform.MERGED.fv0002.r1')
+        self.assertIsNotNone(var_names)
+        self.assertEqual(['surface_pressure', 'O3_du', 'O3e_du', 'O3_du_tot', 'O3e_du_tot', 'O3_vmr', 'O3e_vmr',
+                          'O3_ndens', 'O3e_ndens'], var_names)

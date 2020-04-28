@@ -499,6 +499,16 @@ class CciOdp:
     def get_dataset_metadata(self, dataset_id: str) -> dict:
         return asyncio.run(_fetch_dataset_metadata(self._datasets_to_uuid[dataset_id]))
 
+    async def _ensure_data_sources_read(self):
+        if not self._data_sources:
+            self._data_sources = {}
+            catalogue = await _fetch_data_source_list_json(_OPENSEARCH_CEDA_URL, dict(parentIdentifier='cci'))
+            if catalogue:
+                tasks = []
+                for catalogue_item in catalogue:
+                    tasks.append(self._create_data_source(catalogue[catalogue_item], catalogue_item))
+                await asyncio.gather(*tasks)
+
     async def _fetch_dataset_names(self):
         if not self._data_sources:
             self._data_sources = {}
@@ -581,9 +591,22 @@ class CciOdp:
             return meta_info[list_name]
         return []
 
-    def var_names(self, dataset_name: str) -> Dict[str, Any]:
-        #todo implement
-        pass
+    def var_names(self, dataset_name: str) -> List:
+        return asyncio.run(self._var_names(dataset_name))
+
+    async def _var_names(self, dataset_name) -> List:
+        meta_info = await _fetch_dataset_metadata(self._datasets_to_uuid[dataset_name])
+        all_variables = meta_info['variable_infos']
+        coordinate_variable_names = ['lat', 'lon', 'time', 'lat_bnds', 'lon_bnds', 'time_bnds', 'crs', 'layers']
+        variables = []
+        for variable in all_variables:
+            if len(meta_info['variable_infos'][variable]['dimensions']) == 0:
+                continue
+            if 'dimensions' in meta_info and variable in meta_info:
+                continue
+            if variable not in coordinate_variable_names:
+                variables.append(variable)
+        return variables
 
     def get_dimension_data(self, dataset_name: str, dimension_name: str):
         request = dict(parentIdentifier=self._datasets_to_fid[dataset_name],
