@@ -164,16 +164,23 @@ def _replace_ending_number_brackets(das: str) -> str:
     return das
 
 
-async def _get_attribute_infos_from_feature(session, feature: dict) -> dict:
+def _get_variable_infos_from_feature(feature: dict) -> (dict, dict):
     feature_info = _extract_feature_info(feature)
-    opendap_das_url = f"{feature_info[4]['Opendap']}.das"
-    resp = await session.request(method='GET', url=opendap_das_url)
-    if resp.status >= 400:
-        resp.release()
-        _LOG.warning(f"Could not open {opendap_das_url}: {resp.status}")
-        return {}
-    content = await resp.read()
-    return _retrieve_attribute_info_from_das(str(content, 'utf-8'))
+    opendap_url = f"{feature_info[4]['Opendap']}"
+    dataset = open_url(opendap_url)
+    variable_infos = {}
+    for key in dataset.keys():
+        variable_infos[key] = dataset[key].attributes
+        if '_FillValue' in variable_infos[key]:
+            variable_infos[key]['fill_value'] = variable_infos[key]['_FillValue']
+            variable_infos[key].pop('_FillValue')
+        if '_ChunkSizes' in variable_infos[key]:
+            variable_infos[key]['chunk_sizes'] = variable_infos[key]['_ChunkSizes']
+            variable_infos[key].pop('_ChunkSizes')
+        variable_infos[key]['data_type'] = dataset[key].dtype.name
+        variable_infos[key]['dimensions'] = list(dataset[key].dimensions)
+        variable_infos[key]['size'] = dataset[key].size
+    return variable_infos, dataset.attributes
 
 
 def _retrieve_attribute_info_from_das(das: str) -> dict:
@@ -265,21 +272,29 @@ async def _fetch_meta_info(dataset_id: str, odd_url: str, metadata_url: str, var
             for item in desc_metadata:
                 if not item in meta_info_dict:
                     meta_info_dict[item] = desc_metadata[item]
-        meta_info_dict['dimensions'] = {}
-        meta_info_dict['variable_infos'] = {}
         if read_dimensions and len(variables) > 0:
-            feature = await _fetch_feature_at(session, _OPENSEARCH_CEDA_URL, dict(parentIdentifier=dataset_id), 1)
-            if feature is not None:
-                feature_dimensions, feature_variable_infos = await _get_infos_from_feature(session, feature)
-                meta_info_dict['dimensions'] = feature_dimensions
-                meta_info_dict['variable_infos'] = feature_variable_infos
-                meta_info_dict['attributes'] = await _get_attribute_infos_from_feature(session, feature)
+            meta_info_dict['dimensions'], meta_info_dict['variable_infos'] = \
+                await _fetch_variable_infos(dataset_id, session)
         _harmonize_info_field_names(meta_info_dict, 'file_format', 'file_formats')
         _harmonize_info_field_names(meta_info_dict, 'platform_id', 'platform_ids')
         _harmonize_info_field_names(meta_info_dict, 'sensor_id', 'sensor_ids')
         _harmonize_info_field_names(meta_info_dict, 'processing_level', 'processing_levels')
         _harmonize_info_field_names(meta_info_dict, 'time_frequency', 'time_frequencies')
         return meta_info_dict
+
+
+async def _fetch_variable_infos(dataset_id: str, session):
+    dimensions = {}
+    variable_infos = {}
+    feature = await _fetch_feature_at(session, _OPENSEARCH_CEDA_URL, dict(parentIdentifier=dataset_id), 1)
+    if feature is not None:
+        variable_infos, dimensions = _get_variable_infos_from_feature(feature)
+        for variable_info in variable_infos:
+            for dimension in variable_infos[variable_info]['dimensions']:
+                if not dimension in dimensions:
+                    dimensions[dimension] = variable_infos[dimension]['size']
+    return dimensions, variable_infos
+
 
 
 def _harmonize_info_field_names(catalogue: dict, single_field_name: str, multiple_fields_name: str,
@@ -595,18 +610,18 @@ class CciOdp:
         return asyncio.run(self._var_names(dataset_name))
 
     async def _var_names(self, dataset_name) -> List:
-        meta_info = await _fetch_dataset_metadata(self._datasets_to_uuid[dataset_name])
-        all_variables = meta_info['variable_infos']
-        coordinate_variable_names = ['lat', 'lon', 'time', 'lat_bnds', 'lon_bnds', 'time_bnds', 'crs', 'layers']
-        variables = []
-        for variable in all_variables:
-            if len(meta_info['variable_infos'][variable]['dimensions']) == 0:
-                continue
-            if 'dimensions' in meta_info and variable in meta_info:
-                continue
-            if variable not in coordinate_variable_names:
-                variables.append(variable)
-        return variables
+        async with aiohttp.ClientSession() as session:
+            dimensions, variable_infos = await _fetch_variable_infos(self._datasets_to_fid[dataset_name], session)
+            coordinate_variable_names = ['lat', 'lon', 'time', 'lat_bnds', 'lon_bnds', 'time_bnds', 'crs', 'layers']
+            variables = []
+            for variable in variable_infos:
+                if len(variable_infos[variable]['dimensions']) == 0:
+                    continue
+                if variable in dimensions:
+                    continue
+                if variable not in coordinate_variable_names:
+                    variables.append(variable)
+            return variables
 
     def get_dimension_data(self, dataset_name: str, dimension_name: str):
         request = dict(parentIdentifier=self._datasets_to_fid[dataset_name],

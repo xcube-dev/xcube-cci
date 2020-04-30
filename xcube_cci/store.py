@@ -486,11 +486,13 @@ class CciStore(RemoteStore):
 
     def get_spatial_lon_res(self):
         self.ensure_metadata_read()
-        return self._metadata['attributes']['NC_GLOBAL']['geospatial_lon_resolution'][0]
+        # todo ensure this is valid for all data sets
+        return self._metadata['attributes']['NC_GLOBAL']['geospatial_lon_resolution']
 
     def get_spatial_lat_res(self):
         self.ensure_metadata_read()
-        return self._metadata['attributes']['NC_GLOBAL']['geospatial_lat_resolution'][0]
+        # todo ensure this is valid for all data sets
+        return self._metadata['attributes']['NC_GLOBAL']['geospatial_lat_resolution']
 
     def get_dimensions(self):
         self.ensure_metadata_read()
@@ -502,15 +504,13 @@ class CciStore(RemoteStore):
     def get_encoding(self, var_name: str) -> Dict[str, Any]:
         self.ensure_metadata_read()
         encoding_dict = {}
-        encoding_dict['fill_value'] = self._metadata.get('attributes', {}).get(var_name, {}).get('fill_value')
+        encoding_dict['fill_value'] = self._metadata.get('variable_infos', {}).get(var_name, {}).get('fill_value')
         encoding_dict['dtype'] = self._metadata.get('variable_infos', {}).get(var_name, {}).get('data_type')
         return encoding_dict
 
     def get_attrs(self, var_name: str) -> Dict[str, Any]:
         self.ensure_metadata_read()
-        attrs = self._metadata.get('attributes', {}).get(var_name, {})
-        attrs.update(self._metadata.get('variable_infos', {}).get(var_name, {}))
-        return attrs
+        return self._metadata.get('variable_infos', {}).get(var_name, {})
 
     def fetch_chunk(self,
                     var_name: str,

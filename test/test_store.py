@@ -1,4 +1,4 @@
-import pandas
+import numpy
 import unittest
 
 from xcube_cci.cciodp import CciOdp
@@ -22,8 +22,8 @@ class CciStoreTest(unittest.TestCase):
         self.assertTrue('dtype' in encoding_dict)
         self.assertFalse('compressor' in encoding_dict)
         self.assertFalse('order' in encoding_dict)
-        self.assertEqual('NaN', encoding_dict['fill_value'])
-        self.assertEqual('Float32', encoding_dict['dtype'])
+        self.assertTrue(numpy.isnan(encoding_dict['fill_value']))
+        self.assertEqual('float32', encoding_dict['dtype'])
 
 
     def test_get_attrs(self):
@@ -38,9 +38,9 @@ class CciStoreTest(unittest.TestCase):
         self.assertEqual('surface_air_pressure', attrs['standard_name'])
         self.assertEqual('Pressure at the bottom of the atmosphere.', attrs['long_name'])
         self.assertEqual('hPa', attrs['units'])
-        self.assertEqual('NaN', attrs['fill_value'])
+        self.assertTrue(numpy.isnan(attrs['fill_value']))
         self.assertEqual([1, 180, 360], attrs['chunk_sizes'])
-        self.assertEqual('Float32', attrs['data_type'])
+        self.assertEqual('float32', attrs['data_type'])
         self.assertEqual(['time', 'lat', 'lon'], attrs['dimensions'])
 
     def test_get_time_ranges(self):
