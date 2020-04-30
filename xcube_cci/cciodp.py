@@ -637,9 +637,6 @@ class CciOdp:
     def _get_opendap_url(self, request: Dict):
         start_date = datetime.strptime(request['startDate'], _TIMESTAMP_FORMAT)
         end_date = datetime.strptime(request['endDate'], _TIMESTAMP_FORMAT)
-        # todo include these when they are supported by the server
-        request.pop('startDate')
-        request.pop('endDate')
         feature_list = asyncio.run(_fetch_opensearch_feature_list(_OPENSEARCH_CEDA_URL, request))
         for feature in feature_list:
             feature_props = feature.get("properties", {})
