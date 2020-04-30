@@ -273,7 +273,7 @@ async def _fetch_meta_info(dataset_id: str, odd_url: str, metadata_url: str, var
                 if not item in meta_info_dict:
                     meta_info_dict[item] = desc_metadata[item]
         if read_dimensions and len(variables) > 0:
-            meta_info_dict['dimensions'], meta_info_dict['variable_infos'] = \
+            meta_info_dict['dimensions'], meta_info_dict['variable_infos'], meta_info_dict['attributes'] = \
                 await _fetch_variable_infos(dataset_id, session)
         _harmonize_info_field_names(meta_info_dict, 'file_format', 'file_formats')
         _harmonize_info_field_names(meta_info_dict, 'platform_id', 'platform_ids')
@@ -284,16 +284,17 @@ async def _fetch_meta_info(dataset_id: str, odd_url: str, metadata_url: str, var
 
 
 async def _fetch_variable_infos(dataset_id: str, session):
+    attributes = {}
     dimensions = {}
     variable_infos = {}
     feature = await _fetch_feature_at(session, _OPENSEARCH_CEDA_URL, dict(parentIdentifier=dataset_id), 1)
     if feature is not None:
-        variable_infos, dimensions = _get_variable_infos_from_feature(feature)
+        variable_infos, attributes = _get_variable_infos_from_feature(feature)
         for variable_info in variable_infos:
             for dimension in variable_infos[variable_info]['dimensions']:
                 if not dimension in dimensions:
                     dimensions[dimension] = variable_infos[dimension]['size']
-    return dimensions, variable_infos
+    return dimensions, variable_infos, attributes
 
 
 
@@ -611,7 +612,7 @@ class CciOdp:
 
     async def _var_names(self, dataset_name) -> List:
         async with aiohttp.ClientSession() as session:
-            dimensions, variable_infos = await _fetch_variable_infos(self._datasets_to_fid[dataset_name], session)
+            dimensions, variable_infos, attributes = await _fetch_variable_infos(self._datasets_to_fid[dataset_name], session)
             coordinate_variable_names = ['lat', 'lon', 'time', 'lat_bnds', 'lon_bnds', 'time_bnds', 'crs', 'layers']
             variables = []
             for variable in variable_infos:
@@ -652,43 +653,49 @@ class CciOdp:
                     for related_link in links['related']:
                         if related_link['title'] == 'Opendap':
                             return related_link['href']
-        raise ValueError('No datasets for this query found')
+        return None
 
     def get_data(self, request: Dict) -> bytes:
-        #todo make this work with different dimensions
         start_date = datetime.strptime(request['startDate'], _TIMESTAMP_FORMAT)
         end_date = datetime.strptime(request['endDate'], _TIMESTAMP_FORMAT)
-        lon_min, lat_min, lon_max, lat_max = request['bbox']
+        bbox = request['bbox']
         var_names = request['varNames']
         request.pop('bbox')
         opendap_url = self._get_opendap_url(request)
-        dimensions_dict = {}
-        with requests.get(f'{opendap_url}.ascii?time,lat,lon') as resp:
-            lat_lon_data = str(resp.content, 'utf-8')
-            dimension_data_sets = re.findall('[a-z]+\[[0-9]+\]\n[-|0-9|.|, ]+', lat_lon_data)
-            for dimension_data_set in dimension_data_sets:
-                string_dims = dimension_data_set.split('\n')[1].split(',')
-                dimensions_dict[dimension_data_set.split('[')[0]] = [float(i) for i in string_dims]
-        if len(dimensions_dict['time']) > 1:
-            time_start_offset = bisect.bisect_right(dimensions_dict['time'], start_date)
-            time_end_offset = bisect.bisect_left(dimensions_dict['time'], end_date)
-        else:
-            time_start_offset = 0
-            time_end_offset = 1
-        lat_start_offset = bisect.bisect_right(dimensions_dict['lat'], lat_min)
-        lat_end_offset = bisect.bisect_right(dimensions_dict['lat'], lat_max)
-        lon_start_offset = bisect.bisect_right(dimensions_dict['lon'], lon_min)
-        lon_end_offset = bisect.bisect_right(dimensions_dict['lon'], lon_max)
-
         dataset = open_url(opendap_url)
-        array_length = (time_end_offset - time_start_offset) * \
-                       (lat_end_offset - lat_start_offset) * \
-                       (lon_end_offset - lon_start_offset)
-        #todo pick correct dtype
-        result = np.empty(shape=(len(var_names), array_length), dtype=np.float32)
+        dim_indexing = {}
+        # todo support more dimensions
+        supported_dimensions = ['lat', 'lon', 'time']
+        result = bytearray()
         for i, var in enumerate(var_names):
-            variable_data = dataset[var][time_start_offset,
-                            lat_start_offset:lat_end_offset,
-                            lon_start_offset:lon_end_offset]
-            result[i] = variable_data.data[0].flatten()
-        return result.tobytes()
+            indexes = []
+            for dimension in dataset[var].dimensions:
+                if dimension not in supported_dimensions:
+                    raise ValueError(f'Variable {var} has unsupported dimension {dimension}. '
+                                     f'Cannot retrieve this variable.')
+                # todo avoid asking for dimensions from remote. We already have these stored.
+                if dimension not in dim_indexing:
+                    dim_indexing[dimension] = self._get_indexing(dataset, dimension, bbox, start_date, end_date)
+                indexes.append(dim_indexing[dimension])
+            variable_data = dataset[var][tuple(indexes)].data[0].flatten()
+            result += np.array(variable_data, dtype=dataset[var].dtype.type).tobytes()
+        return result
+
+
+    def _get_indexing(self, dataset, dimension: str, bbox:(float, float, float, float),
+                      start_date: datetime, end_date: datetime):
+        if dimension == 'lat':
+            return self._get_dim_indexing(dataset[dimension].data[:], bbox[1], bbox[3])
+        if dimension == 'lon':
+            return self._get_dim_indexing(dataset[dimension].data[:], bbox[0], bbox[2])
+        if dimension == 'time':
+            return self._get_dim_indexing(dataset[dimension].data[:], start_date, end_date)
+
+    def _get_dim_indexing(self, data, min, max):
+        if len(data) == 1:
+            return 0
+        start_index = bisect.bisect_right(data, min)
+        end_index = bisect.bisect_right(data, max)
+        if start_index != end_index:
+            return slice(start_index, end_index)
+        return start_index
