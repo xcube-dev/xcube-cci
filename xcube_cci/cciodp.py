@@ -624,13 +624,24 @@ class CciOdp:
                     variables.append(variable)
             return variables
 
-    def get_dimension_data(self, dataset_name: str, dimension_name: str):
+    def get_dimension_data(self, dataset_name: str, dimension_names: List[str]):
         request = dict(parentIdentifier=self._datasets_to_fid[dataset_name],
                        startDate='1900-01-01T00:00:00',
                        endDate='2001-12-31T00:00:00')
         opendap_url = self._get_opendap_url(request)
         dataset = open_url(opendap_url)
-        return dataset[dimension_name].data[:].tolist()
+        dim_data = {}
+        for dim in dimension_names:
+            dim_data[dim] = dataset[dim].data[:].tolist()
+        return dim_data
+
+    # def get_dimension_data(self, dataset_name: str, dimension_name: str):
+    #     request = dict(parentIdentifier=self._datasets_to_fid[dataset_name],
+    #                    startDate='1900-01-01T00:00:00',
+    #                    endDate='2001-12-31T00:00:00')
+    #     opendap_url = self._get_opendap_url(request)
+    #     dataset = open_url(opendap_url)
+    #     return dataset[dimension_name].data[:].tolist()
 
     def get_fid_for_dataset(self, dataset_name: str) -> str:
         return self._datasets_to_fid[dataset_name]
@@ -655,28 +666,24 @@ class CciOdp:
                             return related_link['href']
         return None
 
-    def get_data(self, request: Dict) -> bytes:
+    def get_data(self, request: Dict, bbox: Tuple[float, float, float, float], dim_indexes: dict) -> bytes:
         start_date = datetime.strptime(request['startDate'], _TIMESTAMP_FORMAT)
         end_date = datetime.strptime(request['endDate'], _TIMESTAMP_FORMAT)
-        bbox = request['bbox']
         var_names = request['varNames']
-        request.pop('bbox')
         opendap_url = self._get_opendap_url(request)
         dataset = open_url(opendap_url)
-        dim_indexing = {}
         # todo support more dimensions
         supported_dimensions = ['lat', 'lon', 'time']
         result = bytearray()
         for i, var in enumerate(var_names):
             indexes = []
             for dimension in dataset[var].dimensions:
-                if dimension not in supported_dimensions:
-                    raise ValueError(f'Variable {var} has unsupported dimension {dimension}. '
-                                     f'Cannot retrieve this variable.')
-                # todo avoid asking for dimensions from remote. We already have these stored.
-                if dimension not in dim_indexing:
-                    dim_indexing[dimension] = self._get_indexing(dataset, dimension, bbox, start_date, end_date)
-                indexes.append(dim_indexing[dimension])
+                if dimension not in dim_indexes:
+                    if dimension not in supported_dimensions:
+                        raise ValueError(f'Variable {var} has unsupported dimension {dimension}. '
+                                         f'Cannot retrieve this variable.')
+                    dim_indexes[dimension] = self._get_indexing(dataset, dimension, bbox, start_date, end_date)
+                indexes.append(dim_indexes[dimension])
             variable_data = dataset[var][tuple(indexes)].data[0].flatten()
             result += np.array(variable_data, dtype=dataset[var].dtype.type).tobytes()
         return result

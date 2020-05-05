@@ -104,32 +104,28 @@ class RemoteStore(MutableMapping, metaclass=ABCMeta):
             '.zattrs': _dict_to_bytes(global_attrs)
         }
 
-        dimensions = self.get_dimensions()
         width = -1
         height = -1
-        for dimension_name in dimensions:
+        self._dimension_data = self.get_dimension_data()
+        for dimension_name in self._dimension_data:
             if dimension_name == 'lat':
                 dim_attrs = self.get_attrs(dimension_name)
                 dim_attrs['_ARRAY_DIMENSIONS'] = dimension_name
-                dimension_data = self.get_dimension_data(dimension_name)
+                dimension_data = self._dimension_data[dimension_name]
                 lat_start_offset = bisect.bisect_right(dimension_data, y1)
                 lat_end_offset = bisect.bisect_right(dimension_data, y2)
                 lat_array = np.array(dimension_data[lat_start_offset:lat_end_offset])
                 height = len(lat_array)
-                self._add_static_array(dimension_name,
-                                       lat_array,
-                                       dim_attrs)
+                self._add_static_array(dimension_name, lat_array, dim_attrs)
             if dimension_name == 'lon':
                 dim_attrs = self.get_attrs(dimension_name)
                 dim_attrs['_ARRAY_DIMENSIONS'] = dimension_name
-                dimension_data = self.get_dimension_data(dimension_name)
+                dimension_data = self._dimension_data[dimension_name]
                 lon_start_offset = bisect.bisect_right(dimension_data, x1)
                 lon_end_offset = bisect.bisect_right(dimension_data, x2)
                 lon_array = np.array(dimension_data[lon_start_offset:lon_end_offset])
                 width = len(lon_array)
-                self._add_static_array(dimension_name,
-                                       lon_array,
-                                       dim_attrs)
+                self._add_static_array(dimension_name, lon_array, dim_attrs)
         time_attrs = {
             "_ARRAY_DIMENSIONS": ['time'],
             "units": "seconds since 1970-01-01T00:00:00Z",
@@ -217,11 +213,8 @@ class RemoteStore(MutableMapping, metaclass=ABCMeta):
     def get_spatial_lon_res(self):
         return self._cube_config.spatial_res
 
-    def get_dimensions(self) -> dict:
-        return dict(lat=-1, lon=-1, time=-1, time_bnds=-1)
-
-    def get_dimension_data(self, dimension_name: str):
-        pass
+    def get_dimension_data(self):
+        return {}
 
     def add_observer(self, observer: Callable):
         """
@@ -494,12 +487,10 @@ class CciStore(RemoteStore):
         # todo ensure this is valid for all data sets
         return self._metadata['attributes']['NC_GLOBAL']['geospatial_lat_resolution']
 
-    def get_dimensions(self):
+    def get_dimension_data(self):
         self.ensure_metadata_read()
-        return self._metadata['dimensions']
-
-    def get_dimension_data(self, dimension_name: str):
-        return self._cci_odp.get_dimension_data(self.cube_config.dataset_name, dimension_name)
+        dimension_names = self._metadata['dimensions']
+        return self._cci_odp.get_dimension_data(self.cube_config.dataset_name, dimension_names)
 
     def get_encoding(self, var_name: str) -> Dict[str, Any]:
         self.ensure_metadata_read()
@@ -524,11 +515,45 @@ class CciStore(RemoteStore):
         else:
             var_names = [var_name]
         identifier = self._cci_odp.get_fid_for_dataset(self.cube_config.dataset_name)
+        iso_start_date = start_time.tz_localize(None).isoformat()
+        iso_end_date = end_time.tz_localize(None).isoformat()
+        dim_indexes = self._get_dimension_indexes_for_request(var_names, bbox, iso_start_date, iso_end_date)
         request = dict(parentIdentifier=identifier,
                        varNames=var_names,
-                       startDate=start_time.tz_localize(None).isoformat(),
-                       endDate=end_time.tz_localize(None).isoformat(),
-                       bbox=bbox,
+                       startDate=iso_start_date,
+                       endDate=iso_end_date,
                        fileFormat='.nc'
                        )
-        return self._cci_odp.get_data(request)
+        return self._cci_odp.get_data(request, bbox, dim_indexes)
+
+    def _get_dimension_indexes_for_request(self, var_names: List[str], bbox: Tuple[float, float, float, float],
+                    start_time: str, end_time: str):
+        self.ensure_metadata_read()
+        start_date = datetime.strptime(start_time, _TIMESTAMP_FORMAT)
+        end_date = datetime.strptime(end_time, _TIMESTAMP_FORMAT)
+        dim_indexes = {}
+        for var_name in var_names:
+            affected_dimensions = self._metadata.get('variable_infos', {}).get(var_name, {}).get('dimensions', [])
+            for dim in affected_dimensions:
+                if dim not in dim_indexes:
+                    dim_indexes[dim] = self._get_indexing(dim, bbox, start_date, end_date)
+        return dim_indexes
+
+    def _get_indexing(self, dimension: str, bbox:(float, float, float, float),
+                      start_date: datetime, end_date: datetime):
+        data = self._dimension_data[dimension]
+        if dimension == 'lat':
+            return self._get_dim_indexing(data, bbox[1], bbox[3])
+        if dimension == 'lon':
+            return self._get_dim_indexing(data, bbox[0], bbox[2])
+        if dimension == 'time':
+            return self._get_dim_indexing(data, start_date, end_date)
+
+    def _get_dim_indexing(self, data, min, max):
+        if len(data) == 1:
+            return 0
+        start_index = bisect.bisect_right(data, min)
+        end_index = bisect.bisect_right(data, max)
+        if start_index != end_index:
+            return slice(start_index, end_index)
+        return start_index

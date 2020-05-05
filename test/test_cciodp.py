@@ -21,10 +21,10 @@ class CciOdpTest(unittest.TestCase):
         request = dict(parentIdentifier='4eb4e801424a47f7b77434291921f889',
                        startDate='1997-05-01T00:00:00',
                        endDate='1997-05-01T00:00:00',
-                       bbox=(-10.0, 40.0, 10.0, 60.0),
                        varNames=['surface_pressure', 'O3e_du_tot']
                        )
-        data = cci_odp.get_data(request)
+        bbox = (-10.0, 40.0, 10.0, 60.0)
+        data = cci_odp.get_data(request, bbox, {})
         self.assertIsNotNone(data)
 
     def test_dataset_names(self):
