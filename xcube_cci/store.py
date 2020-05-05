@@ -531,10 +531,15 @@ class CciStore(RemoteStore):
         self.ensure_metadata_read()
         start_date = datetime.strptime(start_time, _TIMESTAMP_FORMAT)
         end_date = datetime.strptime(end_time, _TIMESTAMP_FORMAT)
+        # todo support more dimensions
+        supported_dimensions = ['lat', 'lon', 'time']
         dim_indexes = {}
         for var_name in var_names:
             affected_dimensions = self._metadata.get('variable_infos', {}).get(var_name, {}).get('dimensions', [])
             for dim in affected_dimensions:
+                if dim not in supported_dimensions:
+                    raise ValueError(f'Variable {var_name} has unsupported dimension {dim}. '
+                                     f'Cannot retrieve this variable.')
                 if dim not in dim_indexes:
                     dim_indexes[dim] = self._get_indexing(dim, bbox, start_date, end_date)
         return dim_indexes
