@@ -31,12 +31,14 @@ from typing import Iterator, Any, List, Dict, Tuple, Callable, Iterable, KeysVie
 
 import numpy as np
 import pandas as pd
+import re
 
 from .config import CubeConfig
 from .constants import DATA_ARRAY_NAME
 from .cciodp import CciOdp
 
 _TIMESTAMP_FORMAT = "%Y-%m-%dT%H:%M:%S"
+
 
 def _dict_to_bytes(d: Dict):
     return _str_to_bytes(json.dumps(d, indent=2))
@@ -445,10 +447,32 @@ class CciStore(RemoteStore):
         if self._metadata is None:
             self._metadata = self._cci_odp.get_dataset_metadata(self._cube_config.dataset_name)
 
+    def get_time_range_for_num_days(self, num_days: int, start_time: datetime, end_time: datetime):
+        temp_start_time = datetime(start_time.year, start_time.month, start_time.day)
+        temp_start_time -= relativedelta(days=num_days - 1)
+        temp_start_time = self._cci_odp.get_earliest_start_date(self.cube_config.dataset_name,
+                                                                datetime.strftime(temp_start_time, _TIMESTAMP_FORMAT),
+                                                                datetime.strftime(end_time, _TIMESTAMP_FORMAT),
+                                                                f'{num_days} days')
+        if temp_start_time:
+            start_time = temp_start_time
+        else:
+            start_time = datetime(start_time.year, start_time.month, start_time.day)
+        start_time_ordinal = start_time.toordinal()
+        end_time_ordinal = end_time.toordinal()
+        end_time_ordinal = start_time_ordinal + int(np.ceil((end_time_ordinal - start_time_ordinal) /
+                                                            float(num_days)) * num_days)
+        end_time = datetime.fromordinal(end_time_ordinal)
+        end_time += relativedelta(days=1, microseconds=-1)
+        delta = relativedelta(days=num_days, microseconds=-1)
+        return start_time, end_time, delta
+
     def get_time_ranges(self) -> List[Tuple]:
         time_start, time_end = self._cube_config.time_range
-        start_time = datetime.strptime(time_start.tz_localize(None).isoformat(), _TIMESTAMP_FORMAT)
-        end_time = datetime.strptime(time_end.tz_localize(None).isoformat(), _TIMESTAMP_FORMAT)
+        iso_start_time = time_start.tz_localize(None).isoformat()
+        start_time = datetime.strptime(iso_start_time, _TIMESTAMP_FORMAT)
+        iso_end_time = time_end.tz_localize(None).isoformat()
+        end_time = datetime.strptime(iso_end_time, _TIMESTAMP_FORMAT)
         time_period = self.cube_config.dataset_name.split('.')[2]
         delta_ms = relativedelta(microseconds=1)
         if time_period == 'day':
@@ -464,8 +488,28 @@ class CciStore(RemoteStore):
             start_time = datetime(year=start_time.year, month=1, day=1)
             end_time = datetime(year=end_time.year, month=12, day=31)
             delta = relativedelta(years=1, microseconds=-1)
+        elif re.compile('[0-9]*-days').search(time_period):
+            num_days = int(time_period.split('-')[0])
+            temp_start_time = datetime(start_time.year, start_time.month, start_time.day)
+            temp_start_time -= relativedelta(days=num_days - 1)
+            temp_start_time = self._cci_odp.get_earliest_start_date(self.cube_config.dataset_name,
+                                                                    datetime.strftime(temp_start_time,
+                                                                                      _TIMESTAMP_FORMAT),
+                                                                    iso_end_time,
+                                                                    f'{num_days} days')
+            if temp_start_time:
+                start_time = temp_start_time
+            else:
+                start_time = datetime(start_time.year, start_time.month, start_time.day)
+            start_time_ordinal = start_time.toordinal()
+            end_time_ordinal = end_time.toordinal()
+            end_time_ordinal = start_time_ordinal + int(np.ceil((end_time_ordinal - start_time_ordinal) /
+                                                                float(num_days)) * num_days)
+            end_time = datetime.fromordinal(end_time_ordinal)
+            end_time += relativedelta(days=1, microseconds=-1)
+            delta = relativedelta(days=num_days, microseconds=-1)
         else:
-            # todo add support for other frequencies
+            # todo add support for satellite-orbit-frequency
             return []
         request_time_ranges = []
         this = start_time
@@ -527,7 +571,7 @@ class CciStore(RemoteStore):
         return self._cci_odp.get_data(request, bbox, dim_indexes)
 
     def _get_dimension_indexes_for_request(self, var_names: List[str], bbox: Tuple[float, float, float, float],
-                    start_time: str, end_time: str):
+                                           start_time: str, end_time: str):
         self.ensure_metadata_read()
         start_date = datetime.strptime(start_time, _TIMESTAMP_FORMAT)
         end_date = datetime.strptime(end_time, _TIMESTAMP_FORMAT)
@@ -544,7 +588,7 @@ class CciStore(RemoteStore):
                     dim_indexes[dim] = self._get_indexing(dim, bbox, start_date, end_date)
         return dim_indexes
 
-    def _get_indexing(self, dimension: str, bbox:(float, float, float, float),
+    def _get_indexing(self, dimension: str, bbox: (float, float, float, float),
                       start_date: datetime, end_date: datetime):
         data = self._dimension_data[dimension]
         if dimension == 'lat':

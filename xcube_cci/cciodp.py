@@ -635,21 +635,35 @@ class CciOdp:
             dim_data[dim] = dataset[dim].data[:].tolist()
         return dim_data
 
-    # def get_dimension_data(self, dataset_name: str, dimension_name: str):
-    #     request = dict(parentIdentifier=self._datasets_to_fid[dataset_name],
-    #                    startDate='1900-01-01T00:00:00',
-    #                    endDate='2001-12-31T00:00:00')
-    #     opendap_url = self._get_opendap_url(request)
-    #     dataset = open_url(opendap_url)
-    #     return dataset[dimension_name].data[:].tolist()
+    def get_earliest_start_date(self, dataset_name: str, start_time: str, end_time: str, frequency: str) -> \
+            Optional[datetime]:
+        query_args = dict(parentIdentifier=self.get_fid_for_dataset(dataset_name),
+                          startDate=start_time,
+                          endDate=end_time,
+                          frequency=frequency,
+                          fileFormat='.nc')
+        opendap_url = self._get_opendap_url(query_args, get_earliest=True)
+        if opendap_url:
+            dataset = open_url(opendap_url)
+            start_time_attributes = ['time_coverage_start', 'start_date']
+            attributes = dataset.attributes.get('NC_GLOBAL', {})
+            for start_time_attribute in start_time_attributes:
+                start_time_string = attributes[start_time_attribute]
+                time_format, start, end = find_datetime_format(start_time_string)
+                if time_format:
+                    start_time = datetime.strptime(start_time_string[start:end], time_format)
+                    return start_time
+        return None
 
     def get_fid_for_dataset(self, dataset_name: str) -> str:
         return self._datasets_to_fid[dataset_name]
 
-    def _get_opendap_url(self, request: Dict):
+    def _get_opendap_url(self, request: Dict, get_earliest:bool=False):
         start_date = datetime.strptime(request['startDate'], _TIMESTAMP_FORMAT)
         end_date = datetime.strptime(request['endDate'], _TIMESTAMP_FORMAT)
         feature_list = asyncio.run(_fetch_opensearch_feature_list(_OPENSEARCH_CEDA_URL, request))
+        opendap_url = None
+        earliest_date = datetime(2999, 12, 31)
         for feature in feature_list:
             feature_props = feature.get("properties", {})
             date = feature_props.get("date", None)
@@ -658,13 +672,17 @@ class CciOdp:
             feature_dates = date.split('/')
             feature_start_date = datetime.strptime(feature_dates[0], _TIMESTAMP_FORMAT)
             feature_end_date = datetime.strptime(feature_dates[1], _TIMESTAMP_FORMAT)
-            if feature_start_date >= start_date and feature_end_date <= end_date:
+            if feature_start_date >= start_date and feature_end_date <= end_date and earliest_date > feature_start_date:
                 links = feature_props.get('links', {})
                 if 'related' in links:
                     for related_link in links['related']:
                         if related_link['title'] == 'Opendap':
-                            return related_link['href']
-        return None
+                            if get_earliest:
+                                earliest_date = feature_start_date
+                                opendap_url = related_link['href']
+                            else:
+                                return related_link['href']
+        return opendap_url
 
     def get_data(self, request: Dict, bbox: Tuple[float, float, float, float], dim_indexes: dict) -> bytes:
         start_date = datetime.strptime(request['startDate'], _TIMESTAMP_FORMAT)
