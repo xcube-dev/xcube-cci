@@ -524,12 +524,12 @@ class CciStore(RemoteStore):
     def get_spatial_lon_res(self):
         self.ensure_metadata_read()
         # todo ensure this is valid for all data sets
-        return self._metadata['attributes']['NC_GLOBAL']['geospatial_lon_resolution']
+        return float(self._metadata['attributes']['NC_GLOBAL']['geospatial_lon_resolution'])
 
     def get_spatial_lat_res(self):
         self.ensure_metadata_read()
         # todo ensure this is valid for all data sets
-        return self._metadata['attributes']['NC_GLOBAL']['geospatial_lat_resolution']
+        return float(self._metadata['attributes']['NC_GLOBAL']['geospatial_lat_resolution'])
 
     def get_dimension_data(self):
         self.ensure_metadata_read()
