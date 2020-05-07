@@ -613,26 +613,25 @@ class CciOdp:
     async def _var_names(self, dataset_name) -> List:
         async with aiohttp.ClientSession() as session:
             dimensions, variable_infos, attributes = await _fetch_variable_infos(self._datasets_to_fid[dataset_name], session)
-            coordinate_variable_names = ['lat', 'lon', 'time', 'lat_bnds', 'lon_bnds', 'time_bnds', 'crs', 'layers']
+            # todo support variables with other dimensions
             variables = []
             for variable in variable_infos:
-                if len(variable_infos[variable]['dimensions']) == 0:
+                dimensions = variable_infos[variable]['dimensions']
+                if 'lat' not in dimensions or 'lon' not in dimensions or (len(dimensions) > 2 and 'time' not in dimensions):
                     continue
-                if variable in dimensions:
-                    continue
-                if variable not in coordinate_variable_names:
-                    variables.append(variable)
+                variables.append(variable)
             return variables
 
     def get_dimension_data(self, dataset_name: str, dimension_names: List[str]):
         request = dict(parentIdentifier=self._datasets_to_fid[dataset_name],
                        startDate='1900-01-01T00:00:00',
-                       endDate='2001-12-31T00:00:00')
+                       endDate='3001-12-31T00:00:00')
         opendap_url = self._get_opendap_url(request)
-        dataset = open_url(opendap_url)
         dim_data = {}
-        for dim in dimension_names:
-            dim_data[dim] = dataset[dim].data[:].tolist()
+        if opendap_url:
+            dataset = open_url(opendap_url)
+            for dim in dimension_names:
+                dim_data[dim] = dataset[dim].data[:].tolist()
         return dim_data
 
     def get_earliest_start_date(self, dataset_name: str, start_time: str, end_time: str, frequency: str) -> \
@@ -689,10 +688,12 @@ class CciOdp:
         end_date = datetime.strptime(request['endDate'], _TIMESTAMP_FORMAT)
         var_names = request['varNames']
         opendap_url = self._get_opendap_url(request)
+        result = bytearray()
+        if not opendap_url:
+            return result
         dataset = open_url(opendap_url)
         # todo support more dimensions
         supported_dimensions = ['lat', 'lon', 'time']
-        result = bytearray()
         for i, var in enumerate(var_names):
             indexes = []
             for dimension in dataset[var].dimensions:
