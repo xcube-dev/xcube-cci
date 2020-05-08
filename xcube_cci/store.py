@@ -109,25 +109,36 @@ class RemoteStore(MutableMapping, metaclass=ABCMeta):
         width = -1
         height = -1
         self._dimension_data = self.get_dimension_data()
+        self._dim_flipped = {}
         for dimension_name in self._dimension_data:
-            if dimension_name == 'lat':
+            if dimension_name == 'lat' or dimension_name == 'latitude':
                 dim_attrs = self.get_attrs(dimension_name)
                 dim_attrs['_ARRAY_DIMENSIONS'] = dimension_name
                 dimension_data = self._dimension_data[dimension_name]
+                self._dim_flipped[dimension_name] = dimension_data[0] > dimension_data[-1]
+                if self._dim_flipped[dimension_name]:
+                    dimension_data.reverse()
                 lat_start_offset = bisect.bisect_right(dimension_data, y1)
                 lat_end_offset = bisect.bisect_right(dimension_data, y2)
                 lat_array = np.array(dimension_data[lat_start_offset:lat_end_offset])
                 height = len(lat_array)
-                self._add_static_array(dimension_name, lat_array, dim_attrs)
-            if dimension_name == 'lon':
+                self._add_static_array('lat', lat_array, dim_attrs)
+            if dimension_name == 'lon' or dimension_name == 'longitude':
                 dim_attrs = self.get_attrs(dimension_name)
                 dim_attrs['_ARRAY_DIMENSIONS'] = dimension_name
                 dimension_data = self._dimension_data[dimension_name]
+                self._dim_flipped[dimension_name] = dimension_data[0] > dimension_data[-1]
+                if self._dim_flipped[dimension_name]:
+                    dimension_data.reverse()
                 lon_start_offset = bisect.bisect_right(dimension_data, x1)
                 lon_end_offset = bisect.bisect_right(dimension_data, x2)
                 lon_array = np.array(dimension_data[lon_start_offset:lon_end_offset])
                 width = len(lon_array)
-                self._add_static_array(dimension_name, lon_array, dim_attrs)
+                self._add_static_array('lon', lon_array, dim_attrs)
+        if width == -1:
+            raise ValueError('Could not determine latitude. Does this dataset have this dimension?')
+        if width == -1:
+            raise ValueError('Could not determine longitude. Does this dataset have this dimension?')
         time_attrs = {
             "_ARRAY_DIMENSIONS": ['time'],
             "units": "seconds since 1970-01-01T00:00:00Z",
@@ -432,6 +443,20 @@ class CciStore(RemoteStore):
     :param trace_store_calls: Whether store calls shall be printed (for debugging).
     """
 
+    _SAMPLE_TYPE_TO_DTYPE = {
+        # Note: Sentinel Hub currently only supports unsigned
+        # integer values therefore requesting INT8 or INT16
+        # will return the same as UINT8 or UINT16 respectively.
+        'uint8': '|u1',
+        'uint16': '<u2',
+        'uint32': '<u4',
+        'int8': '|u1',
+        'int16': '<u2',
+        'int32': '<u4',
+        'float32': '<f4',
+        'float64': '<f8',
+    }
+
     def __init__(self,
                  cci_odp: CciOdp,
                  cube_config: CubeConfig,
@@ -523,13 +548,19 @@ class CciStore(RemoteStore):
 
     def get_spatial_lon_res(self):
         self.ensure_metadata_read()
-        # todo ensure this is valid for all data sets
-        return float(self._metadata['attributes']['NC_GLOBAL']['geospatial_lon_resolution'])
+        nc_attrs = self._metadata.get('attributes', {}).get('NC_GLOBAL', {})
+        if 'geospatial_lon_resolution' in nc_attrs:
+            return float(nc_attrs['geospatial_lon_resolution'])
+        else:
+            return float(nc_attrs['resolution'].split('x')[0].split('deg')[0])
 
     def get_spatial_lat_res(self):
         self.ensure_metadata_read()
-        # todo ensure this is valid for all data sets
-        return float(self._metadata['attributes']['NC_GLOBAL']['geospatial_lat_resolution'])
+        nc_attrs = self._metadata.get('attributes', {}).get('NC_GLOBAL', {})
+        if 'geospatial_lat_resolution' in nc_attrs:
+            return float(nc_attrs['geospatial_lat_resolution'])
+        else:
+            return float(nc_attrs['resolution'].split('x')[0].split('deg')[0])
 
     def get_dimension_data(self):
         self.ensure_metadata_read()
@@ -568,7 +599,22 @@ class CciStore(RemoteStore):
                        endDate=iso_end_date,
                        fileFormat='.nc'
                        )
-        return self._cci_odp.get_data(request, bbox, dim_indexes)
+        data = self._cci_odp.get_data(request, bbox, dim_indexes, self._dim_flipped)
+        if not data:
+            self.ensure_metadata_read()
+            data = bytearray()
+            for var_name in var_names:
+                var_info = self._metadata.get('variable_infos', {}).get(var_name, {})
+                var_dims = var_info.get('dimensions', [])
+                length = 1
+                for var_dim in var_dims:
+                    dim_index = dim_indexes[var_dim]
+                    if type(dim_index) == slice:
+                        length *= (dim_index.stop - dim_index.start)
+                dtype = np.dtype(self._SAMPLE_TYPE_TO_DTYPE[var_info['data_type']])
+                var_array = np.full(shape=(length), fill_value=var_info['fill_value'], dtype=dtype)
+                data += var_array.tobytes()
+        return data
 
     def _get_dimension_indexes_for_request(self, var_names: List[str], bbox: Tuple[float, float, float, float],
                                            start_time: str, end_time: str):
@@ -576,7 +622,7 @@ class CciStore(RemoteStore):
         start_date = datetime.strptime(start_time, _TIMESTAMP_FORMAT)
         end_date = datetime.strptime(end_time, _TIMESTAMP_FORMAT)
         # todo support more dimensions
-        supported_dimensions = ['lat', 'lon', 'time']
+        supported_dimensions = ['lat', 'latitude', 'lon', 'longitude', 'time']
         dim_indexes = {}
         for var_name in var_names:
             affected_dimensions = self._metadata.get('variable_infos', {}).get(var_name, {}).get('dimensions', [])
@@ -591,18 +637,22 @@ class CciStore(RemoteStore):
     def _get_indexing(self, dimension: str, bbox: (float, float, float, float),
                       start_date: datetime, end_date: datetime):
         data = self._dimension_data[dimension]
-        if dimension == 'lat':
-            return self._get_dim_indexing(data, bbox[1], bbox[3])
-        if dimension == 'lon':
-            return self._get_dim_indexing(data, bbox[0], bbox[2])
+        if dimension == 'lat' or dimension == 'latitude':
+            return self._get_dim_indexing(dimension, data, bbox[1], bbox[3])
+        if dimension == 'lon' or dimension == 'longitude':
+            return self._get_dim_indexing(dimension, data, bbox[0], bbox[2])
         if dimension == 'time':
-            return self._get_dim_indexing(data, start_date, end_date)
+            return self._get_dim_indexing(dimension, data, start_date, end_date)
 
-    def _get_dim_indexing(self, data, min, max):
+    def _get_dim_indexing(self, dimension_name, data, min, max):
         if len(data) == 1:
             return 0
         start_index = bisect.bisect_right(data, min)
         end_index = bisect.bisect_right(data, max)
+        if self._dim_flipped[dimension_name]:
+            temp_index = len(data) - start_index
+            start_index = len(data) - end_index
+            end_index = temp_index
         if start_index != end_index:
             return slice(start_index, end_index)
         return start_index

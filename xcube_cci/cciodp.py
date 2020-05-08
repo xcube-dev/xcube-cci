@@ -293,7 +293,10 @@ async def _fetch_variable_infos(dataset_id: str, session):
         for variable_info in variable_infos:
             for dimension in variable_infos[variable_info]['dimensions']:
                 if not dimension in dimensions:
-                    dimensions[dimension] = variable_infos[dimension]['size']
+                    if not dimension in variable_infos and variable_info.split('_')[-1] == 'bnds':
+                        dimensions[dimension] = 2
+                    else:
+                        dimensions[dimension] = variable_infos[dimension]['size']
     return dimensions, variable_infos, attributes
 
 
@@ -512,6 +515,25 @@ class CciOdp:
     def dataset_names(self) -> List[str]:
         return list(self._datasets_to_uuid.keys())
 
+    def get_dataset_info(self, dataset_id: str) -> dict:
+        data_info = {}
+        dataset_metadata = self.get_dataset_metadata(dataset_id)
+        nc_attrs = dataset_metadata.get('attributes', {}).get('NC_GLOBAL', {})
+        if 'geospatial_lat_resolution' in nc_attrs:
+            data_info['lat_res'] = float(nc_attrs['geospatial_lat_resolution'])
+        else:
+            data_info['lat_res'] = float(nc_attrs['resolution'].split('x')[0].split('deg')[0])
+        if 'geospatial_lon_resolution' in nc_attrs:
+            data_info['lon_res'] = float(nc_attrs['geospatial_lon_resolution'])
+        else:
+            data_info['lon_res'] = float(nc_attrs['resolution'].split('x')[1].split('deg')[0])
+        data_info['bbox'] = (float(dataset_metadata['bbox_minx']), float(dataset_metadata['bbox_miny']),
+                             float(dataset_metadata['bbox_maxx']), float(dataset_metadata['bbox_maxy']))
+        data_info['temporal_coverage_start'] = '2000-02-01T00:00:00'
+        data_info['temporal_coverage_end'] = '2014-12-31T23:59:59'
+        data_info['var_names'] = self.var_names(dataset_id)
+        return data_info
+
     def get_dataset_metadata(self, dataset_id: str) -> dict:
         return asyncio.run(_fetch_dataset_metadata(self._datasets_to_uuid[dataset_id]))
 
@@ -617,7 +639,9 @@ class CciOdp:
             variables = []
             for variable in variable_infos:
                 dimensions = variable_infos[variable]['dimensions']
-                if 'lat' not in dimensions or 'lon' not in dimensions or (len(dimensions) > 2 and 'time' not in dimensions):
+                if ('lat' not in dimensions and 'latitude' not in dimensions) or\
+                        ('lon' not in dimensions and 'longitude' not in dimensions) or\
+                        (len(dimensions) > 2 and 'time' not in dimensions):
                     continue
                 variables.append(variable)
             return variables
@@ -631,7 +655,10 @@ class CciOdp:
         if opendap_url:
             dataset = open_url(opendap_url)
             for dim in dimension_names:
-                dim_data[dim] = dataset[dim].data[:].tolist()
+                if dim in dataset:
+                    dim_data[dim] = dataset[dim].data[:].tolist()
+                else:
+                    dim_data[dim] = []
         return dim_data
 
     def get_earliest_start_date(self, dataset_name: str, start_time: str, end_time: str, frequency: str) -> \
@@ -683,17 +710,18 @@ class CciOdp:
                                 return related_link['href']
         return opendap_url
 
-    def get_data(self, request: Dict, bbox: Tuple[float, float, float, float], dim_indexes: dict) -> bytes:
+    def get_data(self, request: Dict, bbox: Tuple[float, float, float, float], dim_indexes: dict, dim_flipped: dict)\
+            -> Optional[bytes]:
         start_date = datetime.strptime(request['startDate'], _TIMESTAMP_FORMAT)
         end_date = datetime.strptime(request['endDate'], _TIMESTAMP_FORMAT)
         var_names = request['varNames']
         opendap_url = self._get_opendap_url(request)
-        result = bytearray()
         if not opendap_url:
-            return result
+            return None
         dataset = open_url(opendap_url)
         # todo support more dimensions
-        supported_dimensions = ['lat', 'lon', 'time']
+        supported_dimensions = ['lat', 'lon', 'time', 'latitude', 'longitude']
+        result = bytearray()
         for i, var in enumerate(var_names):
             indexes = []
             for dimension in dataset[var].dimensions:
@@ -703,16 +731,19 @@ class CciOdp:
                                          f'Cannot retrieve this variable.')
                     dim_indexes[dimension] = self._get_indexing(dataset, dimension, bbox, start_date, end_date)
                 indexes.append(dim_indexes[dimension])
-            variable_data = dataset[var][tuple(indexes)].data[0].flatten()
-            result += np.array(variable_data, dtype=dataset[var].dtype.type).tobytes()
+            variable_data = np.array(dataset[var][tuple(indexes)].data[0], dtype=dataset[var].dtype.type)
+            for i, dimension in enumerate(dataset[var].dimensions):
+                if dim_flipped.get('dimension', False):
+                    variable_data = np.flip(variable_data, axis=i)
+            result += variable_data.flatten().tobytes()
         return result
 
 
     def _get_indexing(self, dataset, dimension: str, bbox:(float, float, float, float),
                       start_date: datetime, end_date: datetime):
-        if dimension == 'lat':
+        if dimension == 'lat' or dimension == 'latitude':
             return self._get_dim_indexing(dataset[dimension].data[:], bbox[1], bbox[3])
-        if dimension == 'lon':
+        if dimension == 'lon' or dimension == 'longitude':
             return self._get_dim_indexing(dataset[dimension].data[:], bbox[0], bbox[2])
         if dimension == 'time':
             return self._get_dim_indexing(dataset[dimension].data[:], start_date, end_date)
