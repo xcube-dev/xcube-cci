@@ -31,9 +31,8 @@ import os
 import re
 import urllib.parse
 from datetime import datetime
+from requests.sessions import Session
 from typing import List, Any, Dict, Tuple, Optional, Union, Sequence, Callable
-
-import requests
 
 from pydap.client import open_url
 
@@ -503,6 +502,7 @@ class CciOdp:
         with open(os.path.join(os.path.dirname(__file__), 'data/datasets_to_fid.json')) as fp:
             self._datasets_to_fid = json.load(fp)
         self._data_sources = None
+        self.session = Session()
 
     def close(self):
         pass
@@ -653,7 +653,7 @@ class CciOdp:
         opendap_url = self._get_opendap_url(request)
         dim_data = {}
         if opendap_url:
-            dataset = open_url(opendap_url)
+            dataset = open_url(opendap_url, session=self.session)
             for dim in dimension_names:
                 if dim in dataset:
                     dim_data[dim] = dataset[dim].data[:].tolist()
@@ -670,7 +670,7 @@ class CciOdp:
                           fileFormat='.nc')
         opendap_url = self._get_opendap_url(query_args, get_earliest=True)
         if opendap_url:
-            dataset = open_url(opendap_url)
+            dataset = open_url(opendap_url, session=self.session)
             start_time_attributes = ['time_coverage_start', 'start_date']
             attributes = dataset.attributes.get('NC_GLOBAL', {})
             for start_time_attribute in start_time_attributes:
@@ -718,7 +718,7 @@ class CciOdp:
         opendap_url = self._get_opendap_url(request)
         if not opendap_url:
             return None
-        dataset = open_url(opendap_url)
+        dataset = open_url(opendap_url, session=self.session)
         # todo support more dimensions
         supported_dimensions = ['lat', 'lon', 'time', 'latitude', 'longitude']
         result = bytearray()
