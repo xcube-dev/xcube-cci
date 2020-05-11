@@ -733,7 +733,7 @@ class CciOdp:
                 indexes.append(dim_indexes[dimension])
             variable_data = np.array(dataset[var][tuple(indexes)].data[0], dtype=dataset[var].dtype.type)
             for i, dimension in enumerate(dataset[var].dimensions):
-                if dim_flipped.get('dimension', False):
+                if dim_flipped.get(dimension, False):
                     variable_data = np.flip(variable_data, axis=i)
             result += variable_data.flatten().tobytes()
         return result
