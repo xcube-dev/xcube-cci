@@ -1,5 +1,8 @@
 import numpy
+import os
 import unittest
+
+from unittest import skipIf
 
 from xcube_cci.cciodp import CciOdp
 from xcube_cci.config import CubeConfig
@@ -7,6 +10,7 @@ from xcube_cci.store import CciStore
 
 class CciStoreTest(unittest.TestCase):
 
+    @skipIf(os.environ.get('XCUBE_DISABLE_WEB_TESTS', None) == '1', 'XCUBE_DISABLE_WEB_TESTS = 1')
     def setUp(self) -> None:
         cci_odp = CciOdp()
         config = CubeConfig(dataset_name='esacci.OZONE.month.L3.NP.multi-sensor.multi-platform.MERGED.fv0002.r1',
@@ -16,6 +20,7 @@ class CciStoreTest(unittest.TestCase):
                             )
         self._store = CciStore(cci_odp, config)
 
+    @skipIf(os.environ.get('XCUBE_DISABLE_WEB_TESTS', None) == '1', 'XCUBE_DISABLE_WEB_TESTS = 1')
     def test_get_encoding(self):
         encoding_dict = self._store.get_encoding('surface_pressure')
         self.assertTrue('fill_value' in encoding_dict)
@@ -25,7 +30,7 @@ class CciStoreTest(unittest.TestCase):
         self.assertTrue(numpy.isnan(encoding_dict['fill_value']))
         self.assertEqual('float32', encoding_dict['dtype'])
 
-
+    @skipIf(os.environ.get('XCUBE_DISABLE_WEB_TESTS', None) == '1', 'XCUBE_DISABLE_WEB_TESTS = 1')
     def test_get_attrs(self):
         attrs = self._store.get_attrs('surface_pressure')
         self.assertTrue('standard_name' in attrs)
@@ -43,6 +48,7 @@ class CciStoreTest(unittest.TestCase):
         self.assertEqual('float32', attrs['data_type'])
         self.assertEqual(['time', 'lat', 'lon'], attrs['dimensions'])
 
+    @skipIf(os.environ.get('XCUBE_DISABLE_WEB_TESTS', None) == '1', 'XCUBE_DISABLE_WEB_TESTS = 1')
     def test_get_time_ranges(self):
         time_ranges = self._store.get_time_ranges()
         self.assertEqual([('2010-02-01T00:00:00', '2010-02-28T23:59:59'),

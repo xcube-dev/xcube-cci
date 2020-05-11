@@ -1,6 +1,7 @@
-import logging
+import numpy as np
 import os
 import unittest
+from unittest import skipIf
 
 from xcube_cci.cciodp import _retrieve_attribute_info_from_das, CciOdp
 
@@ -17,6 +18,7 @@ class CciOdpTest(unittest.TestCase):
         self.assertTrue('fill_value' in attribute_info['surface_pressure'])
         self.assertEqual('NaN', attribute_info['surface_pressure']['fill_value'])
 
+    @skipIf(os.environ.get('XCUBE_DISABLE_WEB_TESTS', None) == '1', 'XCUBE_DISABLE_WEB_TESTS = 1')
     def test_get_data(self):
         cci_odp = CciOdp()
         request = dict(parentIdentifier='4eb4e801424a47f7b77434291921f889',
@@ -25,14 +27,25 @@ class CciOdpTest(unittest.TestCase):
                        varNames=['surface_pressure', 'O3e_du_tot']
                        )
         bbox = (-10.0, 40.0, 10.0, 60.0)
-        data = cci_odp.get_data(request, bbox, {})
+        data = cci_odp.get_data(request, bbox, {}, {})
         self.assertIsNotNone(data)
+        data_array = np.frombuffer(data, dtype=np.float32)
+        self.assertEqual(800, len(data_array))
+        self.assertAlmostEqual(1003.18524, data_array[0], 8)
+        self.assertAlmostEqual(960.9344, data_array[399], 8)
+        self.assertAlmostEqual(0.63038087, data_array[400], 8)
+        self.assertAlmostEqual(0.659591, data_array[799], 8)
 
     def test_dataset_names(self):
         cci_odp = CciOdp()
         dataset_names = cci_odp.dataset_names
         self.assertIsNotNone(dataset_names)
+        self.assertEqual(65, len(dataset_names))
+        self.assertEqual('esacci.OZONE.month.L3.NP.multi-sensor.multi-platform.MERGED.fv0002.r1', dataset_names[0])
+        self.assertEqual('esacci.SOILMOISTURE.day.L3S.SSMS.multi-sensor.multi-platform.ACTIVE.04-5.r1',
+                         dataset_names[-1])
 
+    @skipIf(os.environ.get('XCUBE_DISABLE_WEB_TESTS', None) == '1', 'XCUBE_DISABLE_WEB_TESTS = 1')
     def test_var_names(self):
         cci_odp = CciOdp()
         var_names = cci_odp.var_names('esacci.OC.8-days.L3S.OC_PRODUCTS.multi-sensor.multi-platform.MERGED.4-0.geographic')
@@ -54,6 +67,7 @@ class CciOdpTest(unittest.TestCase):
                           'adg_555_bias', 'adg_670_bias', 'kd_490_rmsd', 'kd_490_bias', 'SeaWiFS_nobs_sum',
                           'MODISA_nobs_sum', 'MERIS_nobs_sum', 'VIIRS_nobs_sum', 'total_nobs_sum'], var_names)
 
+    @skipIf(os.environ.get('XCUBE_DISABLE_WEB_TESTS', None) == '1', 'XCUBE_DISABLE_WEB_TESTS = 1')
     def test_get_dataset_info(self):
         cci_odp = CciOdp()
         dataset_info = cci_odp.get_dataset_info('esacci.CLOUD.month.L3C.CLD_PRODUCTS.MODIS.Terra.MODIS_TERRA.2-0.r1')
