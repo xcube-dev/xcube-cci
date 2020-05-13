@@ -22,6 +22,7 @@
 import aiohttp
 import asyncio
 import bisect
+import copy
 import itertools
 import json
 import logging
@@ -31,10 +32,16 @@ import os
 import re
 import urllib.parse
 from datetime import datetime
-from requests.sessions import Session
 from typing import List, Any, Dict, Tuple, Optional, Union, Sequence, Callable
 
-from pydap.client import open_url
+from pydap.client import Functions
+from pydap.handlers.dap import BaseProxy, SequenceProxy
+from pydap.lib import fix_slice, walk
+from pydap.model import BaseType, SequenceType, GridType
+from pydap.parsers import parse_ce
+from pydap.parsers.dds import build_dataset
+from pydap.parsers.das import parse_das, add_attributes
+from six.moves.urllib.parse import urlsplit, urlunsplit
 
 _LOG = logging.getLogger('xcube')
 _OPENSEARCH_CEDA_URL = "http://opensearch-test.ceda.ac.uk/opensearch/request"
@@ -163,10 +170,78 @@ def _replace_ending_number_brackets(das: str) -> str:
     return das
 
 
-def _get_variable_infos_from_feature(feature: dict) -> (dict, dict):
+async def _get_content_from_opendap_url(url: str, part: str, res_dict: dict, session):
+    scheme, netloc, path, query, fragment = urlsplit(url)
+    url = urlunsplit((scheme, netloc, path + f'.{part}', query, fragment))
+    resp = await session.request(method='GET', url=url)
+    if resp.status >= 400:
+        resp.release()
+        _LOG.warning(f"Could not open {url}: {resp.status}")
+    else:
+        res_dict[part] = await resp.read()
+
+
+def get_opendap_dataset(url: str):
+    return asyncio.run(_get_opendap_dataset(url))
+
+
+async def _get_opendap_dataset(url: str, session=None):
+    tasks = []
+    res_dict = {}
+    close_session = session is None
+    if close_session:
+        session = aiohttp.ClientSession()
+    tasks.append(_get_content_from_opendap_url(url, 'dds', res_dict, session))
+    tasks.append(_get_content_from_opendap_url(url, 'das', res_dict, session))
+    await asyncio.gather(*tasks)
+    if close_session:
+        session.close()
+    if 'dds' not in res_dict or 'das' not in res_dict:
+        return
+    dataset = build_dataset(str(res_dict['dds'], 'utf-8'))
+    add_attributes(dataset, parse_das(str(res_dict['das'], 'utf-8')))
+
+    # remove any projection from the url, leaving selections
+    scheme, netloc, path, query, fragment = urlsplit(url)
+    projection, selection = parse_ce(query)
+    url = urlunsplit((scheme, netloc, path, '&'.join(selection), fragment))
+
+    # now add data proxies
+    for var in walk(dataset, BaseType):
+        var.data = BaseProxy(url, var.id, var.dtype, var.shape)
+    for var in walk(dataset, SequenceType):
+        template = copy.copy(var)
+        var.data = SequenceProxy(url, template)
+
+    # apply projections
+    for var in projection:
+        target = dataset
+        while var:
+            token, index = var.pop(0)
+            target = target[token]
+            if isinstance(target, BaseType):
+                target.data.slice = fix_slice(index, target.shape)
+            elif isinstance(target, GridType):
+                index = fix_slice(index, target.array.shape)
+                target.array.data.slice = index
+                for s, child in zip(index, target.maps):
+                    target[child].data.slice = (s,)
+            elif isinstance(target, SequenceType):
+                target.data.slice = index
+
+    # retrieve only main variable for grid types:
+    for var in walk(dataset, GridType):
+        var.set_output_grid(True)
+
+    dataset.functions = Functions(url)
+
+    return dataset
+
+
+async def _get_variable_infos_from_feature(feature: dict, session) -> (dict, dict):
     feature_info = _extract_feature_info(feature)
     opendap_url = f"{feature_info[4]['Opendap']}"
-    dataset = open_url(opendap_url)
+    dataset = await _get_opendap_dataset(opendap_url, session)
     variable_infos = {}
     for key in dataset.keys():
         variable_infos[key] = dataset[key].attributes
@@ -288,7 +363,7 @@ async def _fetch_variable_infos(dataset_id: str, session):
     variable_infos = {}
     feature = await _fetch_feature_at(session, _OPENSEARCH_CEDA_URL, dict(parentIdentifier=dataset_id), 1)
     if feature is not None:
-        variable_infos, attributes = _get_variable_infos_from_feature(feature)
+        variable_infos, attributes = await _get_variable_infos_from_feature(feature, session)
         for variable_info in variable_infos:
             for dimension in variable_infos[variable_info]['dimensions']:
                 if not dimension in dimensions:
@@ -297,7 +372,6 @@ async def _fetch_variable_infos(dataset_id: str, session):
                     else:
                         dimensions[dimension] = variable_infos[dimension]['size']
     return dimensions, variable_infos, attributes
-
 
 
 def _harmonize_info_field_names(catalogue: dict, single_field_name: str, multiple_fields_name: str,
@@ -502,7 +576,6 @@ class CciOdp:
         with open(os.path.join(os.path.dirname(__file__), 'data/datasets_to_fid.json')) as fp:
             self._datasets_to_fid = json.load(fp)
         self._data_sources = None
-        self.session = Session()
 
     def close(self):
         pass
@@ -514,6 +587,51 @@ class CciOdp:
     @property
     def dataset_names(self) -> List[str]:
         return list(self._datasets_to_uuid.keys())
+
+    @property
+    def description(self) -> dict:
+        asyncio.run(self._ensure_data_sources_read(read_dimensions=True))
+        datasets = []
+        for data_source in self._data_sources:
+            metadata = self._data_sources[data_source]
+            var_names = self._get_var_names(metadata.get('variable_infos', {}))
+            variables = []
+            for variable in var_names:
+                variable_dict = {}
+                var_metadata = [dict for dict in metadata['variables'] if dict['name'] == variable][0]
+                variable_dict['id'] = var_metadata.get('name', '')
+                variable_dict['name'] = var_metadata.get('name', '')
+                variable_dict['units'] = var_metadata.get('units', '')
+                variable_dict['description'] = var_metadata.get('description', '')
+                variable_dict['dtype'] = metadata.get('variable_infos', {}).get(variable, {}).get('data_type', '')
+                variable_dict['spatialRes'] = metadata.get('attributes', {}).get('NC_GLOBAL', {}). \
+                    get('geospatial_lat_resolution', '')
+                variable_dict['spatialLatRes'] = metadata.get('attributes', {}).get('NC_GLOBAL', {}). \
+                    get('geospatial_lat_resolution', '')
+                variable_dict['spatialLonRes'] = metadata.get('attributes', {}).get('NC_GLOBAL', {}). \
+                    get('geospatial_lon_resolution', '')
+                variable_dict['temporal_coverage_start'] = metadata.get('temporal_coverage_start', '')
+                variable_dict['temporal_coverage_end'] = metadata.get('temporal_coverage_end', '')
+                variable_dict['temporalRes'] = metadata.get('attributes', {}).get('NC_GLOBAL', {}). \
+                    get('time_coverage_resolution', '')
+                variables.append(variable_dict)
+            dataset_dict = dict(id=data_source,
+                                name=self._shorten_dataset_name(metadata['title']),
+                                variables=variables
+                                )
+            datasets.append(dataset_dict)
+        description = dict(id='cciodp',
+                           name='ESA CCI Open Data Portal',
+                           datasets=datasets)
+        return description
+
+    def _shorten_dataset_name(self, dataset_name: str) -> str:
+        if re.match('.*[(].*[)].*[:].*', dataset_name) is None:
+            return dataset_name
+        split_name = dataset_name.split(':')
+        cci_name = split_name[0][split_name[0].index('(') + 1:split_name[0].index(')')]
+        set_name = split_name[1].replace('Level ', 'L').replace(', version ', ' v').replace(', Version ', ' v')
+        return f'{cci_name}:{set_name}'
 
     def get_dataset_info(self, dataset_id: str) -> dict:
         data_info = {}
@@ -537,14 +655,14 @@ class CciOdp:
     def get_dataset_metadata(self, dataset_id: str) -> dict:
         return asyncio.run(_fetch_dataset_metadata(self._datasets_to_uuid[dataset_id]))
 
-    async def _ensure_data_sources_read(self):
+    async def _ensure_data_sources_read(self, read_dimensions: bool = False):
         if not self._data_sources:
             self._data_sources = {}
             catalogue = await _fetch_data_source_list_json(_OPENSEARCH_CEDA_URL, dict(parentIdentifier='cci'))
             if catalogue:
                 tasks = []
                 for catalogue_item in catalogue:
-                    tasks.append(self._create_data_source(catalogue[catalogue_item], catalogue_item))
+                    tasks.append(self._create_data_source(catalogue[catalogue_item], catalogue_item, read_dimensions))
                 await asyncio.gather(*tasks)
 
     async def _fetch_dataset_names(self):
@@ -558,9 +676,11 @@ class CciOdp:
                 await asyncio.gather(*tasks)
         return list(self._data_sources.keys())
 
-    async def _create_data_source(self, json_dict: dict, datasource_id: str):
+    async def _create_data_source(self, json_dict: dict, datasource_id: str, read_dimensions: bool = False):
+        if datasource_id not in set(self._datasets_to_fid.values()):
+            return
         meta_info = await _fetch_meta_info(datasource_id, json_dict['odd_url'], json_dict['metadata_url'],
-                                           json_dict['variables'], False)
+                                           json_dict['variables'], read_dimensions)
         time_frequencies = self._get_as_list(meta_info, 'time_frequency', 'time_frequencies')
         processing_levels = self._get_as_list(meta_info, 'processing_level', 'processing_levels')
         data_types = self._get_as_list(meta_info, 'data_type', 'data_types')
@@ -581,6 +701,8 @@ class CciOdp:
             for value_tuple in value_tuples:
                 pretty_id = self._get_pretty_id(meta_info, value_tuple, drs_id)
                 if pretty_id in excluded_data_sources:
+                    continue
+                if pretty_id not in self._datasets_to_fid:
                     continue
                 if pretty_id in self._data_sources:
                     _LOG.warning(f'Data source {pretty_id} already included. Will omit this one.')
@@ -634,17 +756,21 @@ class CciOdp:
 
     async def _var_names(self, dataset_name) -> List:
         async with aiohttp.ClientSession() as session:
-            dimensions, variable_infos, attributes = await _fetch_variable_infos(self._datasets_to_fid[dataset_name], session)
-            # todo support variables with other dimensions
-            variables = []
-            for variable in variable_infos:
-                dimensions = variable_infos[variable]['dimensions']
-                if ('lat' not in dimensions and 'latitude' not in dimensions) or\
-                        ('lon' not in dimensions and 'longitude' not in dimensions) or\
-                        (len(dimensions) > 2 and 'time' not in dimensions):
-                    continue
-                variables.append(variable)
-            return variables
+            dimensions, variable_infos, attributes = await _fetch_variable_infos(self._datasets_to_fid[dataset_name],
+                                                                                 session)
+            return self._get_var_names(variable_infos)
+
+    def _get_var_names(self, variable_infos) -> List:
+        # todo support variables with other dimensions
+        variables = []
+        for variable in variable_infos:
+            dimensions = variable_infos[variable]['dimensions']
+            if ('lat' not in dimensions and 'latitude' not in dimensions) or \
+                    ('lon' not in dimensions and 'longitude' not in dimensions) or \
+                    (len(dimensions) > 2 and 'time' not in dimensions):
+                continue
+            variables.append(variable)
+        return variables
 
     def get_dimension_data(self, dataset_name: str, dimension_names: List[str]):
         request = dict(parentIdentifier=self._datasets_to_fid[dataset_name],
@@ -653,7 +779,7 @@ class CciOdp:
         opendap_url = self._get_opendap_url(request)
         dim_data = {}
         if opendap_url:
-            dataset = open_url(opendap_url, session=self.session)
+            dataset = get_opendap_dataset(opendap_url)
             for dim in dimension_names:
                 if dim in dataset:
                     dim_data[dim] = dataset[dim].data[:].tolist()
@@ -670,7 +796,7 @@ class CciOdp:
                           fileFormat='.nc')
         opendap_url = self._get_opendap_url(query_args, get_earliest=True)
         if opendap_url:
-            dataset = open_url(opendap_url, session=self.session)
+            dataset = get_opendap_dataset(opendap_url)
             start_time_attributes = ['time_coverage_start', 'start_date']
             attributes = dataset.attributes.get('NC_GLOBAL', {})
             for start_time_attribute in start_time_attributes:
@@ -684,7 +810,7 @@ class CciOdp:
     def get_fid_for_dataset(self, dataset_name: str) -> str:
         return self._datasets_to_fid[dataset_name]
 
-    def _get_opendap_url(self, request: Dict, get_earliest:bool=False):
+    def _get_opendap_url(self, request: Dict, get_earliest: bool = False):
         start_date = datetime.strptime(request['startDate'], _TIMESTAMP_FORMAT)
         end_date = datetime.strptime(request['endDate'], _TIMESTAMP_FORMAT)
         feature_list = asyncio.run(_fetch_opensearch_feature_list(_OPENSEARCH_CEDA_URL, request))
@@ -710,7 +836,7 @@ class CciOdp:
                                 return related_link['href']
         return opendap_url
 
-    def get_data(self, request: Dict, bbox: Tuple[float, float, float, float], dim_indexes: dict, dim_flipped: dict)\
+    def get_data(self, request: Dict, bbox: Tuple[float, float, float, float], dim_indexes: dict, dim_flipped: dict) \
             -> Optional[bytes]:
         start_date = datetime.strptime(request['startDate'], _TIMESTAMP_FORMAT)
         end_date = datetime.strptime(request['endDate'], _TIMESTAMP_FORMAT)
@@ -718,7 +844,7 @@ class CciOdp:
         opendap_url = self._get_opendap_url(request)
         if not opendap_url:
             return None
-        dataset = open_url(opendap_url, session=self.session)
+        dataset = get_opendap_dataset(opendap_url)
         # todo support more dimensions
         supported_dimensions = ['lat', 'lon', 'time', 'latitude', 'longitude']
         result = bytearray()
@@ -738,8 +864,7 @@ class CciOdp:
             result += variable_data.flatten().tobytes()
         return result
 
-
-    def _get_indexing(self, dataset, dimension: str, bbox:(float, float, float, float),
+    def _get_indexing(self, dataset, dimension: str, bbox: (float, float, float, float),
                       start_date: datetime, end_date: datetime):
         if dimension == 'lat' or dimension == 'latitude':
             return self._get_dim_indexing(dataset[dimension].data[:], bbox[1], bbox[3])

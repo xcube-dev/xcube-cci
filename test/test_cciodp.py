@@ -3,7 +3,7 @@ import os
 import unittest
 from unittest import skipIf
 
-from xcube_cci.cciodp import _retrieve_attribute_info_from_das, CciOdp
+from xcube_cci.cciodp import _retrieve_attribute_info_from_das, get_opendap_dataset, CciOdp
 
 class CciOdpTest(unittest.TestCase):
 
@@ -31,10 +31,10 @@ class CciOdpTest(unittest.TestCase):
         self.assertIsNotNone(data)
         data_array = np.frombuffer(data, dtype=np.float32)
         self.assertEqual(800, len(data_array))
-        self.assertAlmostEqual(1003.18524, data_array[0], 8)
-        self.assertAlmostEqual(960.9344, data_array[399], 8)
+        self.assertAlmostEqual(1003.18524, data_array[0], 5)
+        self.assertAlmostEqual(960.9344, data_array[399], 4)
         self.assertAlmostEqual(0.63038087, data_array[400], 8)
-        self.assertAlmostEqual(0.659591, data_array[799], 8)
+        self.assertAlmostEqual(0.659591, data_array[799], 6)
 
     def test_dataset_names(self):
         cci_odp = CciOdp()
@@ -48,24 +48,10 @@ class CciOdpTest(unittest.TestCase):
     @skipIf(os.environ.get('XCUBE_DISABLE_WEB_TESTS', None) == '1', 'XCUBE_DISABLE_WEB_TESTS = 1')
     def test_var_names(self):
         cci_odp = CciOdp()
-        var_names = cci_odp.var_names('esacci.OC.8-days.L3S.OC_PRODUCTS.multi-sensor.multi-platform.MERGED.4-0.geographic')
+        var_names = cci_odp.var_names('esacci.OC.8-days.L3S.K_490.multi-sensor.multi-platform.MERGED.4-0.geographic')
         self.assertIsNotNone(var_names)
-        self.assertEqual(['Rrs_412', 'Rrs_443', 'Rrs_490', 'Rrs_510', 'Rrs_555', 'Rrs_670', 'water_class1',
-                          'water_class2', 'water_class3', 'water_class4', 'water_class5', 'water_class6',
-                          'water_class7', 'water_class8', 'water_class9', 'water_class10', 'water_class11',
-                          'water_class12', 'water_class13', 'water_class14', 'atot_412', 'atot_443', 'atot_490',
-                          'atot_510', 'atot_555', 'atot_670', 'aph_412', 'aph_443', 'aph_490', 'aph_510', 'aph_555',
-                          'aph_670', 'adg_412', 'adg_443', 'adg_490', 'adg_510', 'adg_555', 'adg_670', 'bbp_412',
-                          'bbp_443', 'bbp_490', 'bbp_510', 'bbp_555', 'bbp_670', 'chlor_a', 'kd_490', 'Rrs_412_rmsd',
-                          'Rrs_443_rmsd', 'Rrs_490_rmsd', 'Rrs_510_rmsd', 'Rrs_555_rmsd', 'Rrs_670_rmsd',
-                          'Rrs_412_bias', 'Rrs_443_bias', 'Rrs_490_bias', 'Rrs_510_bias', 'Rrs_555_bias',
-                          'Rrs_670_bias', 'chlor_a_log10_rmsd', 'chlor_a_log10_bias', 'aph_412_rmsd', 'aph_443_rmsd',
-                          'aph_490_rmsd', 'aph_510_rmsd', 'aph_555_rmsd', 'aph_670_rmsd', 'aph_412_bias',
-                          'aph_443_bias', 'aph_490_bias', 'aph_510_bias', 'aph_555_bias', 'aph_670_bias',
-                          'adg_412_rmsd', 'adg_443_rmsd', 'adg_490_rmsd', 'adg_510_rmsd', 'adg_555_rmsd',
-                          'adg_670_rmsd', 'adg_412_bias', 'adg_443_bias', 'adg_490_bias', 'adg_510_bias',
-                          'adg_555_bias', 'adg_670_bias', 'kd_490_rmsd', 'kd_490_bias', 'SeaWiFS_nobs_sum',
-                          'MODISA_nobs_sum', 'MERIS_nobs_sum', 'VIIRS_nobs_sum', 'total_nobs_sum'], var_names)
+        self.assertEqual(['MERIS_nobs_sum', 'MODISA_nobs_sum', 'SeaWiFS_nobs_sum', 'VIIRS_nobs_sum', 'kd_490',
+                          'kd_490_bias', 'kd_490_rmsd', 'total_nobs_sum'], var_names)
 
     @skipIf(os.environ.get('XCUBE_DISABLE_WEB_TESTS', None) == '1', 'XCUBE_DISABLE_WEB_TESTS = 1')
     def test_get_dataset_info(self):
@@ -111,3 +97,38 @@ class CciOdpTest(unittest.TestCase):
         self.assertEqual('2000-02-01T00:00:00', dataset_info['temporal_coverage_start'])
         self.assertTrue('temporal_coverage_end' in dataset_info)
         self.assertEqual('2014-12-31T23:59:59', dataset_info['temporal_coverage_end'])
+
+
+    @skipIf(os.environ.get('XCUBE_DISABLE_WEB_TESTS', None) == '1', 'XCUBE_DISABLE_WEB_TESTS = 1')
+    def test_description(self):
+        cci_odp = CciOdp()
+        description = cci_odp.description
+        self.assertIsNotNone(description)
+        self.assertEqual('cciodp', description['id'])
+        self.assertEqual('ESA CCI Open Data Portal', description['name'])
+        import json
+        with open('cci_datasets.json', 'w') as fp:
+            json.dump(description, fp, indent=4)
+
+    def test_shorten_dataset_name(self):
+        cci_odp = CciOdp()
+        self.assertEqual('gdrvtzsw', cci_odp._shorten_dataset_name('gdrvtzsw'))
+        self.assertEqual('Ozone CCI: Level3 Nadir Ozone Profile Merged Data Product version 2',
+                         cci_odp._shorten_dataset_name('ESA Ozone Climate Change Initiative (Ozone CCI): '
+                                                       'Level3 Nadir Ozone Profile Merged Data Product version 2'))
+        self.assertEqual('Ozone CCI: L3 Nadir Ozone Profile Merged Data Product v2',
+                         cci_odp._shorten_dataset_name('ESA Ozone Climate Change Initiative (Ozone CCI): '
+                                                       'Level 3 Nadir Ozone Profile Merged Data Product, version 2'))
+
+    @skipIf(os.environ.get('XCUBE_DISABLE_WEB_TESTS', None) == '1', 'XCUBE_DISABLE_WEB_TESTS = 1')
+    def test_get_opendap_dataset(self):
+        opendap_url = 'http://cci-odp-data2.ceda.ac.uk/thredds/dodsC/esacci/aerosol/data/AATSR_SU/L3/v4.21/DAILY/2002/' \
+                      '07/20020724-ESACCI-L3C_AEROSOL-AER_PRODUCTS-AATSR_ENVISAT-SU_DAILY-v4.21.nc'
+        dataset = get_opendap_dataset(opendap_url)
+        self.assertIsNotNone(dataset)
+        self.assertEqual(53, len(list(dataset.keys())))
+        self.assertTrue('AOD550_mean' in dataset.keys())
+        self.assertEqual('atmosphere_optical_thickness_due_to_ambient_aerosol',
+                         dataset['AOD550_mean'].attributes['standard_name'])
+        self.assertEqual(('latitude', 'longitude'), dataset['AOD550_mean'].dimensions)
+        self.assertEqual(64800, dataset['AOD550_mean'].size)

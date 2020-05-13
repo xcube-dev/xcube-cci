@@ -18,5 +18,5 @@ class OpenCubeTest(unittest.TestCase):
         cube = open_cube(config)
         self.assertIsNotNone(cube)
         data = cube.surface_pressure.sel(time='1997-05-15 12:00:00', method='nearest')
-        self.assertAlmostEqual(926.4256, data[0][0])
-        self.assertAlmostEqual(1000.27875, data[-1][-1])
+        self.assertAlmostEqual(926.4256, data.values[0][0], 4)
+        self.assertAlmostEqual(1000.27875, data.values[-1][-1], 5)
