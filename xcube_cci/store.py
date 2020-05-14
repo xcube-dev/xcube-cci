@@ -546,21 +546,15 @@ class CciStore(RemoteStore):
             this = next + delta_ms
         return request_time_ranges
 
-    def get_spatial_lon_res(self):
+    def get_spatial_lon_res(self) -> float:
         self.ensure_metadata_read()
         nc_attrs = self._metadata.get('attributes', {}).get('NC_GLOBAL', {})
-        if 'geospatial_lon_resolution' in nc_attrs:
-            return float(nc_attrs['geospatial_lon_resolution'])
-        else:
-            return float(nc_attrs['resolution'].split('x')[0].split('deg')[0])
+        return self._cci_odp._get_res(nc_attrs, 'geospatial_lat_resolution', -1)
 
-    def get_spatial_lat_res(self):
+    def get_spatial_lat_res(self) -> float:
         self.ensure_metadata_read()
         nc_attrs = self._metadata.get('attributes', {}).get('NC_GLOBAL', {})
-        if 'geospatial_lat_resolution' in nc_attrs:
-            return float(nc_attrs['geospatial_lat_resolution'])
-        else:
-            return float(nc_attrs['resolution'].split('x')[0].split('deg')[0])
+        return self._cci_odp._get_res(nc_attrs, 'geospatial_lat_resolution', 0)
 
     def get_dimension_data(self):
         self.ensure_metadata_read()

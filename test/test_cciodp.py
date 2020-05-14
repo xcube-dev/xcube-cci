@@ -40,9 +40,9 @@ class CciOdpTest(unittest.TestCase):
         cci_odp = CciOdp()
         dataset_names = cci_odp.dataset_names
         self.assertIsNotNone(dataset_names)
-        self.assertEqual(65, len(dataset_names))
+        self.assertEqual(72, len(dataset_names))
         self.assertEqual('esacci.OZONE.month.L3.NP.multi-sensor.multi-platform.MERGED.fv0002.r1', dataset_names[0])
-        self.assertEqual('esacci.SOILMOISTURE.day.L3S.SSMS.multi-sensor.multi-platform.ACTIVE.04-5.r1',
+        self.assertEqual('esacci.OC.month.L3S.CHLOR_A.multi-sensor.multi-platform.MERGED.3-1.geographic',
                          dataset_names[-1])
 
     @skipIf(os.environ.get('XCUBE_DISABLE_WEB_TESTS', None) == '1', 'XCUBE_DISABLE_WEB_TESTS = 1')

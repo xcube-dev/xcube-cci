@@ -182,20 +182,19 @@ async def _get_content_from_opendap_url(url: str, part: str, res_dict: dict, ses
 
 
 def get_opendap_dataset(url: str):
-    return asyncio.run(_get_opendap_dataset(url))
+    return asyncio.run(_wrap_get_opendap_dataset(url))
+
+async def _wrap_get_opendap_dataset(url: str):
+    async with aiohttp.ClientSession() as session:
+        return await _get_opendap_dataset(url, session)
 
 
-async def _get_opendap_dataset(url: str, session=None):
+async def _get_opendap_dataset(url: str, session):
     tasks = []
     res_dict = {}
-    close_session = session is None
-    if close_session:
-        session = aiohttp.ClientSession()
     tasks.append(_get_content_from_opendap_url(url, 'dds', res_dict, session))
     tasks.append(_get_content_from_opendap_url(url, 'das', res_dict, session))
     await asyncio.gather(*tasks)
-    if close_session:
-        session.close()
     if 'dds' not in res_dict or 'das' not in res_dict:
         return
     dataset = build_dataset(str(res_dict['dds'], 'utf-8'))
@@ -637,20 +636,23 @@ class CciOdp:
         data_info = {}
         dataset_metadata = self.get_dataset_metadata(dataset_id)
         nc_attrs = dataset_metadata.get('attributes', {}).get('NC_GLOBAL', {})
-        if 'geospatial_lat_resolution' in nc_attrs:
-            data_info['lat_res'] = float(nc_attrs['geospatial_lat_resolution'])
-        else:
-            data_info['lat_res'] = float(nc_attrs['resolution'].split('x')[0].split('deg')[0])
-        if 'geospatial_lon_resolution' in nc_attrs:
-            data_info['lon_res'] = float(nc_attrs['geospatial_lon_resolution'])
-        else:
-            data_info['lon_res'] = float(nc_attrs['resolution'].split('x')[1].split('deg')[0])
+        data_info['lat_res'] = self._get_res(nc_attrs, 'geospatial_lat_resolution', 0)
+        data_info['lon_res'] = self._get_res(nc_attrs, 'geospatial_lon_resolution', -1)
         data_info['bbox'] = (float(dataset_metadata['bbox_minx']), float(dataset_metadata['bbox_miny']),
                              float(dataset_metadata['bbox_maxx']), float(dataset_metadata['bbox_maxy']))
         data_info['temporal_coverage_start'] = '2000-02-01T00:00:00'
         data_info['temporal_coverage_end'] = '2014-12-31T23:59:59'
         data_info['var_names'] = self.var_names(dataset_id)
         return data_info
+
+    def _get_res(self, nc_attrs: dict, attr_name: str, index: int) -> float:
+        for name in [attr_name, 'resolution']:
+            if name in nc_attrs:
+                res_attr = nc_attrs[name]
+                if type(res_attr) == float:
+                    return res_attr
+                return float(nc_attrs['geospatial_lat_resolution'].split('x')[index].split('deg')[0].split('degree')[0])
+        return -1.0
 
     def get_dataset_metadata(self, dataset_id: str) -> dict:
         return asyncio.run(_fetch_dataset_metadata(self._datasets_to_uuid[dataset_id]))
