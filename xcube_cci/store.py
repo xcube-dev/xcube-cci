@@ -504,12 +504,12 @@ class CciStore(RemoteStore):
             start_time = datetime(year=start_time.year, month=start_time.month, day=start_time.day)
             end_time = datetime(year=end_time.year, month=end_time.month, day=end_time.day)
             delta = relativedelta(days=1, microseconds=-1)
-        elif time_period == 'month':
+        elif time_period == 'month' or time_period == 'mon':
             start_time = datetime(year=start_time.year, month=start_time.month, day=1)
             end_time = datetime(year=end_time.year, month=end_time.month, day=1)
             delta = relativedelta(months=+1, microseconds=-1)
             end_time += delta
-        elif time_period == 'year':
+        elif time_period == 'year' or time_period == 'yr':
             start_time = datetime(year=start_time.year, month=1, day=1)
             end_time = datetime(year=end_time.year, month=12, day=31)
             delta = relativedelta(years=1, microseconds=-1)

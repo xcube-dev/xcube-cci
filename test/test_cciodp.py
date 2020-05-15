@@ -40,10 +40,10 @@ class CciOdpTest(unittest.TestCase):
         cci_odp = CciOdp()
         dataset_names = cci_odp.dataset_names
         self.assertIsNotNone(dataset_names)
-        self.assertEqual(72, len(dataset_names))
-        self.assertEqual('esacci.OZONE.month.L3.NP.multi-sensor.multi-platform.MERGED.fv0002.r1', dataset_names[0])
-        self.assertEqual('esacci.OC.month.L3S.CHLOR_A.multi-sensor.multi-platform.MERGED.3-1.geographic',
-                         dataset_names[-1])
+        list(dataset_names).sort()
+        self.assertEqual(175, len(dataset_names))
+        self.assertTrue('esacci.AEROSOL.day.L3C.AER_PRODUCTS.ATSR-2.ERS-2.ORAC.03-02.r1' in dataset_names)
+        self.assertTrue('esacci.OC.day.L3S.K_490.multi-sensor.multi-platform.MERGED.3-1.sinusoidal' in dataset_names)
 
     @skipIf(os.environ.get('XCUBE_DISABLE_WEB_TESTS', None) == '1', 'XCUBE_DISABLE_WEB_TESTS = 1')
     def test_var_names(self):

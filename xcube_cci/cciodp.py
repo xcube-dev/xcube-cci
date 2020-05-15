@@ -23,7 +23,6 @@ import aiohttp
 import asyncio
 import bisect
 import copy
-import itertools
 import json
 import logging
 import lxml.etree as etree
@@ -63,7 +62,70 @@ _RE_TO_DATETIME_FORMATS = patterns = [(re.compile(14 * '\\d'), '%Y%m%d%H%M%S'),
                                       (re.compile(4 * '\\d'), '%Y')]
 
 
-async def _fetch_dataset_metadata(uuid: str) -> dict:
+def _convert_time_from_drs_id(time_value: str) -> str:
+    if time_value == 'mon':
+        return 'month'
+    if time_value == 'month':
+        return 'month'
+    if time_value == 'yr':
+        return 'year'
+    if time_value == 'day':
+        return 'day'
+    if time_value == 'satellite-orbit-frequency':
+        return 'satellite-orbit-frequency'
+    if time_value == '5-days':
+        return '5 days'
+    if time_value == '8-days':
+        return '8 days'
+    if time_value == '15-days':
+        return '15 days'
+    if time_value == '13-yrs':
+        return '13 years'
+    if time_value == 'climatology':
+        return 'climatology'
+    raise ValueError('Unknown time frequency format')
+
+async def _fetch_fid_and_uuid(dataset_id: str) -> (str, str):
+    ds_components = dataset_id.split('.')
+    query_args = dict(parentIdentifier='cci',
+                      ecv=ds_components[1],
+                      frequency=_convert_time_from_drs_id(ds_components[2]),
+                      processingLevel=ds_components[3],
+                      dataType=ds_components[4],
+                      sensor=ds_components[5],
+                      platform=ds_components[6],
+                      productString=ds_components[7],
+                      productVersion=ds_components[8].replace('-', '.')
+                      )
+    feature_list = await _fetch_opensearch_feature_list(_OPENSEARCH_CEDA_URL, query_args)
+    if len(feature_list) == 0:
+        query_args = dict(parentIdentifier='cci',
+                          ecv=ds_components[1],
+                          frequency=_convert_time_from_drs_id(ds_components[2]),
+                          processingLevel=ds_components[3],
+                          dataType=ds_components[4],
+                          sensor=ds_components[5],
+                          platform=ds_components[6],
+                          productString=ds_components[7]
+                          )
+        feature_list = await _fetch_opensearch_feature_list(_OPENSEARCH_CEDA_URL, query_args)
+        if len(feature_list) == 0:
+            raise ValueError(f'Could not find any fid for dataset {dataset_id}')
+    if len(feature_list) > 1:
+        for feature in feature_list:
+            title = feature.get("properties", {}).get("title", '')
+            if ds_components[9] in title:
+                fid = feature.get("properties", {}).get("identifier", None)
+                uuid = feature.get("id", "uuid=").split("uuid=")[-1]
+                return fid, uuid
+        raise ValueError(f'Could not unambiguously determine fid for dataset {dataset_id}')
+    fid = feature_list[0].get("properties", {}).get("identifier", None)
+    uuid = feature_list[0].get("id", "uuid=").split("uuid=")[-1]
+    return fid, uuid
+
+
+async def _fetch_dataset_metadata(dataset_id: str) -> dict:
+    fid, uuid = await _fetch_fid_and_uuid(dataset_id)
     query_args = dict(parentIdentifier='cci', uuid=uuid)
     feature_list = await _fetch_opensearch_feature_list(_OPENSEARCH_CEDA_URL, query_args)
     if len(feature_list) < 1:
@@ -570,10 +632,6 @@ class CciOdp:
         self.error_policy = error_policy or 'fail'
         self.error_handler = error_handler
         self.enable_warnings = enable_warnings
-        with open(os.path.join(os.path.dirname(__file__), 'data/datasets_to_uuid.json')) as fp:
-            self._datasets_to_uuid = json.load(fp)
-        with open(os.path.join(os.path.dirname(__file__), 'data/datasets_to_fid.json')) as fp:
-            self._datasets_to_fid = json.load(fp)
         self._data_sources = None
 
     def close(self):
@@ -585,7 +643,7 @@ class CciOdp:
 
     @property
     def dataset_names(self) -> List[str]:
-        return list(self._datasets_to_uuid.keys())
+        return asyncio.run(self._fetch_dataset_names())
 
     @property
     def description(self) -> dict:
@@ -655,7 +713,7 @@ class CciOdp:
         return -1.0
 
     def get_dataset_metadata(self, dataset_id: str) -> dict:
-        return asyncio.run(_fetch_dataset_metadata(self._datasets_to_uuid[dataset_id]))
+        return asyncio.run(_fetch_dataset_metadata(dataset_id))
 
     async def _ensure_data_sources_read(self, read_dimensions: bool = False):
         if not self._data_sources:
@@ -679,8 +737,6 @@ class CciOdp:
         return list(self._data_sources.keys())
 
     async def _create_data_source(self, json_dict: dict, datasource_id: str, read_dimensions: bool = False):
-        if datasource_id not in set(self._datasets_to_fid.values()):
-            return
         meta_info = await _fetch_meta_info(datasource_id, json_dict['odd_url'], json_dict['metadata_url'],
                                            json_dict['variables'], read_dimensions)
         time_frequencies = self._get_as_list(meta_info, 'time_frequency', 'time_frequencies')
@@ -694,36 +750,46 @@ class CciOdp:
         if not time_frequencies or not processing_levels or not data_types or not sensor_ids or not platform_ids \
                 or not product_strings or not product_versions or not drs_ids:
             return
-        drs_id = drs_ids[0].split('.')[-1]
-        it = itertools.product(time_frequencies, processing_levels, data_types, sensor_ids, platform_ids,
-                               product_strings, product_versions)
-        value_tuples = list(it)
         with open(os.path.join(os.path.dirname(__file__), 'data/excluded_data_sources')) as fp:
-            excluded_data_sources = fp.read().split('\n')
-            for value_tuple in value_tuples:
-                pretty_id = self._get_pretty_id(meta_info, value_tuple, drs_id)
-                if pretty_id in excluded_data_sources:
-                    continue
-                if pretty_id not in self._datasets_to_fid:
-                    continue
-                if pretty_id in self._data_sources:
-                    _LOG.warning(f'Data source {pretty_id} already included. Will omit this one.')
-                    continue
+            for drs_id in drs_ids:
                 meta_info = meta_info.copy()
                 meta_info.update(json_dict)
-                self._adjust_json_dict(meta_info, value_tuple)
+                self._adjust_json_dict(meta_info, drs_id)
                 meta_info['cci_project'] = meta_info['ecv']
                 meta_info['fid'] = datasource_id
-                self._data_sources[pretty_id] = meta_info
+                self._data_sources[drs_id] = meta_info
 
-    def _adjust_json_dict(self, json_dict: dict, value_tuple: tuple):
-        self._adjust_json_dict_for_param(json_dict, 'time_frequency', 'time_frequencies', value_tuple[0])
-        self._adjust_json_dict_for_param(json_dict, 'processing_level', 'processing_levels', value_tuple[1])
-        self._adjust_json_dict_for_param(json_dict, 'data_type', 'data_types', value_tuple[2])
-        self._adjust_json_dict_for_param(json_dict, 'sensor_id', 'sensor_ids', value_tuple[3])
-        self._adjust_json_dict_for_param(json_dict, 'platform_id', 'platform_ids', value_tuple[4])
-        self._adjust_json_dict_for_param(json_dict, 'product_string', 'product_strings', value_tuple[5])
-        self._adjust_json_dict_for_param(json_dict, 'product_version', 'product_versions', value_tuple[6])
+    def _adjust_json_dict(self, json_dict: dict, drs_id: str):
+        values = drs_id.split('.')
+        self._adjust_json_dict_for_param(json_dict, 'time_frequency', 'time_frequencies',
+                                         self._convert_time_from_drs_id(values[2]))
+        self._adjust_json_dict_for_param(json_dict, 'processing_level', 'processing_levels', values[3])
+        self._adjust_json_dict_for_param(json_dict, 'data_type', 'data_types', values[4])
+        self._adjust_json_dict_for_param(json_dict, 'sensor_id', 'sensor_ids', values[5])
+        self._adjust_json_dict_for_param(json_dict, 'platform_id', 'platform_ids', values[6])
+        self._adjust_json_dict_for_param(json_dict, 'product_string', 'product_strings', values[7])
+        self._adjust_json_dict_for_param(json_dict, 'product_version', 'product_versions', values[8])
+
+    def _convert_time_from_drs_id(self, time_value: str) -> str:
+        if time_value == 'mon':
+            return 'month'
+        if time_value == 'yr':
+            return 'year'
+        if time_value == 'day':
+            return 'day'
+        if time_value == 'satellite-orbit-frequency':
+            return 'satellite-orbit-frequency'
+        if time_value == '5-days':
+            return '5 days'
+        if time_value == '8-days':
+            return '8 days'
+        if time_value == '15-days':
+            return '15 days'
+        if time_value == '13-yrs':
+            return '13 years'
+        if time_value == 'climatology':
+            return 'climatology'
+        raise ValueError('Unknown time frequency format')
 
     def _adjust_json_dict_for_param(self, json_dict: dict, single_name: str, list_name: str, param_value: str):
         json_dict[single_name] = param_value
@@ -758,8 +824,8 @@ class CciOdp:
 
     async def _var_names(self, dataset_name) -> List:
         async with aiohttp.ClientSession() as session:
-            dimensions, variable_infos, attributes = await _fetch_variable_infos(self._datasets_to_fid[dataset_name],
-                                                                                 session)
+            fid, uuid = await _fetch_fid_and_uuid(dataset_name)
+            dimensions, variable_infos, attributes = await _fetch_variable_infos(fid, session)
             return self._get_var_names(variable_infos)
 
     def _get_var_names(self, variable_infos) -> List:
@@ -775,7 +841,8 @@ class CciOdp:
         return variables
 
     def get_dimension_data(self, dataset_name: str, dimension_names: List[str]):
-        request = dict(parentIdentifier=self._datasets_to_fid[dataset_name],
+        fid, uuid = asyncio.run(_fetch_fid_and_uuid(dataset_name))
+        request = dict(parentIdentifier=fid,
                        startDate='1900-01-01T00:00:00',
                        endDate='3001-12-31T00:00:00')
         opendap_url = self._get_opendap_url(request)
@@ -810,7 +877,8 @@ class CciOdp:
         return None
 
     def get_fid_for_dataset(self, dataset_name: str) -> str:
-        return self._datasets_to_fid[dataset_name]
+        fid, uuid = asyncio.run(_fetch_fid_and_uuid(dataset_name))
+        return fid
 
     def _get_opendap_url(self, request: Dict, get_earliest: bool = False):
         start_date = datetime.strptime(request['startDate'], _TIMESTAMP_FORMAT)
