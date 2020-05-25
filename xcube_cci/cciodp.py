@@ -428,7 +428,9 @@ async def _fetch_variable_infos(dataset_id: str, session):
         for variable_info in variable_infos:
             for dimension in variable_infos[variable_info]['dimensions']:
                 if not dimension in dimensions:
-                    if not dimension in variable_infos and variable_info.split('_')[-1] == 'bnds':
+                    if dimension == 'bin_index':
+                        dimensions[dimension] = variable_infos[variable_info]['size']
+                    elif not dimension in variable_infos and variable_info.split('_')[-1] == 'bnds':
                         dimensions[dimension] = 2
                     else:
                         dimensions[dimension] = variable_infos[dimension]['size']
@@ -694,8 +696,8 @@ class CciOdp:
         data_info = {}
         dataset_metadata = self.get_dataset_metadata(dataset_id)
         nc_attrs = dataset_metadata.get('attributes', {}).get('NC_GLOBAL', {})
-        data_info['lat_res'] = self._get_res(nc_attrs, 'geospatial_lat_resolution', 0)
-        data_info['lon_res'] = self._get_res(nc_attrs, 'geospatial_lon_resolution', -1)
+        data_info['lat_res'] = self._get_res(nc_attrs, 'lat')
+        data_info['lon_res'] = self._get_res(nc_attrs, 'lon')
         data_info['bbox'] = (float(dataset_metadata['bbox_minx']), float(dataset_metadata['bbox_miny']),
                              float(dataset_metadata['bbox_maxx']), float(dataset_metadata['bbox_maxy']))
         data_info['temporal_coverage_start'] = '2000-02-01T00:00:00'
@@ -703,13 +705,19 @@ class CciOdp:
         data_info['var_names'] = self.var_names(dataset_id)
         return data_info
 
-    def _get_res(self, nc_attrs: dict, attr_name: str, index: int) -> float:
+    def _get_res(self, nc_attrs: dict, dim: str) -> float:
+        if dim == 'lat':
+            attr_name = 'geospatial_lat_resolution'
+            index = 0
+        else:
+            attr_name = 'geospatial_lon_resolution'
+            index = -1
         for name in [attr_name, 'resolution']:
             if name in nc_attrs:
                 res_attr = nc_attrs[name]
                 if type(res_attr) == float:
                     return res_attr
-                return float(nc_attrs['geospatial_lat_resolution'].split('x')[index].split('deg')[0].split('degree')[0])
+                return float(res_attr.split('x')[index].split('deg')[0].split('degree')[0])
         return -1.0
 
     def get_dataset_metadata(self, dataset_id: str) -> dict:
@@ -739,17 +747,7 @@ class CciOdp:
     async def _create_data_source(self, json_dict: dict, datasource_id: str, read_dimensions: bool = False):
         meta_info = await _fetch_meta_info(datasource_id, json_dict['odd_url'], json_dict['metadata_url'],
                                            json_dict['variables'], read_dimensions)
-        time_frequencies = self._get_as_list(meta_info, 'time_frequency', 'time_frequencies')
-        processing_levels = self._get_as_list(meta_info, 'processing_level', 'processing_levels')
-        data_types = self._get_as_list(meta_info, 'data_type', 'data_types')
-        sensor_ids = self._get_as_list(meta_info, 'sensor_id', 'sensor_ids')
-        platform_ids = self._get_as_list(meta_info, 'platform_id', 'platform_ids')
-        product_strings = self._get_as_list(meta_info, 'product_string', 'product_strings')
-        product_versions = self._get_as_list(meta_info, 'product_version', 'product_versions')
         drs_ids = self._get_as_list(meta_info, 'drs_id', 'drs_ids')
-        if not time_frequencies or not processing_levels or not data_types or not sensor_ids or not platform_ids \
-                or not product_strings or not product_versions or not drs_ids:
-            return
         with open(os.path.join(os.path.dirname(__file__), 'data/excluded_data_sources')) as fp:
             for drs_id in drs_ids:
                 meta_info = meta_info.copy()
@@ -771,9 +769,9 @@ class CciOdp:
         self._adjust_json_dict_for_param(json_dict, 'product_version', 'product_versions', values[8])
 
     def _convert_time_from_drs_id(self, time_value: str) -> str:
-        if time_value == 'mon':
+        if time_value == 'mon' or time_value == 'month':
             return 'month'
-        if time_value == 'yr':
+        if time_value == 'yr' or time_value == 'year':
             return 'year'
         if time_value == 'day':
             return 'day'
@@ -883,27 +881,27 @@ class CciOdp:
     def _get_opendap_url(self, request: Dict, get_earliest: bool = False):
         start_date = datetime.strptime(request['startDate'], _TIMESTAMP_FORMAT)
         end_date = datetime.strptime(request['endDate'], _TIMESTAMP_FORMAT)
+        request['fileFormat'] = '.nc'
         feature_list = asyncio.run(_fetch_opensearch_feature_list(_OPENSEARCH_CEDA_URL, request))
+        if len(feature_list) == 0:
+            # try without dates. For some data sets, this works better
+            request.pop('startDate')
+            request.pop('endDate')
+            feature_list = asyncio.run(_fetch_opensearch_feature_list(_OPENSEARCH_CEDA_URL, request))
         opendap_url = None
         earliest_date = datetime(2999, 12, 31)
         for feature in feature_list:
-            feature_props = feature.get("properties", {})
-            date = feature_props.get("date", None)
-            if date is None:
-                continue
-            feature_dates = date.split('/')
-            feature_start_date = datetime.strptime(feature_dates[0], _TIMESTAMP_FORMAT)
-            feature_end_date = datetime.strptime(feature_dates[1], _TIMESTAMP_FORMAT)
+            feature_info = _extract_feature_info(feature)
+            feature_start_date = datetime.strptime(feature_info[1], _TIMESTAMP_FORMAT)
+            feature_end_date = datetime.strptime(feature_info[2], _TIMESTAMP_FORMAT)
             if feature_start_date >= start_date and feature_end_date <= end_date and earliest_date > feature_start_date:
-                links = feature_props.get('links', {})
-                if 'related' in links:
-                    for related_link in links['related']:
-                        if related_link['title'] == 'Opendap':
-                            if get_earliest:
-                                earliest_date = feature_start_date
-                                opendap_url = related_link['href']
-                            else:
-                                return related_link['href']
+                feature_opendap_url = feature_info[4].get('Opendap', None)
+                if feature_opendap_url:
+                    if get_earliest:
+                        earliest_date = feature_start_date
+                        opendap_url = feature_opendap_url
+                    else:
+                        return feature_opendap_url
         return opendap_url
 
     def get_data(self, request: Dict, bbox: Tuple[float, float, float, float], dim_indexes: dict, dim_flipped: dict) \

@@ -132,3 +132,18 @@ class CciOdpTest(unittest.TestCase):
                          dataset['AOD550_mean'].attributes['standard_name'])
         self.assertEqual(('latitude', 'longitude'), dataset['AOD550_mean'].dimensions)
         self.assertEqual(64800, dataset['AOD550_mean'].size)
+
+    def test_get_res(self):
+        cci_odp = CciOdp()
+        nc_attrs = dict(geospatial_lat_resolution=24.2,
+                        geospatial_lon_resolution=30.1)
+        self.assertEquals(24.2, cci_odp._get_res(nc_attrs, 'lat'))
+        self.assertEquals(30.1, cci_odp._get_res(nc_attrs, 'lon'))
+
+        nc_attrs = dict(resolution=5.0)
+        self.assertEquals(5.0, cci_odp._get_res(nc_attrs, 'lat'))
+        self.assertEquals(5.0, cci_odp._get_res(nc_attrs, 'lon'))
+
+        nc_attrs = dict(resolution='12x34 degree')
+        self.assertEquals(12.0, cci_odp._get_res(nc_attrs, 'lat'))
+        self.assertEquals(34.0, cci_odp._get_res(nc_attrs, 'lon'))
