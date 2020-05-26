@@ -137,7 +137,7 @@ class RemoteStore(MutableMapping, metaclass=ABCMeta):
                 self._add_static_array('lon', lon_array, dim_attrs)
         if width == -1:
             raise ValueError('Could not determine latitude. Does this dataset have this dimension?')
-        if width == -1:
+        if height == -1:
             raise ValueError('Could not determine longitude. Does this dataset have this dimension?')
         time_attrs = {
             "_ARRAY_DIMENSIONS": ['time'],
@@ -606,7 +606,7 @@ class CciStore(RemoteStore):
                     if type(dim_index) == slice:
                         length *= (dim_index.stop - dim_index.start)
                 dtype = np.dtype(self._SAMPLE_TYPE_TO_DTYPE[var_info['data_type']])
-                var_array = np.full(shape=(length), fill_value=var_info['fill_value'], dtype=dtype)
+                var_array = np.full(shape=length, fill_value=var_info['fill_value'], dtype=dtype)
                 data += var_array.tobytes()
         return data
 
