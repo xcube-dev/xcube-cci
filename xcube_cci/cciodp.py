@@ -59,6 +59,8 @@ _TIMESTAMP_FORMAT = "%Y-%m-%dT%H:%M:%S"
 _RE_TO_DATETIME_FORMATS = patterns = [(re.compile(14 * '\\d'), '%Y%m%d%H%M%S', relativedelta()),
                                       (re.compile(12 * '\\d'), '%Y%m%d%H%M', relativedelta(minutes=1, seconds=-1)),
                                       (re.compile(8 * '\\d'), '%Y%m%d', relativedelta(days=1, seconds=-1)),
+                                      (re.compile(4 * '\\d' + '-' + 2 * '\\d' + '-' + 2 * '\\d'), '%Y-%m-%d',
+                                       relativedelta(days=1, seconds=-1)),
                                       (re.compile(6 * '\\d'), '%Y%m', relativedelta(months=1, seconds=-1)),
                                       (re.compile(4 * '\\d'), '%Y', relativedelta(years=1, seconds=-1))]
 
@@ -941,7 +943,26 @@ class CciOdp:
         if dimension == 'lon' or dimension == 'longitude':
             return self._get_dim_indexing(dataset[dimension].data[:], bbox[0], bbox[2])
         if dimension == 'time':
-            return self._get_dim_indexing(dataset[dimension].data[:], start_date, end_date)
+            time_units = dataset.time.attributes.get('units', '')
+            time_data = self._convert_time_data(dataset[dimension].data[:], time_units)
+            return self._get_dim_indexing(time_data, start_date, end_date)
+        else:
+            return 0
+
+    def _convert_time_data(self, time_data: np.array, units: str):
+        converted_time = []
+        format, start, end, timedelta = find_datetime_format(units)
+        if format:
+            start_time = datetime.strptime(units[start:end], format)
+            for time in time_data:
+                if units.startswith('days'):
+                    converted_time.append(start_time + relativedelta(days=int(time), hours=12))
+                elif units.startswith('seconds'):
+                    converted_time.append(start_time + relativedelta(seconds=int(time)))
+        else:
+            for time in time_data:
+                converted_time.append(time)
+        return converted_time
 
     def _get_dim_indexing(self, data, min, max):
         if len(data) == 1:

@@ -1,6 +1,7 @@
 import numpy as np
 import os
 import unittest
+from datetime import datetime
 from unittest import skipIf
 
 from xcube_cci.cciodp import _retrieve_attribute_info_from_das, find_datetime_format, get_opendap_dataset, CciOdp
@@ -182,3 +183,33 @@ class CciOdpTest(unittest.TestCase):
         self.assertEqual(0, timedelta.minutes)
         self.assertEqual(0, timedelta.seconds)
 
+        time_format, start, end, timedelta = find_datetime_format('f23gxgdrtgys1983-11-30y391fbgv')
+        self.assertEqual('%Y-%m-%d', time_format)
+        self.assertEqual(12, start)
+        self.assertEqual(22, end)
+        self.assertEqual(0, timedelta.years)
+        self.assertEqual(0, timedelta.months)
+        self.assertEqual(1, timedelta.days)
+        self.assertEqual(0, timedelta.hours)
+        self.assertEqual(0, timedelta.minutes)
+        self.assertEqual(-1, timedelta.seconds)
+
+    def test_convert_time_data(self):
+        cci_odp = CciOdp()
+        converted_time_data = cci_odp._convert_time_data([39407, 22403, 25100], 'days since 1900-01-01 00:00:00')
+        self.assertEqual(3, len(converted_time_data))
+        self.assertEqual('2007-11-23', datetime.strftime(converted_time_data[0], '%Y-%m-%d'))
+        self.assertEqual('1961-05-04', datetime.strftime(converted_time_data[1], '%Y-%m-%d'))
+        self.assertEqual('1968-09-21', datetime.strftime(converted_time_data[2], '%Y-%m-%d'))
+
+        converted_time_data = cci_odp._convert_time_data([39407, 22403, 25100], 'days since 1901-01-01 00:00:00')
+        self.assertEqual(3, len(converted_time_data))
+        self.assertEqual('2008-11-22', datetime.strftime(converted_time_data[0], '%Y-%m-%d'))
+        self.assertEqual('1962-05-04', datetime.strftime(converted_time_data[1], '%Y-%m-%d'))
+        self.assertEqual('1969-09-21', datetime.strftime(converted_time_data[2], '%Y-%m-%d'))
+
+        converted_time_data = cci_odp._convert_time_data([39407, 22403, 25100], 'days since')
+        self.assertEqual(3, len(converted_time_data))
+        self.assertEqual(39407, converted_time_data[0])
+        self.assertEqual(22403, converted_time_data[1])
+        self.assertEqual(25100, converted_time_data[2])
