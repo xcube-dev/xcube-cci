@@ -31,6 +31,7 @@ import os
 import re
 import urllib.parse
 from datetime import datetime
+from dateutil.relativedelta import relativedelta
 from typing import List, Any, Dict, Tuple, Optional, Union, Sequence, Callable
 
 from pydap.client import Functions
@@ -55,11 +56,11 @@ DESC_NS = {'gmd': 'http://www.isotc211.org/2005/gmd',
 
 _TIMESTAMP_FORMAT = "%Y-%m-%dT%H:%M:%S"
 
-_RE_TO_DATETIME_FORMATS = patterns = [(re.compile(14 * '\\d'), '%Y%m%d%H%M%S'),
-                                      (re.compile(12 * '\\d'), '%Y%m%d%H%M'),
-                                      (re.compile(8 * '\\d'), '%Y%m%d'),
-                                      (re.compile(6 * '\\d'), '%Y%m'),
-                                      (re.compile(4 * '\\d'), '%Y')]
+_RE_TO_DATETIME_FORMATS = patterns = [(re.compile(14 * '\\d'), '%Y%m%d%H%M%S', relativedelta()),
+                                      (re.compile(12 * '\\d'), '%Y%m%d%H%M', relativedelta(minutes=1, seconds=-1)),
+                                      (re.compile(8 * '\\d'), '%Y%m%d', relativedelta(days=1, seconds=-1)),
+                                      (re.compile(6 * '\\d'), '%Y%m', relativedelta(months=1, seconds=-1)),
+                                      (re.compile(4 * '\\d'), '%Y', relativedelta(years=1, seconds=-1))]
 
 
 def _convert_time_from_drs_id(time_value: str) -> str:
@@ -545,13 +546,13 @@ def _get_linked_content_from_descxml_elem(descxml: etree.XML, paths: List[str]) 
             return _get_element_content(descxml_elem, paths[2])
 
 
-def find_datetime_format(filename: str) -> Tuple[Optional[str], int, int]:
-    for regex, time_format in _RE_TO_DATETIME_FORMATS:
+def find_datetime_format(filename: str) -> Tuple[Optional[str], int, int, relativedelta]:
+    for regex, time_format, timedelta in _RE_TO_DATETIME_FORMATS:
         searcher = regex.search(filename)
         if searcher:
             p1, p2 = searcher.span()
-            return time_format, p1, p2
-    return None, -1, -1
+            return time_format, p1, p2, timedelta
+    return None, -1, -1, relativedelta()
 
 
 async def _extract_metadata_from_odd_url(session=None, odd_url: str = None) -> dict:
@@ -604,12 +605,13 @@ def _extract_feature_info(feature: dict) -> List:
     if date and "/" in date:
         start_time, end_time = date.split("/")
     elif filename:
-        time_format, p1, p2 = find_datetime_format(filename)
+        time_format, p1, p2, timedelta = find_datetime_format(filename)
         if time_format:
             start_time = datetime.strptime(filename[p1:p2], time_format)
+            end_time = start_time + timedelta
             # Convert back to text, so we can JSON-encode it
             start_time = datetime.strftime(start_time, _TIMESTAMP_FORMAT)
-            end_time = start_time
+            end_time = datetime.strftime(end_time, _TIMESTAMP_FORMAT)
     file_size = feature_props.get("filesize", 0)
     related_links = feature_props.get("links", {}).get("related", [])
     urls = {}
@@ -868,7 +870,7 @@ class CciOdp:
             attributes = dataset.attributes.get('NC_GLOBAL', {})
             for start_time_attribute in start_time_attributes:
                 start_time_string = attributes[start_time_attribute]
-                time_format, start, end = find_datetime_format(start_time_string)
+                time_format, start, end, timedelta = find_datetime_format(start_time_string)
                 if time_format:
                     start_time = datetime.strptime(start_time_string[start:end], time_format)
                     return start_time
@@ -894,14 +896,14 @@ class CciOdp:
             feature_info = _extract_feature_info(feature)
             feature_start_date = datetime.strptime(feature_info[1], _TIMESTAMP_FORMAT)
             feature_end_date = datetime.strptime(feature_info[2], _TIMESTAMP_FORMAT)
-            if feature_start_date >= start_date and feature_end_date <= end_date and earliest_date > feature_start_date:
-                feature_opendap_url = feature_info[4].get('Opendap', None)
-                if feature_opendap_url:
-                    if get_earliest:
-                        earliest_date = feature_start_date
-                        opendap_url = feature_opendap_url
-                    else:
-                        return feature_opendap_url
+            if feature_end_date < start_date or feature_start_date > end_date or feature_start_date > earliest_date:
+                continue
+            feature_opendap_url = feature_info[4].get('Opendap', None)
+            if feature_opendap_url:
+                earliest_date = feature_start_date
+                opendap_url = feature_opendap_url
+                if not get_earliest:
+                    return opendap_url
         return opendap_url
 
     def get_data(self, request: Dict, bbox: Tuple[float, float, float, float], dim_indexes: dict, dim_flipped: dict) \

@@ -3,7 +3,7 @@ import os
 import unittest
 from unittest import skipIf
 
-from xcube_cci.cciodp import _retrieve_attribute_info_from_das, get_opendap_dataset, CciOdp
+from xcube_cci.cciodp import _retrieve_attribute_info_from_das, find_datetime_format, get_opendap_dataset, CciOdp
 
 class CciOdpTest(unittest.TestCase):
 
@@ -147,3 +147,38 @@ class CciOdpTest(unittest.TestCase):
         nc_attrs = dict(resolution='12x34 degree')
         self.assertEquals(12.0, cci_odp._get_res(nc_attrs, 'lat'))
         self.assertEquals(34.0, cci_odp._get_res(nc_attrs, 'lon'))
+
+    def test_find_datetime_format(self):
+        time_format, start, end, timedelta = find_datetime_format('fetgzrs2015ydhfbgv')
+        self.assertEqual('%Y', time_format)
+        self.assertEqual(7, start)
+        self.assertEqual(11, end)
+        self.assertEqual(1, timedelta.years)
+        self.assertEqual(0, timedelta.months)
+        self.assertEqual(0, timedelta.days)
+        self.assertEqual(0, timedelta.hours)
+        self.assertEqual(0, timedelta.minutes)
+        self.assertEqual(-1, timedelta.seconds)
+
+        time_format, start, end, timedelta = find_datetime_format('fetz23gxgs20150213ydh391fbgv')
+        self.assertEqual('%Y%m%d', time_format)
+        self.assertEqual(10, start)
+        self.assertEqual(18, end)
+        self.assertEqual(0, timedelta.years)
+        self.assertEqual(0, timedelta.months)
+        self.assertEqual(1, timedelta.days)
+        self.assertEqual(0, timedelta.hours)
+        self.assertEqual(0, timedelta.minutes)
+        self.assertEqual(-1, timedelta.seconds)
+
+        time_format, start, end, timedelta = find_datetime_format('f23gxgs19961130191846y391fbgv')
+        self.assertEqual('%Y%m%d%H%M%S', time_format)
+        self.assertEqual(7, start)
+        self.assertEqual(21, end)
+        self.assertEqual(0, timedelta.years)
+        self.assertEqual(0, timedelta.months)
+        self.assertEqual(0, timedelta.days)
+        self.assertEqual(0, timedelta.hours)
+        self.assertEqual(0, timedelta.minutes)
+        self.assertEqual(0, timedelta.seconds)
+
