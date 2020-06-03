@@ -135,6 +135,22 @@ class RemoteStore(MutableMapping, metaclass=ABCMeta):
                 lon_array = np.array(dimension_data[lon_start_offset:lon_end_offset])
                 width = len(lon_array)
                 self._add_static_array('lon', lon_array, dim_attrs)
+            if dimension_name == 'latitude_centers':
+                dim_attrs = self.get_attrs(dimension_name)
+                dim_attrs['_ARRAY_DIMENSIONS'] = dimension_name
+                dimension_data = self._dimension_data[dimension_name]
+                self._dim_flipped[dimension_name] = dimension_data[0] > dimension_data[-1]
+                if self._dim_flipped[dimension_name]:
+                    dimension_data.reverse()
+                lat_start_offset = bisect.bisect_right(dimension_data, y1)
+                lat_end_offset = bisect.bisect_right(dimension_data, y2)
+                lat_array = np.array(dimension_data[lat_start_offset:lat_end_offset])
+                height = len(lat_array)
+                self._add_static_array('lat', lat_array, dim_attrs)
+                lon_array = np.zeros(shape=1, dtype=np.float32)
+                lon_dim_attrs = dict(_ARRAY_DIMENSIONS='lon')
+                width = 1
+                self._add_static_array('lon', lon_array, lon_dim_attrs)
         if width == -1:
             raise ValueError('Could not determine latitude. Does this dataset have this dimension?')
         if height == -1:
@@ -616,27 +632,23 @@ class CciStore(RemoteStore):
         start_date = datetime.strptime(start_time, _TIMESTAMP_FORMAT)
         end_date = datetime.strptime(end_time, _TIMESTAMP_FORMAT)
         # todo support more dimensions
-        supported_dimensions = ['lat', 'latitude', 'lon', 'longitude', 'time']
+        supported_dimensions = ['lat', 'latitude', 'lon', 'longitude', 'latitude_centers']
         dim_indexes = {}
         for var_name in var_names:
             affected_dimensions = self._metadata.get('variable_infos', {}).get(var_name, {}).get('dimensions', [])
             for dim in affected_dimensions:
-                if dim not in supported_dimensions:
-                    raise ValueError(f'Variable {var_name} has unsupported dimension {dim}. '
-                                     f'Cannot retrieve this variable.')
-                if dim not in dim_indexes:
-                    dim_indexes[dim] = self._get_indexing(dim, bbox, start_date, end_date)
+                if dim in supported_dimensions:
+                    if dim not in dim_indexes:
+                        dim_indexes[dim] = self._get_indexing(dim, bbox, start_date, end_date)
         return dim_indexes
 
     def _get_indexing(self, dimension: str, bbox: (float, float, float, float),
                       start_date: datetime, end_date: datetime):
         data = self._dimension_data[dimension]
-        if dimension == 'lat' or dimension == 'latitude':
+        if dimension == 'lat' or dimension == 'latitude' or dimension == 'latitude_centers':
             return self._get_dim_indexing(dimension, data, bbox[1], bbox[3])
         if dimension == 'lon' or dimension == 'longitude':
             return self._get_dim_indexing(dimension, data, bbox[0], bbox[2])
-        if dimension == 'time':
-            return self._get_dim_indexing(dimension, data, start_date, end_date)
 
     def _get_dim_indexing(self, dimension_name, data, min, max):
         if len(data) == 1:
