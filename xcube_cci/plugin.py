@@ -19,7 +19,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-from xcube.constants import EXTENSION_POINT_CLI_COMMANDS
+from xcube.constants import EXTENSION_POINT_CLI_COMMANDS, EXTENSION_POINT_CUBE_STORES
 from xcube.util import extension
 
 
@@ -28,3 +28,8 @@ def init_plugin(ext_registry: extension.ExtensionRegistry):
     ext_registry.add_extension(loader=extension.import_component('xcube_cci.main:cli'),
                                point=EXTENSION_POINT_CLI_COMMANDS,
                                name='cci_cli')
+    ext_registry.add_extension(
+        loader=extension.import_component('xcube_cci.cube_store:CciCubeStore'),
+        point=EXTENSION_POINT_CUBE_STORES, name='cci',
+        description='ESA CCI cube store'
+    )
