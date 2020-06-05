@@ -1,5 +1,5 @@
 # The MIT License (MIT)
-# Copyright (c) 2019 by the xcube development team and contributors
+# Copyright (c) 2020 by the xcube development team and contributors
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy of
 # this software and associated documentation files (the "Software"), to deal in
@@ -27,14 +27,12 @@ import json
 import time
 from abc import abstractmethod, ABCMeta
 from collections import MutableMapping
-from typing import Iterator, Any, List, Dict, Tuple, Callable, Iterable, KeysView, Union
+from typing import Iterator, Any, List, Dict, Tuple, Callable, Iterable, KeysView, Mapping
 
 import numpy as np
 import pandas as pd
 import re
 
-from .config import CubeConfig
-from .constants import DATA_ARRAY_NAME
 from .cciodp import CciOdp
 
 _TIMESTAMP_FORMAT = "%Y-%m-%dT%H:%M:%S"
@@ -49,7 +47,7 @@ def _str_to_bytes(s: str):
 
 
 # todo move this to xcube
-class RemoteStore(MutableMapping, metaclass=ABCMeta):
+class RemoteChunkStore(MutableMapping, metaclass=ABCMeta):
     """
     A remote Zarr Store.
 
@@ -59,46 +57,43 @@ class RemoteStore(MutableMapping, metaclass=ABCMeta):
     """
 
     def __init__(self,
-                 cube_config: CubeConfig,
+                 cube_id: str,
+                 open_params: Mapping[str, Any] = None,
+                 cube_params: Mapping[str, Any] = None,
                  observer: Callable = None,
                  trace_store_calls=False):
-
-        self._cube_config = cube_config
+        self._variable_names = open_params.get('var_names', [])
         self._observers = [observer] if observer is not None else []
         self._trace_store_calls = trace_store_calls
-        self._time_ranges = self.get_time_ranges()
+
+        self._dataset_name = cube_id
+        self._time_ranges = self.get_time_ranges(cube_id, cube_params)
 
         if not self._time_ranges:
             raise ValueError('Could not determine any valid time stamps')
 
         t_array = np.array([s + 0.5 * (e - s) for s, e in self._time_ranges]).astype('datetime64[s]').astype(np.int64)
         t_bnds_array = np.array(self._time_ranges).astype('datetime64[s]').astype(np.int64)
-        x1, y1, x2, y2 = self._cube_config.geometry
         time_coverage_start = self._time_ranges[0][0]
         time_coverage_end = self._time_ranges[-1][1]
-        # todo add processing_level from metadata
+        cube_params['time_range'] = (cube_params['time_range'][0].isoformat(), cube_params['time_range'][1].isoformat())
         global_attrs = dict(
             Conventions='CF-1.7',
             coordinates='time_bnds',
-            title=f'{self._cube_config.dataset_name} Data Cube Subset',
+            title=f'{cube_id} Data Cube',
             history=[
                 dict(
                     program=f'{self._class_name}',
-                    cube_config=self._cube_config.as_dict(),
+                    open_params=open_params,
+                    cube_params=cube_params
                 )
             ],
             date_created=pd.Timestamp.now().isoformat(),
+            processing_level=self._dataset_name.split('.')[3],
             time_coverage_start=time_coverage_start.isoformat(),
             time_coverage_end=time_coverage_end.isoformat(),
             time_coverage_duration=(time_coverage_end - time_coverage_start).isoformat(),
         )
-
-        if self._cube_config.is_wgs84_crs:
-            x1, y2, x2, y2 = self._cube_config.geometry
-            global_attrs.update(geospatial_lon_min=x1,
-                                geospatial_lat_min=y1,
-                                geospatial_lon_max=x2,
-                                geospatial_lat_max=y2)
 
         # setup Virtual File System (vfs)
         self._vfs = {
@@ -106,55 +101,23 @@ class RemoteStore(MutableMapping, metaclass=ABCMeta):
             '.zattrs': _dict_to_bytes(global_attrs)
         }
 
-        width = -1
-        height = -1
-        self._dimension_data = self.get_dimension_data()
-        self._dim_flipped = {}
+        self._dimension_data = self.get_dimension_data(cube_id)
         for dimension_name in self._dimension_data:
-            if dimension_name == 'lat' or dimension_name == 'latitude':
-                dim_attrs = self.get_attrs(dimension_name)
-                dim_attrs['_ARRAY_DIMENSIONS'] = dimension_name
-                dimension_data = self._dimension_data[dimension_name]['data']
-                self._dim_flipped[dimension_name] = dimension_data[0] > dimension_data[-1]
-                if self._dim_flipped[dimension_name]:
-                    dimension_data.reverse()
-                lat_start_offset = bisect.bisect_right(dimension_data, y1)
-                lat_end_offset = bisect.bisect_right(dimension_data, y2)
-                lat_array = np.array(dimension_data[lat_start_offset:lat_end_offset])
-                height = len(lat_array)
-                self._add_static_array('lat', lat_array, dim_attrs)
-            if dimension_name == 'lon' or dimension_name == 'longitude':
-                dim_attrs = self.get_attrs(dimension_name)
-                dim_attrs['_ARRAY_DIMENSIONS'] = dimension_name
-                dimension_data = self._dimension_data[dimension_name]['data']
-                self._dim_flipped[dimension_name] = dimension_data[0] > dimension_data[-1]
-                if self._dim_flipped[dimension_name]:
-                    dimension_data.reverse()
-                lon_start_offset = bisect.bisect_right(dimension_data, x1)
-                lon_end_offset = bisect.bisect_right(dimension_data, x2)
-                lon_array = np.array(dimension_data[lon_start_offset:lon_end_offset])
-                width = len(lon_array)
-                self._add_static_array('lon', lon_array, dim_attrs)
-            if dimension_name == 'latitude_centers':
-                dim_attrs = self.get_attrs(dimension_name)
-                dim_attrs['_ARRAY_DIMENSIONS'] = dimension_name
-                dimension_data = self._dimension_data[dimension_name]['data']
-                self._dim_flipped[dimension_name] = dimension_data[0] > dimension_data[-1]
-                if self._dim_flipped[dimension_name]:
-                    dimension_data.reverse()
-                lat_start_offset = bisect.bisect_right(dimension_data, y1)
-                lat_end_offset = bisect.bisect_right(dimension_data, y2)
-                lat_array = np.array(dimension_data[lat_start_offset:lat_end_offset])
-                height = len(lat_array)
-                self._add_static_array('lat', lat_array, dim_attrs)
-                lon_array = np.zeros(shape=1, dtype=np.float32)
-                lon_dim_attrs = dict(_ARRAY_DIMENSIONS='lon')
-                width = 1
-                self._add_static_array('lon', lon_array, lon_dim_attrs)
-        if width == -1:
-            raise ValueError('Could not determine latitude. Does this dataset have this dimension?')
-        if height == -1:
-            raise ValueError('Could not determine longitude. Does this dataset have this dimension?')
+            if dimension_name == 'time':
+                # time has been handled above.
+                continue
+            dim_attrs = self.get_attrs(dimension_name)
+            dim_attrs['_ARRAY_DIMENSIONS'] = dimension_name
+            dimension_data = self._dimension_data[dimension_name]['data']
+            if len(dimension_data) > 0:
+                dim_array = np.array(dimension_data)
+                self._add_static_array(dimension_name, dim_array, dim_attrs)
+            else:
+                size = self._dimension_data[dimension_name]['size']
+                chunk_size = self._dimension_data[dimension_name]['chunkSize']
+                encoding = self.get_encoding(dimension_name)
+                self._add_remote_array(dimension_name, [size], [chunk_size], encoding, dim_attrs)
+
         time_attrs = {
             "_ARRAY_DIMENSIONS": ['time'],
             "units": "seconds since 1970-01-01T00:00:00Z",
@@ -172,47 +135,25 @@ class RemoteStore(MutableMapping, metaclass=ABCMeta):
         self._add_static_array('time', t_array, time_attrs)
         self._add_static_array('time_bnds', t_bnds_array, time_bnds_attrs)
 
-        self._tile_width, self._tile_height = self._cube_config.tile_size
-        if width < 1.5 * self._tile_width:
-            self._tile_width = width
-        else:
-            width = self._adjust_size(width, self._tile_width)
-        if height < 1.5 * self._tile_height:
-            self._tile_height = height
-        else:
-            height = self._adjust_size(height, self._tile_height)
-
-        if self._cube_config.four_d:
-            if self._cube_config.is_wgs84_crs:
-                var_array_dimensions = ['time', 'lat', 'lon', 'var']
-            else:
-                var_array_dimensions = ['time', 'y', 'x', 'var']
-            num_vars = len(self._cube_config.variable_names)
-            self._add_static_array('variable',
-                                   np.array(self._cube_config.variable_names),
-                                   attrs=dict(_ARRAY_DIMENSIONS=['variable']))
-            var_encoding = self.get_encoding(DATA_ARRAY_NAME)
-            var_attrs = self.get_attrs(DATA_ARRAY_NAME)
-            var_attrs.update(_ARRAY_DIMENSIONS=var_array_dimensions, var_names=self._cube_config.variable_names)
-            self._add_remote_array(DATA_ARRAY_NAME,
-                                   [t_array.size, height, width, num_vars],
-                                   [1, self._tile_height, self._tile_width, num_vars],
+        self._time_indexes = {}
+        for variable_name in self._variable_names:
+            var_encoding = self.get_encoding(variable_name)
+            var_attrs = self.get_attrs(variable_name)
+            dimensions = var_attrs['dimensions']
+            var_attrs.update(_ARRAY_DIMENSIONS=dimensions)
+            chunk_sizes = var_attrs['chunk_sizes']
+            sizes = []
+            self._time_indexes[variable_name] = -1
+            for i, dimension_name in enumerate(dimensions):
+                sizes.append(self._dimension_data[dimension_name]['size'])
+                if dimension_name == 'time':
+                    chunk_sizes[i] = 1
+                    self._time_indexes[variable_name] = i
+            self._add_remote_array(variable_name,
+                                   sizes,
+                                   chunk_sizes,
                                    var_encoding,
                                    var_attrs)
-        else:
-            if self._cube_config.is_wgs84_crs:
-                var_array_dimensions = ['time', 'lat', 'lon']
-            else:
-                var_array_dimensions = ['time', 'y', 'x']
-            for variable_name in self._cube_config.variable_names:
-                var_encoding = self.get_encoding(variable_name)
-                var_attrs = self.get_attrs(variable_name)
-                var_attrs.update(_ARRAY_DIMENSIONS=var_array_dimensions)
-                self._add_remote_array(variable_name,
-                                       [t_array.size, height, width],
-                                       [1, self._tile_height, self._tile_width],
-                                       var_encoding,
-                                       var_attrs)
 
     @classmethod
     def _adjust_size(cls, size: int, tile_size: int) -> int:
@@ -225,25 +166,19 @@ class RemoteStore(MutableMapping, metaclass=ABCMeta):
     def _safe_int_div(cls, x: int, y: int) -> int:
         return (x + y - 1) // y
 
-    def get_time_ranges(self) -> List[Tuple]:
-        time_start, time_end = self._cube_config.time_range
-        time_period = self._cube_config.time_period
-        request_time_ranges = []
-        time_now = time_start
-        while time_now <= time_end:
-            time_next = time_now + time_period
-            request_time_ranges.append((time_now, time_next))
-            time_now = time_next
-        return request_time_ranges
+    @abstractmethod
+    def get_time_ranges(self, cube_id: str, cube_params: Mapping[str, Any]) -> List[Tuple]:
+        pass
 
-    def get_spatial_lat_res(self):
-        return self._cube_config.spatial_res
+    # def get_spatial_lat_res(self):
+    #     return self._cube_config.spatial_res
 
-    def get_spatial_lon_res(self):
-        return self._cube_config.spatial_res
+    # def get_spatial_lon_res(self):
+    #     return self._cube_config.spatial_res
 
-    def get_dimension_data(self):
-        return {}
+    @abstractmethod
+    def get_dimension_data(self, dataset_id: str) -> dict:
+        pass
 
     def add_observer(self, observer: Callable):
         """
@@ -285,9 +220,6 @@ class RemoteStore(MutableMapping, metaclass=ABCMeta):
 
     def request_time_range(self, time_index: int) -> Tuple[pd.Timestamp, pd.Timestamp]:
         start_time, end_time = self._time_ranges[time_index]
-        # if self.cube_config.time_tolerance:
-        #     start_time -= self.cube_config.time_tolerance
-        #     end_time += self.cube_config.time_tolerance
         return start_time, end_time
 
     def _add_static_array(self, name: str, array: np.ndarray, attrs: Dict):
@@ -332,25 +264,15 @@ class RemoteStore(MutableMapping, metaclass=ABCMeta):
             # noinspection PyTypeChecker
             self._vfs[name + '/' + filename] = name, index
 
-    @property
-    def cube_config(self) -> CubeConfig:
-        return self._cube_config
-
-    def _fetch_chunk(self, band_name: str, chunk_index: Tuple[int, ...]) -> bytes:
-        if len(chunk_index) == 4:
-            time_index, y_chunk_index, x_chunk_index, band_index = chunk_index
-        else:
-            time_index, y_chunk_index, x_chunk_index = chunk_index
-
-        request_bbox = self.request_bbox(x_chunk_index, y_chunk_index)
-        request_time_range = self.request_time_range(time_index)
+    def _fetch_chunk(self, var_name: str, chunk_index: Tuple[int, ...]) -> bytes:
+        request_time_range = self.request_time_range(self._time_indexes[var_name])
 
         t0 = time.perf_counter()
         try:
             exception = None
-            chunk_data = self.fetch_chunk(band_name,
+            chunk_data = self.fetch_chunk(var_name,
                                           chunk_index,
-                                          bbox=request_bbox,
+                                          # bbox=request_bbox,
                                           time_range=request_time_range)
         except Exception as e:
             exception = e
@@ -358,9 +280,9 @@ class RemoteStore(MutableMapping, metaclass=ABCMeta):
         duration = time.perf_counter() - t0
 
         for observer in self._observers:
-            observer(band_name=band_name,
+            observer(band_name=var_name,
                      chunk_index=chunk_index,
-                     bbox=request_bbox,
+                     # bbox=request_bbox,
                      time_range=request_time_range,
                      duration=duration,
                      exception=exception)
@@ -372,14 +294,14 @@ class RemoteStore(MutableMapping, metaclass=ABCMeta):
 
     @abstractmethod
     def fetch_chunk(self,
-                    band_name: str,
+                    var_name: str,
                     chunk_index: Tuple[int, ...],
-                    bbox: Tuple[float, float, float, float],
-                    time_range: Tuple[pd.Timestamp, pd.Timestamp]) -> bytes:
+                    time_range: Tuple[pd.Timestamp, pd.Timestamp]
+                    ) -> bytes:
         """
         Fetch chunk data from remote.
 
-        :param band_name: Band name
+        :param var_name: Variable name
         :param chunk_index: 3D chunk index (time, y, x)
         :param bbox: Requested bounding box in coordinate units of the CRS
         :param time_range: Requested time range
@@ -449,7 +371,7 @@ class RemoteStore(MutableMapping, metaclass=ABCMeta):
         raise TypeError(f'{self._class_name} is read-only')
 
 
-class CciStore(RemoteStore):
+class CciChunkStore(RemoteChunkStore):
     """
     A remote Zarr Store using the ESA CCI Open Data Portal as backend.
 
@@ -475,46 +397,26 @@ class CciStore(RemoteStore):
 
     def __init__(self,
                  cci_odp: CciOdp,
-                 cube_config: CubeConfig,
+                 dataset_id: str,
+                 open_params: Mapping[str, Any] = None,
+                 cube_params: Mapping[str, Any] = None,
                  observer: Callable = None,
                  trace_store_calls=False):
         self._cci_odp = cci_odp
-        self._metadata = None
-        super().__init__(cube_config,
+        self._metadata = self._cci_odp.get_dataset_metadata(dataset_id)
+        super().__init__(dataset_id,
+                         open_params,
+                         cube_params,
                          observer=observer,
                          trace_store_calls=trace_store_calls)
 
-    def ensure_metadata_read(self):
-        if self._metadata is None:
-            self._metadata = self._cci_odp.get_dataset_metadata(self._cube_config.dataset_name)
-
-    def get_time_range_for_num_days(self, num_days: int, start_time: datetime, end_time: datetime):
-        temp_start_time = datetime(start_time.year, start_time.month, start_time.day)
-        temp_start_time -= relativedelta(days=num_days - 1)
-        temp_start_time = self._cci_odp.get_earliest_start_date(self.cube_config.dataset_name,
-                                                                datetime.strftime(temp_start_time, _TIMESTAMP_FORMAT),
-                                                                datetime.strftime(end_time, _TIMESTAMP_FORMAT),
-                                                                f'{num_days} days')
-        if temp_start_time:
-            start_time = temp_start_time
-        else:
-            start_time = datetime(start_time.year, start_time.month, start_time.day)
-        start_time_ordinal = start_time.toordinal()
-        end_time_ordinal = end_time.toordinal()
-        end_time_ordinal = start_time_ordinal + int(np.ceil((end_time_ordinal - start_time_ordinal) /
-                                                            float(num_days)) * num_days)
-        end_time = datetime.fromordinal(end_time_ordinal)
-        end_time += relativedelta(days=1, microseconds=-1)
-        delta = relativedelta(days=num_days, microseconds=-1)
-        return start_time, end_time, delta
-
-    def get_time_ranges(self) -> List[Tuple]:
-        time_start, time_end = self._cube_config.time_range
+    def get_time_ranges(self, dataset_id: str, cube_params: Mapping[str, Any]) -> List[Tuple]:
+        time_start, time_end = cube_params.get('time_range')
         iso_start_time = time_start.tz_localize(None).isoformat()
         start_time = datetime.strptime(iso_start_time, _TIMESTAMP_FORMAT)
         iso_end_time = time_end.tz_localize(None).isoformat()
         end_time = datetime.strptime(iso_end_time, _TIMESTAMP_FORMAT)
-        time_period = self.cube_config.dataset_name.split('.')[2]
+        time_period = dataset_id.split('.')[2]
         delta_ms = relativedelta(microseconds=1)
         if time_period == 'day':
             start_time = datetime(year=start_time.year, month=start_time.month, day=start_time.day)
@@ -562,103 +464,82 @@ class CciStore(RemoteStore):
             this = next + delta_ms
         return request_time_ranges
 
-    def get_spatial_lon_res(self) -> float:
-        self.ensure_metadata_read()
-        nc_attrs = self._metadata.get('attributes', {}).get('NC_GLOBAL', {})
-        return self._cci_odp._get_res(nc_attrs, 'lon')
+    def _get_time_range_for_num_days(self, num_days: int, start_time: datetime, end_time: datetime):
+        temp_start_time = datetime(start_time.year, start_time.month, start_time.day)
+        temp_start_time -= relativedelta(days=num_days - 1)
+        temp_start_time = self._cci_odp.get_earliest_start_date(self.cube_config.dataset_name,
+                                                                datetime.strftime(temp_start_time, _TIMESTAMP_FORMAT),
+                                                                datetime.strftime(end_time, _TIMESTAMP_FORMAT),
+                                                                f'{num_days} days')
+        if temp_start_time:
+            start_time = temp_start_time
+        else:
+            start_time = datetime(start_time.year, start_time.month, start_time.day)
+        start_time_ordinal = start_time.toordinal()
+        end_time_ordinal = end_time.toordinal()
+        end_time_ordinal = start_time_ordinal + int(np.ceil((end_time_ordinal - start_time_ordinal) /
+                                                            float(num_days)) * num_days)
+        end_time = datetime.fromordinal(end_time_ordinal)
+        end_time += relativedelta(days=1, microseconds=-1)
+        delta = relativedelta(days=num_days, microseconds=-1)
+        return start_time, end_time, delta
 
-    def get_spatial_lat_res(self) -> float:
-        self.ensure_metadata_read()
-        nc_attrs = self._metadata.get('attributes', {}).get('NC_GLOBAL', {})
-        return self._cci_odp._get_res(nc_attrs, 'lat')
-
-    def get_dimension_data(self):
-        self.ensure_metadata_read()
+    def get_dimension_data(self, dataset_id: str):
         dimension_names = self._metadata['dimensions']
-        return self._cci_odp.get_dimension_data(self.cube_config.dataset_name, dimension_names)
+        return self._cci_odp.get_dimension_data(dataset_id, dimension_names)
 
     def get_encoding(self, var_name: str) -> Dict[str, Any]:
-        self.ensure_metadata_read()
         encoding_dict = {}
         encoding_dict['fill_value'] = self._metadata.get('variable_infos', {}).get(var_name, {}).get('fill_value')
         encoding_dict['dtype'] = self._metadata.get('variable_infos', {}).get(var_name, {}).get('data_type')
         return encoding_dict
 
     def get_attrs(self, var_name: str) -> Dict[str, Any]:
-        self.ensure_metadata_read()
         return self._metadata.get('variable_infos', {}).get(var_name, {})
 
     def fetch_chunk(self,
                     var_name: str,
                     chunk_index: Tuple[int, ...],
-                    bbox: Tuple[float, float, float, float],
                     time_range: Tuple[pd.Timestamp, pd.Timestamp]) -> bytes:
 
         start_time, end_time = time_range
-        if var_name == 'var_data':
-            var_names = self.cube_config.variable_names
-        else:
-            var_names = [var_name]
-        identifier = self._cci_odp.get_fid_for_dataset(self.cube_config.dataset_name)
+        identifier = self._cci_odp.get_fid_for_dataset(self.dataset_name)
         iso_start_date = start_time.tz_localize(None).isoformat()
         iso_end_date = end_time.tz_localize(None).isoformat()
-        dim_indexes = self._get_dimension_indexes_for_request(var_names, bbox, iso_start_date, iso_end_date)
+        dim_indexes = self._get_dimension_indexes_for_chunk(var_name, chunk_index)
         request = dict(parentIdentifier=identifier,
-                       varNames=var_names,
+                       varNames=[var_name],
                        startDate=iso_start_date,
                        endDate=iso_end_date,
                        fileFormat='.nc'
                        )
-        data = self._cci_odp.get_data(request, bbox, dim_indexes, self._dim_flipped)
+        data = self._cci_odp.get_data_chunk(request, dim_indexes)
         if not data:
-            self.ensure_metadata_read()
             data = bytearray()
-            for var_name in var_names:
-                var_info = self._metadata.get('variable_infos', {}).get(var_name, {})
-                var_dims = var_info.get('dimensions', [])
-                length = 1
-                for var_dim in var_dims:
-                    dim_index = dim_indexes[var_dim]
-                    if type(dim_index) == slice:
-                        length *= (dim_index.stop - dim_index.start)
-                dtype = np.dtype(self._SAMPLE_TYPE_TO_DTYPE[var_info['data_type']])
-                var_array = np.full(shape=length, fill_value=var_info['fill_value'], dtype=dtype)
-                data += var_array.tobytes()
+            var_info = self._metadata.get('variable_infos', {}).get(var_name, {})
+            var_dims = var_info.get('dimensions', [])
+            length = 1
+            for var_dim in var_dims:
+                dim_index = dim_indexes[var_dim]
+                if type(dim_index) == slice:
+                    length *= (dim_index.stop - dim_index.start)
+            dtype = np.dtype(self._SAMPLE_TYPE_TO_DTYPE[var_info['data_type']])
+            var_array = np.full(shape=length, fill_value=var_info['fill_value'], dtype=dtype)
+            data += var_array.tobytes()
         return data
 
-    def _get_dimension_indexes_for_request(self, var_names: List[str], bbox: Tuple[float, float, float, float],
-                                           start_time: str, end_time: str):
-        self.ensure_metadata_read()
-        start_date = datetime.strptime(start_time, _TIMESTAMP_FORMAT)
-        end_date = datetime.strptime(end_time, _TIMESTAMP_FORMAT)
-        # todo support more dimensions
-        supported_dimensions = ['lat', 'latitude', 'lon', 'longitude', 'latitude_centers']
-        dim_indexes = {}
-        for var_name in var_names:
-            affected_dimensions = self._metadata.get('variable_infos', {}).get(var_name, {}).get('dimensions', [])
-            for dim in affected_dimensions:
-                if dim in supported_dimensions:
-                    if dim not in dim_indexes:
-                        dim_indexes[dim] = self._get_indexing(dim, bbox, start_date, end_date)
-        return dim_indexes
-
-    def _get_indexing(self, dimension: str, bbox: (float, float, float, float),
-                      start_date: datetime, end_date: datetime):
-        data = self._dimension_data[dimension]
-        if dimension == 'lat' or dimension == 'latitude' or dimension == 'latitude_centers':
-            return self._get_dim_indexing(dimension, data, bbox[1], bbox[3])
-        if dimension == 'lon' or dimension == 'longitude':
-            return self._get_dim_indexing(dimension, data, bbox[0], bbox[2])
-
-    def _get_dim_indexing(self, dimension_name, data, min, max):
-        if len(data) == 1:
-            return 0
-        start_index = bisect.bisect_right(data, min)
-        end_index = bisect.bisect_right(data, max)
-        if self._dim_flipped[dimension_name]:
-            temp_index = len(data) - start_index
-            start_index = len(data) - end_index
-            end_index = temp_index
-        if start_index != end_index:
-            return slice(start_index, end_index)
-        return start_index
+    def _get_dimension_indexes_for_chunk(self, var_name: str, chunk_index: Tuple[int, ...]) -> tuple:
+        dim_indexes = []
+        var_dimensions = self._metadata.get('variable_infos', {}).get(var_name, {}).get('dimensions', [])
+        chunk_sizes = self._metadata.get('variable_infos', {}).get(var_name, {}).get('chunk_sizes', [])
+        for i, var_dimension in enumerate(var_dimensions):
+            if var_dimension == 'time':
+                dim_indexes.append(0)
+                continue
+            dim_size = self._metadata.get('dimensions', {}).get(var_dimension, -1)
+            if dim_size < 0:
+                raise ValueError(f'Could not determine size of dimension {var_dimension}')
+            start = chunk_index[i] * chunk_sizes[i]
+            end = min(start + chunk_sizes[i] - 1, dim_size - 1)
+            dim_indexes.append(slice(start, end))
+        return tuple(dim_indexes)

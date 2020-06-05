@@ -852,10 +852,12 @@ class CciOdp:
         if opendap_url:
             dataset = get_opendap_dataset(opendap_url)
             for dim in dimension_names:
-                if dim in dataset:
-                    dim_data[dim] = dataset[dim].data[:].tolist()
+                dim_data[dim] = dict(size=dataset[dim].size,
+                                     chunkSize=dataset[dim].attributes.get('_ChunkSizes'))
+                if dim in dataset and dataset[dim].size < 512 * 512:
+                    dim_data[dim]['data'] = dataset[dim].data[:].tolist()
                 else:
-                    dim_data[dim] = []
+                    dim_data[dim]['data'] = []
         return dim_data
 
     def get_earliest_start_date(self, dataset_name: str, start_time: str, end_time: str, frequency: str) -> \
@@ -934,6 +936,16 @@ class CciOdp:
                 if dim_flipped.get(dimension, False):
                     variable_data = np.flip(variable_data, axis=i)
             result += variable_data.flatten().tobytes()
+        return result
+
+    def get_data_chunk(self, request: Dict, dim_indexes: Tuple) -> Optional[bytes]:
+        var_name = request['varNames'][0]
+        opendap_url = self._get_opendap_url(request)
+        if not opendap_url:
+            return None
+        dataset = get_opendap_dataset(opendap_url)
+        variable_data = np.array(dataset[var_name][dim_indexes].data[0], dtype=dataset[var_name].dtype.type)
+        result = variable_data.flatten().tobytes()
         return result
 
     def _get_indexing(self, dataset, dimension: str, bbox: (float, float, float, float),

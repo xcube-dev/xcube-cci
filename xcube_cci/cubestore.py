@@ -19,17 +19,16 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-import uuid
 import xarray as xr
-from typing import Iterator, Dict, Mapping, Any, Optional
+from typing import Iterator, Mapping, Any
 import zarr
 
 from xcube.core.store.dataset import DatasetDescriptor
-from xcube.core.store.store import CubeOpener, CubeStore, CubeStoreError
+from xcube.core.store.store import CubeOpener, CubeStore
 from xcube.util.jsonschema import JsonObjectSchema
 
 from .cciodp import CciOdp
-from .store import CciStore
+from .chunkstore import CciChunkStore
 
 class CciCubeStore(CubeStore, CubeOpener):
 
@@ -72,8 +71,8 @@ class CciCubeStore(CubeStore, CubeOpener):
         # cube_path = self.get_cube_path(cube_id)
         max_cache_size: int = 2 ** 30
         cci_odp = CciOdp()
-        chunk_store = CciStore(cci_odp, open_params)
+        chunk_store = CciChunkStore(cci_odp, cube_id, open_params, cube_params)
         if max_cache_size:
             chunk_store = zarr.LRUStoreCache(chunk_store, max_cache_size)
-        return xr.open_zarr(chunk_store)
-        # return xr.open_dataset(cube_path, **(open_params or {}))
+        raw_ds = xr.open_zarr(chunk_store)
+        return cci_normalize(raw_ds, cube_id, cube_params, cci_odp)
