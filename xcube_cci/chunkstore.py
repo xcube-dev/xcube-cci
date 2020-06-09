@@ -58,11 +58,10 @@ class RemoteChunkStore(MutableMapping, metaclass=ABCMeta):
 
     def __init__(self,
                  cube_id: str,
-                 open_params: Mapping[str, Any] = None,
                  cube_params: Mapping[str, Any] = None,
                  observer: Callable = None,
                  trace_store_calls=False):
-        self._variable_names = open_params.get('var_names', [])
+        self._variable_names = cube_params.get('var_names', [])
         self._observers = [observer] if observer is not None else []
         self._trace_store_calls = trace_store_calls
 
@@ -84,7 +83,6 @@ class RemoteChunkStore(MutableMapping, metaclass=ABCMeta):
             history=[
                 dict(
                     program=f'{self._class_name}',
-                    open_params=open_params,
                     cube_params=cube_params
                 )
             ],
@@ -398,14 +396,12 @@ class CciChunkStore(RemoteChunkStore):
     def __init__(self,
                  cci_odp: CciOdp,
                  dataset_id: str,
-                 open_params: Mapping[str, Any] = None,
                  cube_params: Mapping[str, Any] = None,
                  observer: Callable = None,
                  trace_store_calls=False):
         self._cci_odp = cci_odp
         self._metadata = self._cci_odp.get_dataset_metadata(dataset_id)
         super().__init__(dataset_id,
-                         open_params,
                          cube_params,
                          observer=observer,
                          trace_store_calls=trace_store_calls)
