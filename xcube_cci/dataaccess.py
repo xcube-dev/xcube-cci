@@ -22,6 +22,7 @@ import re
 import xarray as xr
 import zarr
 
+from xcube.core.store.dataaccess import DataAccessor
 from xcube.core.store.dataaccess import DatasetDescriber
 from xcube.core.store.dataaccess import GeoDataFrameOpener
 from xcube.core.store.dataaccess import ZarrDatasetOpener
@@ -43,7 +44,7 @@ TIME_PERIOD_PATTERN = '[0-9]+[Y|M|W|D|T|S|L|U|N|days|day|hours|hour|hr|h|minutes
                       'milliseconds|millisecond|millis|milli|microseconds|microsecond|micros|micro|' \
                       'nanoseconds|nanosecond|nanos|nano|ns'
 
-class ZarrCciOdpDatasetOpener(DatasetDescriber, ZarrDatasetOpener):
+class ZarrCciOdpDatasetAccessor(DataAccessor, DatasetDescriber, ZarrDatasetOpener):
 
     def __init__(self):
         self._cci_odp = CciOdp()
