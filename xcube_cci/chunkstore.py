@@ -27,7 +27,7 @@ import json
 import time
 from abc import abstractmethod, ABCMeta
 from collections import MutableMapping
-from typing import Iterator, Any, List, Dict, Tuple, Callable, Iterable, KeysView, Mapping
+from typing import Iterator, Any, List, Dict, Tuple, Callable, Iterable, KeysView, Mapping, Union
 
 import numpy as np
 import pandas as pd
@@ -75,7 +75,7 @@ class RemoteChunkStore(MutableMapping, metaclass=ABCMeta):
         t_bnds_array = np.array(self._time_ranges).astype('datetime64[s]').astype(np.int64)
         time_coverage_start = self._time_ranges[0][0]
         time_coverage_end = self._time_ranges[-1][1]
-        cube_params['time_range'] = (cube_params['time_range'][0].isoformat(), cube_params['time_range'][1].isoformat())
+        cube_params['time_range'] = (self._extract_time_range_as_strings(cube_params.get('time_range')))
         global_attrs = dict(
             Conventions='CF-1.7',
             coordinates='time_bnds',
@@ -102,7 +102,8 @@ class RemoteChunkStore(MutableMapping, metaclass=ABCMeta):
         self._dimension_data = self.get_dimension_data(cube_id)
         for dimension_name in self._dimension_data:
             if dimension_name == 'time':
-                # time has been handled above.
+                self._dimension_data['time']['size'] = len(t_array)
+                self._dimension_data['time']['data'] = t_array
                 continue
             dim_attrs = self.get_attrs(dimension_name)
             dim_attrs['_ARRAY_DIMENSIONS'] = dimension_name
@@ -406,12 +407,26 @@ class CciChunkStore(RemoteChunkStore):
                          observer=observer,
                          trace_store_calls=trace_store_calls)
 
-    def get_time_ranges(self, dataset_id: str, cube_params: Mapping[str, Any]) -> List[Tuple]:
-        time_start, time_end = cube_params.get('time_range')
-        iso_start_time = time_start.tz_localize(None).isoformat()
+    @staticmethod
+    def _extract_time_range_as_strings(time_range: Union[Tuple, List]) -> (str, str):
+        if isinstance(time_range, tuple):
+            time_start, time_end = time_range
+            iso_start_time = time_start.tz_localize(None).isoformat()
+            iso_end_time = time_end.tz_localize(None).isoformat()
+        else:
+            iso_start_time = pd.to_datetime(time_range[0], utc=True).tz_localize(None).isoformat()
+            iso_end_time = pd.to_datetime(time_range[1], utc=True).tz_localize(None).isoformat()
+        return iso_start_time, iso_end_time
+
+    def _extract_time_range_as_datetime(self, time_range: Union[Tuple, List]) -> (datetime, datetime):
+        iso_start_time, iso_end_time = self._extract_time_range_as_strings(time_range)
         start_time = datetime.strptime(iso_start_time, _TIMESTAMP_FORMAT)
-        iso_end_time = time_end.tz_localize(None).isoformat()
         end_time = datetime.strptime(iso_end_time, _TIMESTAMP_FORMAT)
+        return start_time, end_time
+
+
+    def get_time_ranges(self, dataset_id: str, cube_params: Mapping[str, Any]) -> List[Tuple]:
+        start_time, end_time = self._extract_time_range_as_datetime(cube_params.get('time_range'))
         time_period = dataset_id.split('.')[2]
         delta_ms = relativedelta(microseconds=1)
         if time_period == 'day':

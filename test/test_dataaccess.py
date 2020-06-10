@@ -44,3 +44,14 @@ class DataAccessorTest(unittest.TestCase):
         self.assertTrue('spatial_res_unit' in schema['properties'])
         self.assertTrue('crs' in schema['properties'])
         self.assertTrue('time_period' in schema['properties'])
+
+    @skipIf(os.environ.get('XCUBE_DISABLE_WEB_TESTS', None) == '1', 'XCUBE_DISABLE_WEB_TESTS = 1')
+    def test_open_dataset(self):
+        accessor = ZarrCciOdpDatasetAccessor()
+        dataset = accessor.open_dataset('esacci.OZONE.month.L3.NP.multi-sensor.multi-platform.MERGED.fv0002.r1',
+                                        var_names=['surface_pressure', 'O3_du', 'O3e_du'],
+                                        time_range=['2009-05-02', '2009-08-31'])
+        self.assertIsNotNone(dataset)
+        self.assertTrue('surface_pressure' in dataset.variables)
+        self.assertTrue('O3_du' in dataset.variables)
+        self.assertTrue('O3e_du' in dataset.variables)
