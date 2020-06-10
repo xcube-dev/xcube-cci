@@ -103,6 +103,7 @@ class ZarrCciOdpDatasetAccessor(DataAccessor, DatasetDescriber, ZarrDatasetOpene
                                         JsonNumberSchema())),
             geometry_wkt=JsonStringSchema(pattern=WKT_PATTERN),
             spatial_res=JsonNumberSchema(exclusive_minimum=0.0),
+            spatial_res_unit=JsonStringSchema(default='deg'),
             crs=JsonStringSchema(pattern=CRS_PATTERN, default=DEFAULT_CRS),
             time_period=JsonStringSchema(pattern=TIME_PERIOD_PATTERN)
         )
@@ -120,26 +121,26 @@ class ZarrCciOdpDatasetAccessor(DataAccessor, DatasetDescriber, ZarrDatasetOpene
         return cci_schema
 
     def open_dataset(self, dataset_id: str, **open_params) -> xr.Dataset:
-        self.get_open_dataset_params_schema(dataset_id).validate_instance(open_params)
-
+        cci_schema = self.get_open_dataset_params_schema(dataset_id)
+        cci_schema.validate_instance(open_params)
+        cube_kwargs, open_params = cci_schema.process_kwargs_subset(open_params, (
+            'var_names',
+            'chunk_size',
+            'time_range'
+        ))
         max_cache_size: int = 2 ** 30
         cci_odp = CciOdp()
-        cube_params = dict(
-            var_names=open_params.pop('var_names'),
-            chunk_size=open_params.pop('chunk_size', None),
-            time_range=open_params.pop('time_range')
-        )
-        chunk_store = CciChunkStore(cci_odp, dataset_id, cube_params)
+        chunk_store = CciChunkStore(cci_odp, dataset_id, cube_kwargs)
         if max_cache_size:
             chunk_store = zarr.LRUStoreCache(chunk_store, max_cache_size)
         raw_ds = xr.open_zarr(chunk_store)
-        normalization_params = dict(
-            bbox=open_params.pop('bbox', None),
-            geometry_wkt=open_params.pop('geometry_wkt', None),
-            spatial_res=open_params.pop('spatial_res'),
-            crs=open_params.pop('crs', DEFAULT_CRS),
-            time_period=open_params.pop('time_period', None)
-        )
+        normalization_kwargs, open_params = cci_schema.process_kwargs_subset(open_params, (
+            'bbox',
+            'geometry_wkt',
+            'spatial_res',
+            'crs',
+            'time_period'
+        ))
         return raw_ds
         # return cci_normalize(raw_ds, dataset_id, cube_params, cci_odp)
 
