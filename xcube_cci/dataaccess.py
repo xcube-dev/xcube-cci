@@ -91,7 +91,7 @@ class ZarrCciOdpDatasetAccessor(DataAccessor, DatasetDescriber, ZarrDatasetOpene
         cube_params = dict(
             var_names=JsonArraySchema(items=JsonStringSchema(
                 enum=[v.name for v in dsd.data_vars] if dsd and dsd.data_vars else None)),
-            chunk_size=JsonArraySchema(items=JsonIntegerSchema()),
+            chunk_sizes=JsonArraySchema(items=JsonIntegerSchema()),
             time_range=JsonArraySchema(items=(JsonStringSchema(format='date-time'),
                                               JsonStringSchema(format='date-time')))
         )
@@ -124,7 +124,7 @@ class ZarrCciOdpDatasetAccessor(DataAccessor, DatasetDescriber, ZarrDatasetOpene
         cci_schema.validate_instance(open_params)
         cube_kwargs, open_params = cci_schema.process_kwargs_subset(open_params, (
             'var_names',
-            'chunk_size',
+            'chunk_sizes',
             'time_range'
         ))
         max_cache_size: int = 2 ** 30

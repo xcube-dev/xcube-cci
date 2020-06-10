@@ -28,3 +28,19 @@ class DataAccessorTest(unittest.TestCase):
         self.assertEqual((1.0, 1.0), descriptor.spatial_resolution)
         self.assertEqual(('2000-02-01T00:00:00', '2014-12-31T23:59:59'), descriptor.temporal_coverage)
         self.assertEqual('1M', descriptor.temporal_resolution)
+
+    @skipIf(os.environ.get('XCUBE_DISABLE_WEB_TESTS', None) == '1', 'XCUBE_DISABLE_WEB_TESTS = 1')
+    def test_get_open_dataset_params_schema(self):
+        accessor = ZarrCciOdpDatasetAccessor()
+        schema = accessor.get_open_dataset_params_schema(
+            'esacci.OZONE.month.L3.NP.multi-sensor.multi-platform.MERGED.fv0002.r1').to_dict()
+        self.assertIsNotNone(schema)
+        self.assertTrue('var_names' in schema['properties'])
+        self.assertTrue('chunk_sizes' in schema['properties'])
+        self.assertTrue('time_range' in schema['properties'])
+        self.assertTrue('bbox' in schema['properties'])
+        self.assertTrue('geometry_wkt' in schema['properties'])
+        self.assertTrue('spatial_res' in schema['properties'])
+        self.assertTrue('spatial_res_unit' in schema['properties'])
+        self.assertTrue('crs' in schema['properties'])
+        self.assertTrue('time_period' in schema['properties'])
