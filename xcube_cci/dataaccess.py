@@ -42,7 +42,7 @@ CRS_PATTERN = 'http://www.opengis.net/def/crs/EPSG/0/[0-9]{4,5}'
 WKT_PATTERN = '[A-Z]*\(\([0-9 0-9,*]+\)\)'
 TIME_PERIOD_PATTERN = '[0-9]+[Y|M|W|D|T|S|L|U|N|days|day|hours|hour|hr|h|minutes|minute|min|m|seconds|second|sec|' \
                       'milliseconds|millisecond|millis|milli|microseconds|microsecond|micros|micro|' \
-                      'nanoseconds|nanosecond|nanos|nano|ns'
+                      'nanoseconds|nanosecond|nanos|nano|ns]'
 
 class ZarrCciOdpDatasetAccessor(DataAccessor, DatasetDescriber, ZarrDatasetOpener):
 
@@ -50,14 +50,19 @@ class ZarrCciOdpDatasetAccessor(DataAccessor, DatasetDescriber, ZarrDatasetOpene
         self._cci_odp = CciOdp()
 
     def describe_dataset(self, dataset_id: str) -> DatasetDescriptor:
-        dataset_info = self._cci_odp.get_dataset_info(dataset_id)
+        ds_metadata = self._cci_odp.get_dataset_metadata(dataset_id)
+        dims = ds_metadata['dimensions']
+        attrs = ds_metadata.get('attributes', {}).get('NC_GLOBAL', {})
+        temporal_resolution = attrs.get('time_coverage_resolution', '')[1:]
+        if re.match(TIME_PERIOD_PATTERN, temporal_resolution) is None:
+            temporal_resolution = None
+        dataset_info = self._cci_odp.get_dataset_info(dataset_id, ds_metadata)
         spatial_resolution = (dataset_info['lat_res'], dataset_info['lon_res'])
         spatial_coverage = dataset_info['bbox']
         temporal_coverage = (dataset_info['temporal_coverage_start'], dataset_info['temporal_coverage_end'])
-        var_names = dataset_info['var_names']
-        ds_metadata = self._cci_odp.get_dataset_metadata(dataset_id)
         var_descriptors = []
         var_infos = ds_metadata.get('variable_infos', {})
+        var_names = dataset_info['var_names']
         for var_name in var_names:
             if var_name in var_infos:
                 var_info = var_infos[var_name]
@@ -69,12 +74,7 @@ class ZarrCciOdpDatasetAccessor(DataAccessor, DatasetDescriber, ZarrDatasetOpene
                                                           var_info))
             else:
                 var_descriptors.append(VariableDescriptor(var_name, '', ''))
-        dims = ds_metadata['dims']
-        attrs = ds_metadata.get('attributes', {}).get('NC_GLOBAL', {})
-        temporal_resolution = attrs.get('time_coverage_resolution', '')[1:]
-        if re.match(TIME_PERIOD_PATTERN, temporal_resolution) is None:
-            temporal_resolution = None
-        DatasetDescriptor(
+        return DatasetDescriptor(
             dataset_id=dataset_id,
             dims=dims,
             data_vars=var_descriptors,
@@ -84,7 +84,6 @@ class ZarrCciOdpDatasetAccessor(DataAccessor, DatasetDescriber, ZarrDatasetOpene
             temporal_coverage=temporal_coverage,
             temporal_resolution=temporal_resolution
         )
-        return DatasetDescriptor(dataset_id=dataset_id)
 
     def get_open_dataset_params_schema(self, dataset_id: str = None) -> JsonObjectSchema:
         dsd = self.describe_dataset(dataset_id) if dataset_id else None

@@ -696,9 +696,10 @@ class CciOdp:
         set_name = split_name[1].replace('Level ', 'L').replace(', version ', ' v').replace(', Version ', ' v')
         return f'{cci_name}:{set_name}'
 
-    def get_dataset_info(self, dataset_id: str) -> dict:
+    def get_dataset_info(self, dataset_id: str, dataset_metadata: dict=None) -> dict:
         data_info = {}
-        dataset_metadata = self.get_dataset_metadata(dataset_id)
+        if not dataset_metadata:
+            dataset_metadata = self.get_dataset_metadata(dataset_id)
         nc_attrs = dataset_metadata.get('attributes', {}).get('NC_GLOBAL', {})
         data_info['lat_res'] = self._get_res(nc_attrs, 'lat')
         data_info['lon_res'] = self._get_res(nc_attrs, 'lon')
