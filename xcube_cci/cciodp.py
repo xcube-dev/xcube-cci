@@ -753,14 +753,13 @@ class CciOdp:
         meta_info = await _fetch_meta_info(datasource_id, json_dict['odd_url'], json_dict['metadata_url'],
                                            json_dict['variables'], read_dimensions)
         drs_ids = self._get_as_list(meta_info, 'drs_id', 'drs_ids')
-        with open(os.path.join(os.path.dirname(__file__), 'data/excluded_data_sources')) as fp:
-            for drs_id in drs_ids:
-                meta_info = meta_info.copy()
-                meta_info.update(json_dict)
-                self._adjust_json_dict(meta_info, drs_id)
-                meta_info['cci_project'] = meta_info['ecv']
-                meta_info['fid'] = datasource_id
-                self._data_sources[drs_id] = meta_info
+        for drs_id in drs_ids:
+            meta_info = meta_info.copy()
+            meta_info.update(json_dict)
+            self._adjust_json_dict(meta_info, drs_id)
+            meta_info['cci_project'] = meta_info['ecv']
+            meta_info['fid'] = datasource_id
+            self._data_sources[drs_id] = meta_info
 
     def _adjust_json_dict(self, json_dict: dict, drs_id: str):
         values = drs_id.split('.')
@@ -853,12 +852,18 @@ class CciOdp:
         if opendap_url:
             dataset = get_opendap_dataset(opendap_url)
             for dim in dimension_names:
-                dim_data[dim] = dict(size=dataset[dim].size,
-                                     chunkSize=dataset[dim].attributes.get('_ChunkSizes'))
-                if dim in dataset and dataset[dim].size < 512 * 512:
-                    dim_data[dim]['data'] = dataset[dim].data[:].tolist()
+                if dim in dataset:
+                    dim_data[dim] = dict(size=dataset[dim].size,
+                                         chunkSize=dataset[dim].attributes.get('_ChunkSizes'))
+                    if dataset[dim].size < 512 * 512:
+                        dim_data[dim]['data'] = dataset[dim].data[:].tolist()
+                    else:
+                        dim_data[dim]['data'] = []
                 else:
-                    dim_data[dim]['data'] = []
+                    dim_data[dim] = dict(size=dimension_names[dim],
+                                         chunkSize=dimension_names[dim],
+                                         data=list(range(dimension_names[dim]))
+                                         )
         return dim_data
 
     def get_earliest_start_date(self, dataset_name: str, start_time: str, end_time: str, frequency: str) -> \
