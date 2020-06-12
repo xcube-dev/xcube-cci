@@ -52,14 +52,15 @@ class CciOdpTest(unittest.TestCase):
         self.assertEqual(64261, len(data_array))
         self.assertAlmostEqual(1024.4185, data_array[-1], 4)
 
-    # def test_dataset_names(self):
-    #     cci_odp = CciOdp()
-    #     dataset_names = cci_odp.dataset_names
-    #     self.assertIsNotNone(dataset_names)
-    #     list(dataset_names).sort()
-    #     self.assertEqual(175, len(dataset_names))
-    #     self.assertTrue('esacci.AEROSOL.day.L3C.AER_PRODUCTS.ATSR-2.ERS-2.ORAC.03-02.r1' in dataset_names)
-    #     self.assertTrue('esacci.OC.day.L3S.K_490.multi-sensor.multi-platform.MERGED.3-1.sinusoidal' in dataset_names)
+    @skipIf(os.environ.get('XCUBE_DISABLE_WEB_TESTS', None) == '1', 'XCUBE_DISABLE_WEB_TESTS = 1')
+    def test_dataset_names(self):
+        cci_odp = CciOdp()
+        dataset_names = cci_odp.dataset_names
+        self.assertIsNotNone(dataset_names)
+        list(dataset_names)
+        self.assertEqual(175, len(dataset_names))
+        self.assertTrue('esacci.AEROSOL.day.L3C.AER_PRODUCTS.ATSR-2.ERS-2.ORAC.03-02.r1' in dataset_names)
+        self.assertTrue('esacci.OC.day.L3S.K_490.multi-sensor.multi-platform.MERGED.3-1.sinusoidal' in dataset_names)
 
     @skipIf(os.environ.get('XCUBE_DISABLE_WEB_TESTS', None) == '1', 'XCUBE_DISABLE_WEB_TESTS = 1')
     def test_var_names(self):
