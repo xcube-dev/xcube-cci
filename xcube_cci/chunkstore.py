@@ -418,15 +418,16 @@ class CciChunkStore(RemoteChunkStore):
             iso_end_time = pd.to_datetime(time_range[1], utc=True).tz_localize(None).isoformat()
         return iso_start_time, iso_end_time
 
-    def _extract_time_range_as_datetime(self, time_range: Union[Tuple, List]) -> (datetime, datetime):
+    def _extract_time_range_as_datetime(self, time_range: Union[Tuple, List]) -> (datetime, datetime, str, str):
         iso_start_time, iso_end_time = self._extract_time_range_as_strings(time_range)
         start_time = datetime.strptime(iso_start_time, _TIMESTAMP_FORMAT)
         end_time = datetime.strptime(iso_end_time, _TIMESTAMP_FORMAT)
-        return start_time, end_time
+        return start_time, end_time, iso_start_time, iso_end_time
 
 
     def get_time_ranges(self, dataset_id: str, cube_params: Mapping[str, Any]) -> List[Tuple]:
-        start_time, end_time = self._extract_time_range_as_datetime(cube_params.get('time_range'))
+        start_time, end_time, iso_start_time, iso_end_time = \
+            self._extract_time_range_as_datetime(cube_params.get('time_range'))
         time_period = dataset_id.split('.')[2]
         delta_ms = relativedelta(microseconds=1)
         if time_period == 'day':
