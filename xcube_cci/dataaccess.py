@@ -22,8 +22,11 @@ import re
 import xarray as xr
 import zarr
 
+from typing import Iterator
+
 from xcube.core.store.dataaccess import DataAccessor
 from xcube.core.store.dataaccess import DatasetDescriber
+from xcube.core.store.dataaccess import DatasetIterator
 from xcube.core.store.dataaccess import GeoDataFrameOpener
 from xcube.core.store.dataaccess import ZarrDatasetOpener
 from xcube.core.store.descriptor import DatasetDescriptor
@@ -44,10 +47,13 @@ TIME_PERIOD_PATTERN = '[0-9]+[Y|M|W|D|T|S|L|U|N|days|day|hours|hour|hr|h|minutes
                       'milliseconds|millisecond|millis|milli|microseconds|microsecond|micros|micro|' \
                       'nanoseconds|nanosecond|nanos|nano|ns]'
 
-class ZarrCciOdpDatasetAccessor(DataAccessor, DatasetDescriber, ZarrDatasetOpener):
+class ZarrCciOdpDatasetAccessor(ZarrDatasetOpener, DatasetDescriber, DatasetIterator, DataAccessor):
 
     def __init__(self):
         self._cci_odp = CciOdp()
+
+    def iter_dataset_ids(self) -> Iterator[str]:
+        return iter(self._cci_odp.dataset_names)
 
     def describe_dataset(self, dataset_id: str) -> DatasetDescriptor:
         ds_metadata = self._cci_odp.get_dataset_metadata(dataset_id)
@@ -58,7 +64,7 @@ class ZarrCciOdpDatasetAccessor(DataAccessor, DatasetDescriber, ZarrDatasetOpene
             temporal_resolution = None
         dataset_info = self._cci_odp.get_dataset_info(dataset_id, ds_metadata)
         spatial_resolution = (dataset_info['lat_res'], dataset_info['lon_res'])
-        spatial_coverage = dataset_info['bbox']
+        bbox = dataset_info['bbox']
         temporal_coverage = (dataset_info['temporal_coverage_start'], dataset_info['temporal_coverage_end'])
         var_descriptors = []
         var_infos = ds_metadata.get('variable_infos', {})
@@ -75,14 +81,14 @@ class ZarrCciOdpDatasetAccessor(DataAccessor, DatasetDescriber, ZarrDatasetOpene
             else:
                 var_descriptors.append(VariableDescriptor(var_name, '', ''))
         return DatasetDescriptor(
-            dataset_id=dataset_id,
+            data_id=dataset_id,
             dims=dims,
             data_vars=var_descriptors,
             attrs=attrs,
-            spatial_coverage=spatial_coverage,
-            spatial_resolution=spatial_resolution,
-            temporal_coverage=temporal_coverage,
-            temporal_resolution=temporal_resolution
+            bbox=bbox,
+            spatial_res=spatial_resolution,
+            time_range=temporal_coverage,
+            time_period=temporal_resolution
         )
 
     def get_open_dataset_params_schema(self, dataset_id: str = None) -> JsonObjectSchema:

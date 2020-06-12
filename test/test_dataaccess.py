@@ -12,7 +12,7 @@ class DataAccessorTest(unittest.TestCase):
         accessor = ZarrCciOdpDatasetAccessor()
         descriptor = accessor.describe_dataset('esacci.OZONE.month.L3.NP.multi-sensor.multi-platform.MERGED.fv0002.r1')
         self.assertIsNotNone(descriptor)
-        self.assertEqual('esacci.OZONE.month.L3.NP.multi-sensor.multi-platform.MERGED.fv0002.r1', descriptor.id)
+        self.assertEqual('esacci.OZONE.month.L3.NP.multi-sensor.multi-platform.MERGED.fv0002.r1', descriptor.data_id)
         self.assertEqual(['lon', 'lat', 'layers', 'air_pressure', 'time'], list(descriptor.dims.keys()))
         self.assertEqual(360, descriptor.dims['lon'])
         self.assertEqual(180, descriptor.dims['lat'])
@@ -24,10 +24,10 @@ class DataAccessorTest(unittest.TestCase):
         self.assertEqual(3, descriptor.data_vars[0].ndim)
         self.assertEqual(('time', 'lat', 'lon'), descriptor.data_vars[0].dims)
         self.assertEqual('float32', descriptor.data_vars[0].dtype)
-        self.assertIsNone(descriptor.spatial_crs)
-        self.assertEqual((1.0, 1.0), descriptor.spatial_resolution)
-        self.assertEqual(('2000-02-01T00:00:00', '2014-12-31T23:59:59'), descriptor.temporal_coverage)
-        self.assertEqual('1M', descriptor.temporal_resolution)
+        self.assertIsNone(descriptor.crs)
+        self.assertEqual((1.0, 1.0), descriptor.spatial_res)
+        self.assertEqual(('2000-02-01T00:00:00', '2014-12-31T23:59:59'), descriptor.time_range)
+        self.assertEqual('1M', descriptor.time_period)
 
     @skipIf(os.environ.get('XCUBE_DISABLE_WEB_TESTS', None) == '1', 'XCUBE_DISABLE_WEB_TESTS = 1')
     def test_get_open_dataset_params_schema(self):
@@ -55,3 +55,13 @@ class DataAccessorTest(unittest.TestCase):
         self.assertTrue('surface_pressure' in dataset.variables)
         self.assertTrue('O3_du' in dataset.variables)
         self.assertTrue('O3e_du' in dataset.variables)
+
+    @skipIf(os.environ.get('XCUBE_DISABLE_WEB_TESTS', None) == '1', 'XCUBE_DISABLE_WEB_TESTS = 1')
+    def test_iter_dataset_ids(self):
+        accessor = ZarrCciOdpDatasetAccessor()
+        dataset_ids_iter = accessor.iter_dataset_ids()
+        self.assertIsNotNone(dataset_ids_iter)
+        dataset_ids = list(dataset_ids_iter)
+        self.assertEqual(175, len(dataset_ids))
+        self.assertTrue('esacci.AEROSOL.day.L3C.AER_PRODUCTS.ATSR-2.ERS-2.ORAC.03-02.r1' in dataset_ids)
+        self.assertTrue('esacci.OC.day.L3S.K_490.multi-sensor.multi-platform.MERGED.3-1.sinusoidal' in dataset_ids)
