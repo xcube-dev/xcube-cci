@@ -514,7 +514,7 @@ class CciChunkStore(RemoteChunkStore):
                     time_range: Tuple[pd.Timestamp, pd.Timestamp]) -> bytes:
 
         start_time, end_time = time_range
-        identifier = self._cci_odp.get_fid_for_dataset(self.dataset_name)
+        identifier = self._cci_odp.get_fid_for_dataset(self._dataset_name)
         iso_start_date = start_time.tz_localize(None).isoformat()
         iso_end_date = end_time.tz_localize(None).isoformat()
         dim_indexes = self._get_dimension_indexes_for_chunk(var_name, chunk_index)
@@ -528,10 +528,8 @@ class CciChunkStore(RemoteChunkStore):
         if not data:
             data = bytearray()
             var_info = self._metadata.get('variable_infos', {}).get(var_name, {})
-            var_dims = var_info.get('dimensions', [])
             length = 1
-            for var_dim in var_dims:
-                dim_index = dim_indexes[var_dim]
+            for dim_index in dim_indexes:
                 if type(dim_index) == slice:
                     length *= (dim_index.stop - dim_index.start)
             dtype = np.dtype(self._SAMPLE_TYPE_TO_DTYPE[var_info['data_type']])
@@ -551,6 +549,6 @@ class CciChunkStore(RemoteChunkStore):
             if dim_size < 0:
                 raise ValueError(f'Could not determine size of dimension {var_dimension}')
             start = chunk_index[i] * chunk_sizes[i]
-            end = min(start + chunk_sizes[i] - 1, dim_size - 1)
+            end = min(start + chunk_sizes[i], dim_size)
             dim_indexes.append(slice(start, end))
         return tuple(dim_indexes)
