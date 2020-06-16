@@ -29,6 +29,7 @@ from xcube.core.store.descriptor import DataDescriptor
 from xcube.core.store.descriptor import DatasetDescriptor
 from xcube.core.store.descriptor import VariableDescriptor
 from xcube.core.store.store import DataStore
+from xcube.core.store.store import DataStoreError
 from xcube.util.jsonschema import JsonArraySchema
 from xcube.util.jsonschema import JsonIntegerSchema
 from xcube.util.jsonschema import JsonNumberSchema
@@ -40,6 +41,7 @@ from xcube_cci.chunkstore import CciChunkStore
 from xcube_cci.constants import DEFAULT_CRS
 
 DATASET_DATA_TYPE = 'dataset'
+DATA_OPENER_ID = 'dataset:zarr:cci_odp'
 
 CRS_PATTERN = 'http://www.opengis.net/def/crs/EPSG/0/[0-9]{4,5}'
 WKT_PATTERN = '[A-Z]*\(\([0-9 0-9,*]+\)\)'
@@ -65,8 +67,14 @@ class CciOdpDataStore(DataStore):
         assert type_id == DATASET_DATA_TYPE or type_id is None
         return iter(self._cci_odp.dataset_names)
 
+    def has_data(self, data_id: str) -> bool:
+        return data_id in self._cci_odp.dataset_names
+
     def describe_data(self, data_id: str) -> DataDescriptor:
-        ds_metadata = self._cci_odp.get_dataset_metadata(data_id)
+        try:
+            ds_metadata = self._cci_odp.get_dataset_metadata(data_id)
+        except ValueError as e:
+            raise DataStoreError(f'Cannot describe metadata. "{data_id}" does not seem to be a valid identifier.')
         dims = ds_metadata['dimensions']
         attrs = ds_metadata.get('attributes', {}).get('NC_GLOBAL', {})
         temporal_resolution = attrs.get('time_coverage_resolution', '')[1:]
@@ -103,31 +111,37 @@ class CciOdpDataStore(DataStore):
 
     @classmethod
     def get_search_params_schema(cls) -> JsonObjectSchema:
-        """
-        Get the schema for the parameters that can be passed as *search_params* to :meth:search_data().
-        Parameters are named and described by the properties of the returned JSON object schema.
-        The default implementation returns JSON object schema that can have any properties.
-
-        :return: A JSON object schema whose properties describe this store's search parameters.
-        """
-        return JsonObjectSchema()
+        search_params = dict(
+            start_date=JsonStringSchema(format='date-time'),
+            end_date=JsonStringSchema(format='date-time'),
+            bbox = JsonArraySchema(items=(JsonNumberSchema(),
+                                          JsonNumberSchema(),
+                                          JsonNumberSchema(),
+                                          JsonNumberSchema())),
+            ecv = JsonStringSchema(),
+            frequency = JsonStringSchema(),
+            institute = JsonStringSchema(),
+            processing_level = JsonStringSchema(),
+            product_string = JsonStringSchema(),
+            product_version = JsonStringSchema(),
+            data_type = JsonStringSchema(),
+            sensor = JsonStringSchema(),
+            platform = JsonStringSchema()
+        )
+        search_schema = JsonObjectSchema(
+            properties=dict(**search_params),
+            additional_properties=False)
+        return search_schema
 
     def search_data(self, type_id: str = None, **search_params) -> Iterator[DataDescriptor]:
-        """
-        Search this store for data resources.
-        If *type_id* is given, the search is restricted to data resources of that type.
-
-        Returns an iterator over the search results.
-        The returned data descriptors may contain less information than returned by the :meth:describe_data()
-        method.
-
-        If a store implementation supports only a single data type, it should verify that *type_id* is either None
-        or equal to that single data type.
-
-        :param type_id: An optional data type identifier that is known to be supported by this data store.
-        :param search_params: The search parameters.
-        :return: An iterator of data descriptors for the found data resources.
-        """
+        assert type_id == DATASET_DATA_TYPE or type_id is None
+        search_schema = self.get_search_params_schema()
+        search_schema.validate_instance(search_params)
+        search_result = self._cci_odp.search(**search_params)
+        data_descriptors = []
+        for data_id in search_result:
+            data_descriptors.append(self.describe_data(data_id))
+        return iter(data_descriptors)
 
     def get_data_opener_ids(self, type_id: str = None, data_id: str = None) -> Tuple[str, ...]:
         """
@@ -143,6 +157,8 @@ class CciOdpDataStore(DataStore):
         :param data_id: An optional data resource identifier that is known to exist in this data store.
         :return: A tuple of identifiers of data openers that can be used to open data resources.
         """
+        assert type_id == DATASET_DATA_TYPE or type_id is None
+        return tuple(DATA_OPENER_ID)
 
     def get_open_data_params_schema(self, data_id: str = None, opener_id: str = None) -> JsonObjectSchema:
         dsd = self.describe_data(data_id) if data_id else None
