@@ -27,7 +27,6 @@ import json
 import logging
 import lxml.etree as etree
 import numpy as np
-import os
 import re
 import urllib.parse
 from datetime import datetime
@@ -841,6 +840,70 @@ class CciOdp:
                 continue
             variables.append(variable)
         return variables
+
+    def search(self,
+               start_date: Optional[str]=None,
+               end_date: Optional[str]=None,
+               bbox: Optional[Tuple[float, float, float, float]]=None,
+               ecv: Optional[str]=None,
+               frequency: Optional[str]=None,
+               institute: Optional[str]=None,
+               processing_level: Optional[str]=None,
+               product_string: Optional[str]=None,
+               product_version: Optional[str]=None,
+               data_type: Optional[str]=None,
+               sensor: Optional[str]=None,
+               platform: Optional[str]=None) -> List[str]:
+        asyncio.run(self._ensure_data_sources_read())
+        results = []
+        if start_date:
+            converted_start_date = self._get_datetime_from_string(start_date)
+        if end_date:
+            converted_end_date = self._get_datetime_from_string(end_date)
+        for data_source  in self._data_sources:
+            split_data_source = data_source.split('.')
+            if ecv is not None and ecv != split_data_source[1]:
+                continue
+            if frequency is not None and frequency != _convert_time_from_drs_id(split_data_source[2]):
+                continue
+            if processing_level is not None and processing_level != split_data_source[3]:
+                continue
+            if data_type is not None and data_type != split_data_source[4]:
+                continue
+            if sensor is not None and sensor != split_data_source[5]:
+                continue
+            if platform is not None and platform != split_data_source[6]:
+                continue
+            if product_string is not None and product_string != split_data_source[7]:
+                continue
+            if product_version is not None and product_version.replace('.', '-') != split_data_source[8]:
+                continue
+            data_source_info = self._data_sources[data_source]
+            if institute is not None and ('institute' not in data_source_info or institute != data_source_info['institute']):
+                continue
+            if bbox:
+                if float(data_source_info['bbox_minx']) > bbox[2]:
+                    continue
+                if float(data_source_info['bbox_maxx']) < bbox[0]:
+                    continue
+                if float(data_source_info['bbox_miny']) > bbox[3]:
+                    continue
+                if float(data_source_info['bbox_maxy']) < bbox[1]:
+                    continue
+            if start_date:
+                data_source_end = datetime.strptime(data_source_info['temporal_coverage_end'], _TIMESTAMP_FORMAT)
+                if converted_start_date > data_source_end:
+                    continue
+            if end_date:
+                data_source_start = datetime.strptime(data_source_info['temporal_coverage_start'], _TIMESTAMP_FORMAT)
+                if converted_end_date < data_source_start:
+                    continue
+            results.append(data_source)
+        return results
+                
+    def _get_datetime_from_string(self, time_as_string: str) -> datetime:
+        time_format, start, end, timedelta = find_datetime_format(time_as_string)
+        return datetime.strptime(time_as_string[start:end], time_format)
 
     def get_dimension_data(self, dataset_name: str, dimension_names: List[str]):
         fid, uuid = asyncio.run(_fetch_fid_and_uuid(dataset_name))

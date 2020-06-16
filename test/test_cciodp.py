@@ -116,16 +116,16 @@ class CciOdpTest(unittest.TestCase):
         self.assertEqual('2014-12-31T23:59:59', dataset_info['temporal_coverage_end'])
 
 
-    # @skipIf(os.environ.get('XCUBE_DISABLE_WEB_TESTS', None) == '1', 'XCUBE_DISABLE_WEB_TESTS = 1')
-    # def test_description(self):
-    #     cci_odp = CciOdp()
-    #     description = cci_odp.description
-    #     self.assertIsNotNone(description)
-    #     self.assertEqual('cciodp', description['id'])
-    #     self.assertEqual('ESA CCI Open Data Portal', description['name'])
-    #     import json
-    #     with open('cci_datasets.json', 'w') as fp:
-    #         json.dump(description, fp, indent=4)
+    @skipIf(os.environ.get('XCUBE_DISABLE_WEB_TESTS', None) == '1', 'XCUBE_DISABLE_WEB_TESTS = 1')
+    def test_description(self):
+        cci_odp = CciOdp()
+        description = cci_odp.description
+        self.assertIsNotNone(description)
+        self.assertEqual('cciodp', description['id'])
+        self.assertEqual('ESA CCI Open Data Portal', description['name'])
+        import json
+        with open('cci_datasets.json', 'w') as fp:
+            json.dump(description, fp, indent=4)
 
     def test_shorten_dataset_name(self):
         cci_odp = CciOdp()
@@ -262,3 +262,70 @@ class CciOdpTest(unittest.TestCase):
         self.assertEqual(dimension_data['lon']['size'], 23761676)
         self.assertEqual(dimension_data['lon']['chunkSize'], 1048576)
         self.assertEqual(len(dimension_data['lon']['data']), 0)
+
+    @skipIf(os.environ.get('XCUBE_DISABLE_WEB_TESTS', None) == '1', 'XCUBE_DISABLE_WEB_TESTS = 1')
+    def test_search(self):
+        cci_odp = CciOdp()
+        aerosol_sources = cci_odp.search(
+            start_date='1990-05-01',
+            end_date='2021-08-01',
+            bbox=(-20, 30, 20, 50),
+            ecv='AEROSOL'
+        )
+        self.assertEqual(31, len(aerosol_sources))
+        five_day_sources = cci_odp.search(
+            start_date='1990-05-01',
+            end_date='2021-08-01',
+            bbox=(-20, 30, 20, 50),
+            frequency='5 days'
+        )
+        self.assertEqual(11, len(five_day_sources))
+        ral_sources = cci_odp.search(
+            start_date='2007-05-01',
+            end_date='2009-08-01',
+            bbox=(-20, 30, 20, 50),
+            institute='Rutherford Appleton Laboratory'
+        )
+        self.assertEqual(3, len(ral_sources))
+        l2p_sources = cci_odp.search(
+            start_date = '1990-05-01',
+            end_date = '2021-08-01',
+            bbox=(-20, 30, 20, 50),
+            processing_level='L2P'
+        )
+        self.assertEqual(25, len(l2p_sources))
+        avhrr19g_sources = cci_odp.search(
+            start_date = '1990-05-01',
+            end_date = '2021-08-01',
+            bbox=(-20, 30, 20, 50),
+            product_string='AVHRR19_G'
+        )
+        self.assertEqual(3, len(avhrr19g_sources))
+        v238_sources = cci_odp.search(
+            start_date = '1990-05-01',
+            end_date = '2021-08-01',
+            bbox=(-20, 30, 20, 50),
+            product_version='v2.3.8'
+        )
+        self.assertEqual(4, len(v238_sources))
+        siconc_sources = cci_odp.search(
+            start_date='2007-05-01',
+            end_date='2009-08-01',
+            bbox=(-20, 30, 20, 50),
+            data_type='SICONC'
+        )
+        self.assertEqual(4, len(siconc_sources))
+        sciamachy_sources = cci_odp.search(
+            start_date = '1990-05-01',
+            end_date = '2021-08-01',
+            bbox=(-20, 30, 20, 50),
+            sensor='SCIAMACHY'
+        )
+        self.assertEqual(5, len(sciamachy_sources))
+        noaa14_sources = cci_odp.search(
+            start_date = '1990-05-01',
+            end_date = '2021-08-01',
+            bbox=(-20, 30, 20, 50),
+            platform='NOAA-14'
+        )
+        self.assertEqual(3, len(noaa14_sources))
