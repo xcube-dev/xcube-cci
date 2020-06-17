@@ -20,8 +20,7 @@
 # SOFTWARE.
 
 from xcube.constants import EXTENSION_POINT_CLI_COMMANDS
-from xcube.constants import EXTENSION_POINT_CUBE_STORES
-from xcube.constants import EXTENSION_POINT_DATA_ACCESSORS
+from xcube.constants import EXTENSION_POINT_DATA_STORES
 from xcube.util import extension
 
 
@@ -30,14 +29,7 @@ def init_plugin(ext_registry: extension.ExtensionRegistry):
     ext_registry.add_extension(loader=extension.import_component('xcube_cci.main:cli'),
                                point=EXTENSION_POINT_CLI_COMMANDS,
                                name='cci_cli')
-    ext_registry.add_extension(
-        loader=extension.import_component('xcube_cci.cube_store:CciCubeStore'),
-        point=EXTENSION_POINT_CUBE_STORES, name='cci',
-        description='ESA CCI cube store'
-    )
-    ext_registry.add_extension(
-        loader=extension.import_component('xcube_cci.dataaccess:ZarrCciOdpDatasetAccessor'),
-        point=EXTENSION_POINT_DATA_ACCESSORS,
-        name='cci_access',
-        description='Accessor to the ESA CCI Open Data Portal'
-    )
+    ext_registry.add_extension(loader=extension.import_component('xcube_cci.dataaccess_v4:CciOdpDataStore'),
+                               point=EXTENSION_POINT_DATA_STORES,
+                               name='cciodp',
+                               description='xarray.Dataset from ESA CCI Open Data Portal')
