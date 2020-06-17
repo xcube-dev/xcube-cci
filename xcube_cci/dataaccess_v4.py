@@ -61,7 +61,7 @@ class CciOdpDataStore(DataStore):
 
     @classmethod
     def get_type_ids(cls) -> Tuple[str, ...]:
-        return tuple(DATASET_DATA_TYPE)
+        return DATASET_DATA_TYPE
 
     def get_data_ids(self, type_id: str = None) -> Iterator[str]:
         assert type_id == DATASET_DATA_TYPE or type_id is None
@@ -144,21 +144,8 @@ class CciOdpDataStore(DataStore):
         return iter(data_descriptors)
 
     def get_data_opener_ids(self, type_id: str = None, data_id: str = None) -> Tuple[str, ...]:
-        """
-        Get identifiers of data openers that can be used to open data resources from this store.
-
-        If *type_id* is given, only openers that support this data type are returned.
-        If *data_id* is given, data accessors are restricted to the ones that can open the identified data resource.
-
-        If a store implementation supports only a single data type, it should verify that *type_id* is either None
-        or equal to that single data type.
-
-        :param type_id: An optional data type identifier that is known to be supported by this data store.
-        :param data_id: An optional data resource identifier that is known to exist in this data store.
-        :return: A tuple of identifiers of data openers that can be used to open data resources.
-        """
         assert type_id == DATASET_DATA_TYPE or type_id is None
-        return tuple(DATA_OPENER_ID)
+        return DATA_OPENER_ID
 
     def get_open_data_params_schema(self, data_id: str = None, opener_id: str = None) -> JsonObjectSchema:
         dsd = self.describe_data(data_id) if data_id else None
