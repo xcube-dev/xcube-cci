@@ -44,6 +44,7 @@ from six.moves.urllib.parse import urlsplit, urlunsplit
 
 _LOG = logging.getLogger('xcube')
 _OPENSEARCH_CEDA_URL = "http://opensearch-test.ceda.ac.uk/opensearch/request"
+_CCI_ODD_URL = 'http://opensearch-test.ceda.ac.uk/opensearch/description.xml?parentIdentifier=cci'
 ODD_NS = {'os': 'http://a9.com/-/spec/opensearch/1.1/',
           'param': 'http://a9.com/-/spec/opensearch/extensions/parameters/1.0/'}
 DESC_NS = {'gmd': 'http://www.isotc211.org/2005/gmd',
@@ -741,6 +742,9 @@ class CciOdp:
                 await asyncio.gather(*tasks)
 
     async def _fetch_dataset_names(self):
+        meta_info_dict = await _extract_metadata_from_odd_url(odd_url=_CCI_ODD_URL)
+        if 'drs_ids' in meta_info_dict:
+            return meta_info_dict['drs_ids']
         if not self._data_sources:
             self._data_sources = {}
             catalogue = await _fetch_data_source_list_json(_OPENSEARCH_CEDA_URL, dict(parentIdentifier='cci'))

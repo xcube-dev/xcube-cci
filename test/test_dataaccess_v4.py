@@ -97,6 +97,6 @@ class DataAccessorTest(unittest.TestCase):
         dataset_ids_iter = self.store.get_data_ids()
         self.assertIsNotNone(dataset_ids_iter)
         dataset_ids = list(dataset_ids_iter)
-        self.assertEqual(238, len(dataset_ids))
+        self.assertEqual(234, len(dataset_ids))
         self.assertTrue('esacci.AEROSOL.day.L3C.AER_PRODUCTS.ATSR-2.ERS-2.ORAC.03-02.r1' in dataset_ids)
         self.assertTrue('esacci.OC.day.L3S.K_490.multi-sensor.multi-platform.MERGED.3-1.sinusoidal' in dataset_ids)

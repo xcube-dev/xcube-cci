@@ -58,7 +58,7 @@ class CciOdpTest(unittest.TestCase):
         dataset_names = cci_odp.dataset_names
         self.assertIsNotNone(dataset_names)
         list(dataset_names)
-        self.assertEqual(238, len(dataset_names))
+        self.assertEqual(234, len(dataset_names))
         self.assertTrue('esacci.AEROSOL.day.L3C.AER_PRODUCTS.ATSR-2.ERS-2.ORAC.03-02.r1' in dataset_names)
         self.assertTrue('esacci.OC.day.L3S.K_490.multi-sensor.multi-platform.MERGED.3-1.sinusoidal' in dataset_names)
 
