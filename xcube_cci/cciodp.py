@@ -305,6 +305,9 @@ async def _get_variable_infos_from_feature(feature: dict, session) -> (dict, dic
     feature_info = _extract_feature_info(feature)
     opendap_url = f"{feature_info[4]['Opendap']}"
     dataset = await _get_opendap_dataset(opendap_url, session)
+    if not dataset:
+        _LOG.warning(f'Could not extract information about variables and attributes from {opendap_url}')
+        return {}, {}
     variable_infos = {}
     for key in dataset.keys():
         variable_infos[key] = dataset[key].attributes
@@ -749,8 +752,9 @@ class CciOdp:
         return list(self._data_sources.keys())
 
     async def _create_data_source(self, json_dict: dict, datasource_id: str, read_dimensions: bool = False):
-        meta_info = await _fetch_meta_info(datasource_id, json_dict['odd_url'], json_dict['metadata_url'],
-                                           json_dict['variables'], read_dimensions)
+        meta_info = await _fetch_meta_info(datasource_id, json_dict.get('odd_url', None),
+                                           json_dict.get('metadata_url', None),
+                                           json_dict.get('variables', []), read_dimensions)
         drs_ids = self._get_as_list(meta_info, 'drs_id', 'drs_ids')
         for drs_id in drs_ids:
             meta_info = meta_info.copy()
