@@ -58,7 +58,7 @@ class CciOdpTest(unittest.TestCase):
         dataset_names = cci_odp.dataset_names
         self.assertIsNotNone(dataset_names)
         list(dataset_names)
-        self.assertEqual(175, len(dataset_names))
+        self.assertEqual(238, len(dataset_names))
         self.assertTrue('esacci.AEROSOL.day.L3C.AER_PRODUCTS.ATSR-2.ERS-2.ORAC.03-02.r1' in dataset_names)
         self.assertTrue('esacci.OC.day.L3S.K_490.multi-sensor.multi-platform.MERGED.3-1.sinusoidal' in dataset_names)
 
@@ -272,14 +272,14 @@ class CciOdpTest(unittest.TestCase):
             bbox=(-20, 30, 20, 50),
             ecv='AEROSOL'
         )
-        self.assertEqual(31, len(aerosol_sources))
+        self.assertEqual(28, len(aerosol_sources))
         five_day_sources = cci_odp.search(
             start_date='1990-05-01',
             end_date='2021-08-01',
             bbox=(-20, 30, 20, 50),
             frequency='5 days'
         )
-        self.assertEqual(11, len(five_day_sources))
+        self.assertEqual(21, len(five_day_sources))
         ral_sources = cci_odp.search(
             start_date='2007-05-01',
             end_date='2009-08-01',
@@ -293,7 +293,7 @@ class CciOdpTest(unittest.TestCase):
             bbox=(-20, 30, 20, 50),
             processing_level='L2P'
         )
-        self.assertEqual(25, len(l2p_sources))
+        self.assertEqual(35, len(l2p_sources))
         avhrr19g_sources = cci_odp.search(
             start_date = '1990-05-01',
             end_date = '2021-08-01',
@@ -307,7 +307,7 @@ class CciOdpTest(unittest.TestCase):
             bbox=(-20, 30, 20, 50),
             product_version='v2.3.8'
         )
-        self.assertEqual(4, len(v238_sources))
+        self.assertEqual(3, len(v238_sources))
         siconc_sources = cci_odp.search(
             start_date='2007-05-01',
             end_date='2009-08-01',
