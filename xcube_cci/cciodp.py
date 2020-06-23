@@ -542,9 +542,7 @@ def find_datetime_format(filename: str) -> Tuple[Optional[str], int, int, relati
     return None, -1, -1, relativedelta()
 
 
-async def _extract_metadata_from_odd_url(session=None, odd_url: str = None) -> dict:
-    if session is None:
-        session = aiohttp.ClientSession()
+async def _extract_metadata_from_odd_url(session: aiohttp.ClientSession, odd_url: str = None) -> dict:
     if not odd_url:
         return {}
     resp = await session.request(method='GET', url=odd_url)
@@ -724,9 +722,10 @@ class CciOdp:
                 await asyncio.gather(*tasks)
 
     async def _fetch_dataset_names(self):
-        meta_info_dict = await _extract_metadata_from_odd_url(odd_url=_CCI_ODD_URL)
-        if 'drs_ids' in meta_info_dict:
-            return meta_info_dict['drs_ids']
+        async with aiohttp.ClientSession() as session:
+            meta_info_dict = await _extract_metadata_from_odd_url(session, _CCI_ODD_URL)
+            if 'drs_ids' in meta_info_dict:
+                return meta_info_dict['drs_ids']
         if not self._data_sources:
             self._data_sources = {}
             catalogue = await _fetch_data_source_list_json(_OPENSEARCH_CEDA_URL, dict(parentIdentifier='cci'))
