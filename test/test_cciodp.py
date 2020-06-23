@@ -154,16 +154,16 @@ class CciOdpTest(unittest.TestCase):
         cci_odp = CciOdp()
         nc_attrs = dict(geospatial_lat_resolution=24.2,
                         geospatial_lon_resolution=30.1)
-        self.assertEquals(24.2, cci_odp._get_res(nc_attrs, 'lat'))
-        self.assertEquals(30.1, cci_odp._get_res(nc_attrs, 'lon'))
+        self.assertEqual(24.2, cci_odp._get_res(nc_attrs, 'lat'))
+        self.assertEqual(30.1, cci_odp._get_res(nc_attrs, 'lon'))
 
         nc_attrs = dict(resolution=5.0)
-        self.assertEquals(5.0, cci_odp._get_res(nc_attrs, 'lat'))
-        self.assertEquals(5.0, cci_odp._get_res(nc_attrs, 'lon'))
+        self.assertEqual(5.0, cci_odp._get_res(nc_attrs, 'lat'))
+        self.assertEqual(5.0, cci_odp._get_res(nc_attrs, 'lon'))
 
         nc_attrs = dict(resolution='12x34 degree')
-        self.assertEquals(12.0, cci_odp._get_res(nc_attrs, 'lat'))
-        self.assertEquals(34.0, cci_odp._get_res(nc_attrs, 'lon'))
+        self.assertEqual(12.0, cci_odp._get_res(nc_attrs, 'lat'))
+        self.assertEqual(34.0, cci_odp._get_res(nc_attrs, 'lon'))
 
     def test_find_datetime_format(self):
         time_format, start, end, timedelta = find_datetime_format('fetgzrs2015ydhfbgv')
