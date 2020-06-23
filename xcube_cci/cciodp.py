@@ -91,29 +91,11 @@ def _convert_time_from_drs_id(time_value: str) -> str:
 async def _fetch_fid_and_uuid(dataset_id: str) -> (str, str):
     ds_components = dataset_id.split('.')
     query_args = dict(parentIdentifier='cci',
-                      ecv=ds_components[1],
-                      frequency=_convert_time_from_drs_id(ds_components[2]),
-                      processingLevel=ds_components[3],
-                      dataType=ds_components[4],
-                      sensor=ds_components[5],
-                      platform=ds_components[6],
-                      productString=ds_components[7],
-                      productVersion=ds_components[8].replace('-', '.')
+                      drsId=dataset_id
                       )
     feature_list = await _fetch_opensearch_feature_list(_OPENSEARCH_CEDA_URL, query_args)
     if len(feature_list) == 0:
-        query_args = dict(parentIdentifier='cci',
-                          ecv=ds_components[1],
-                          frequency=_convert_time_from_drs_id(ds_components[2]),
-                          processingLevel=ds_components[3],
-                          dataType=ds_components[4],
-                          sensor=ds_components[5],
-                          platform=ds_components[6],
-                          productString=ds_components[7]
-                          )
-        feature_list = await _fetch_opensearch_feature_list(_OPENSEARCH_CEDA_URL, query_args)
-        if len(feature_list) == 0:
-            raise ValueError(f'Could not find any fid for dataset {dataset_id}')
+        raise ValueError(f'Could not find any fid for dataset {dataset_id}')
     if len(feature_list) > 1:
         for feature in feature_list:
             title = feature.get("properties", {}).get("title", '')
