@@ -73,7 +73,7 @@ class CciOdpTest(unittest.TestCase):
     @skipIf(os.environ.get('XCUBE_DISABLE_WEB_TESTS', None) == '1', 'XCUBE_DISABLE_WEB_TESTS = 1')
     def test_get_dataset_info(self):
         cci_odp = CciOdp()
-        dataset_info = cci_odp.get_dataset_info('esacci.CLOUD.month.L3C.CLD_PRODUCTS.MODIS.Terra.MODIS_TERRA.2-0.r1')
+        dataset_info = cci_odp.get_dataset_info('esacci.CLOUD.mon.L3C.CLD_PRODUCTS.MODIS.Terra.MODIS_TERRA.2-0.r1')
         self.assertIsNotNone(dataset_info)
         self.assertTrue('lat_res' in dataset_info)
         self.assertEqual(0.5, dataset_info['lat_res'])
