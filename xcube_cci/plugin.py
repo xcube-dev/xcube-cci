@@ -20,6 +20,7 @@
 # SOFTWARE.
 
 from xcube.constants import EXTENSION_POINT_CLI_COMMANDS
+from xcube.constants import EXTENSION_POINT_DATA_OPENERS
 from xcube.constants import EXTENSION_POINT_DATA_STORES
 from xcube.util import extension
 
@@ -33,3 +34,7 @@ def init_plugin(ext_registry: extension.ExtensionRegistry):
                                point=EXTENSION_POINT_DATA_STORES,
                                name='cciodp',
                                description='ESA CCI Open Data Portal')
+    ext_registry.add_extension(loader=extension.import_component('xcube_cci.dataaccess_v4:CciOdpDataOpener'),
+                               point=EXTENSION_POINT_DATA_OPENERS,
+                               name='dataset:zarr:cci_odp',
+                               description='xarray.Dataset in Zarr format from ESA CCI Open Data Portal')

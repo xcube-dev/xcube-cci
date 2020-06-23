@@ -25,6 +25,7 @@ import zarr
 
 from typing import Any, Iterator, Tuple
 
+from xcube.core.store.accessor import DataOpener
 from xcube.core.store.descriptor import DataDescriptor
 from xcube.core.store.descriptor import DatasetDescriptor
 from xcube.core.store.descriptor import VariableDescriptor
@@ -50,25 +51,10 @@ TIME_PERIOD_PATTERN = '[0-9]+[Y|M|W|D|T|S|L|U|N|days|day|hours|hour|hr|h|minutes
                       'nanoseconds|nanosecond|nanos|nano|ns]'
 
 
-class CciOdpDataStore(DataStore):
+class CciOdpDataOpener(DataOpener):
 
     def __init__(self):
         self._cci_odp = CciOdp()
-
-    @classmethod
-    def get_data_store_params_schema(cls) -> JsonObjectSchema:
-        return JsonObjectSchema()
-
-    @classmethod
-    def get_type_ids(cls) -> Tuple[str, ...]:
-        return DATASET_DATA_TYPE,
-
-    def get_data_ids(self, type_id: str = None) -> Iterator[str]:
-        assert type_id == DATASET_DATA_TYPE or type_id is None
-        return iter(self._cci_odp.dataset_names)
-
-    def has_data(self, data_id: str) -> bool:
-        return data_id in self._cci_odp.dataset_names
 
     def describe_data(self, data_id: str) -> DataDescriptor:
         try:
@@ -112,6 +98,85 @@ class CciOdpDataStore(DataStore):
             time_range=temporal_coverage,
             time_period=temporal_resolution
         )
+
+    def get_open_data_params_schema(self, data_id: str = None, opener_id: str = None) -> JsonObjectSchema:
+        dsd = self.describe_data(data_id) if data_id else None
+
+        cube_params = dict(
+            var_names=JsonArraySchema(items=JsonStringSchema(
+                enum=[v.name for v in dsd.data_vars] if dsd and dsd.data_vars else None)),
+            chunk_sizes=JsonArraySchema(items=JsonIntegerSchema()),
+            time_range=JsonArraySchema(items=(JsonStringSchema(format='date-time'),
+                                              JsonStringSchema(format='date-time')))
+        )
+        normalization_params = dict(
+            bbox=JsonArraySchema(items=(JsonNumberSchema(),
+                                        JsonNumberSchema(),
+                                        JsonNumberSchema(),
+                                        JsonNumberSchema())),
+            geometry_wkt=JsonStringSchema(pattern=WKT_PATTERN),
+            spatial_res=JsonNumberSchema(exclusive_minimum=0.0),
+            spatial_res_unit=JsonStringSchema(default='deg'),
+            crs=JsonStringSchema(pattern=CRS_PATTERN, default=DEFAULT_CRS),
+            time_period=JsonStringSchema(pattern=TIME_PERIOD_PATTERN)
+        )
+        cci_schema = JsonObjectSchema(
+            properties=dict(**cube_params,
+                            **normalization_params
+                            ),
+            required=[
+                # cube_params
+                'var_names',
+                'time_range',
+            ],
+            additional_properties=False
+        )
+        return cci_schema
+
+    def open_data(self, data_id: str, opener_id: str = None, **open_params) -> Any:
+        cci_schema = self.get_open_data_params_schema(data_id)
+        cci_schema.validate_instance(open_params)
+        cube_kwargs, open_params = cci_schema.process_kwargs_subset(open_params, (
+            'var_names',
+            'chunk_sizes',
+            'time_range'
+        ))
+        max_cache_size: int = 2 ** 30
+        cci_odp = CciOdp()
+        chunk_store = CciChunkStore(cci_odp, data_id, cube_kwargs)
+        if max_cache_size:
+            chunk_store = zarr.LRUStoreCache(chunk_store, max_cache_size)
+        raw_ds = xr.open_zarr(chunk_store)
+        normalization_kwargs, open_params = cci_schema.process_kwargs_subset(open_params, (
+            'bbox',
+            'geometry_wkt',
+            'spatial_res',
+            'crs',
+            'time_period'
+        ))
+        return raw_ds
+        # return cci_normalize(raw_ds, dataset_id, cube_params, cci_odp)
+
+
+class CciOdpDataStore(CciOdpDataOpener, DataStore):
+
+    def __init__(self):
+        super().__init__()
+
+    @classmethod
+    def get_data_store_params_schema(cls) -> JsonObjectSchema:
+        return JsonObjectSchema()
+
+    @classmethod
+    def get_type_ids(cls) -> Tuple[str, ...]:
+        return DATASET_DATA_TYPE,
+
+    def get_data_ids(self, type_id: str = None) -> Iterator[str]:
+        self._assert_valid_type_id(type_id)
+        return iter(self._cci_odp.dataset_names)
+
+    def has_data(self, data_id: str) -> bool:
+        return data_id in self._cci_odp.dataset_names
 
     @classmethod
     def get_search_params_schema(cls) -> JsonObjectSchema:
@@ -173,7 +238,7 @@ class CciOdpDataStore(DataStore):
         return search_schema
 
     def search_data(self, type_id: str = None, **search_params) -> Iterator[DataDescriptor]:
-        assert type_id == DATASET_DATA_TYPE or type_id is None
+        self._assert_valid_type_id(type_id)
         search_schema = self.get_search_params_schema()
         search_schema.validate_instance(search_params)
         search_result = self._cci_odp.search(**search_params)
@@ -182,65 +247,25 @@ class CciOdpDataStore(DataStore):
             data_descriptors.append(self.describe_data(data_id))
         return iter(data_descriptors)
 
-    def get_data_opener_ids(self, type_id: str = None, data_id: str = None) -> Tuple[str, ...]:
-        assert type_id == DATASET_DATA_TYPE or type_id is None
+    def get_data_opener_ids(self, data_id: str = None, type_id: str = None, ) -> Tuple[str, ...]:
+        self._assert_valid_type_id(type_id)
         return DATA_OPENER_ID,
 
     def get_open_data_params_schema(self, data_id: str = None, opener_id: str = None) -> JsonObjectSchema:
-        dsd = self.describe_data(data_id) if data_id else None
+        self._assert_valid_opener_id(opener_id)
+        return super().get_open_data_params_schema(data_id)
 
-        cube_params = dict(
-            var_names=JsonArraySchema(items=JsonStringSchema(
-                enum=[v.name for v in dsd.data_vars] if dsd and dsd.data_vars else None)),
-            chunk_sizes=JsonArraySchema(items=JsonIntegerSchema()),
-            time_range=JsonArraySchema(items=(JsonStringSchema(format='date-time'),
-                                              JsonStringSchema(format='date-time')))
-        )
-        normalization_params = dict(
-            bbox=JsonArraySchema(items=(JsonNumberSchema(),
-                                        JsonNumberSchema(),
-                                        JsonNumberSchema(),
-                                        JsonNumberSchema())),
-            geometry_wkt=JsonStringSchema(pattern=WKT_PATTERN),
-            spatial_res=JsonNumberSchema(exclusive_minimum=0.0),
-            spatial_res_unit=JsonStringSchema(default='deg'),
-            crs=JsonStringSchema(pattern=CRS_PATTERN, default=DEFAULT_CRS),
-            time_period=JsonStringSchema(pattern=TIME_PERIOD_PATTERN)
-        )
-        cci_schema = JsonObjectSchema(
-            properties=dict(**cube_params,
-                            **normalization_params
-                            ),
-            required=[
-                # cube_params
-                'var_names',
-                'time_range',
-            ],
-            additional_properties=False
-        )
-        return cci_schema
+    def open_data(self, data_id: str, opener_id: str = None, **open_params) -> xr.Dataset:
+        self._assert_valid_opener_id(opener_id)
+        return super().open_data(data_id, **open_params)
 
-    def open_data(self, data_id: str, opener_id: str = None, **open_params) -> Any:
-        cci_schema = self.get_open_data_params_schema(data_id)
-        cci_schema.validate_instance(open_params)
-        cube_kwargs, open_params = cci_schema.process_kwargs_subset(open_params, (
-            'var_names',
-            'chunk_sizes',
-            'time_range'
-        ))
-        max_cache_size: int = 2 ** 30
-        cci_odp = CciOdp()
-        chunk_store = CciChunkStore(cci_odp, data_id, cube_kwargs)
-        if max_cache_size:
-            chunk_store = zarr.LRUStoreCache(chunk_store, max_cache_size)
-        raw_ds = xr.open_zarr(chunk_store)
-        normalization_kwargs, open_params = cci_schema.process_kwargs_subset(open_params, (
-            'bbox',
-            'geometry_wkt',
-            'spatial_res',
-            'crs',
-            'time_period'
-        ))
-        return raw_ds
-        # return cci_normalize(raw_ds, dataset_id, cube_params, cci_odp)
+    #############################################################################
+    # Implementation helpers
 
+    def _assert_valid_type_id(self, type_id):
+        if type_id is not None and type_id != DATASET_DATA_TYPE:
+            raise DataStoreError(f'Data type identifier must be "{DATASET_DATA_TYPE}", but got "{type_id}"')
+
+    def _assert_valid_opener_id(self, opener_id):
+        if opener_id is not None and opener_id != DATA_OPENER_ID:
+            raise DataStoreError(f'Data opener identifier must be "{DATA_OPENER_ID}", but got "{opener_id}"')
