@@ -32,10 +32,17 @@ import urllib.parse
 from datetime import datetime
 from dateutil.relativedelta import relativedelta
 from typing import List, Any, Dict, Tuple, Optional, Union, Sequence, Callable
+from urllib.parse import quote
 
 from pydap.client import Functions
-from pydap.handlers.dap import BaseProxy, SequenceProxy
-from pydap.lib import fix_slice, walk
+from pydap.handlers.dap import BaseProxy
+from pydap.handlers.dap import SequenceProxy
+from pydap.handlers.dap import unpack_data
+from pydap.lib import BytesReader
+from pydap.lib import combine_slices
+from pydap.lib import fix_slice
+from pydap.lib import hyperslab
+from pydap.lib import walk
 from pydap.model import BaseType, SequenceType, GridType
 from pydap.parsers import parse_ce
 from pydap.parsers.dds import build_dataset
@@ -275,6 +282,30 @@ async def _get_opendap_dataset(url: str, session):
     dataset.functions = Functions(url)
 
     return dataset
+
+
+async def _get_data_from_opendap_dataset(dataset, session, variable_name, slices):
+    proxy = dataset[variable_name].data
+    # build download url
+    index = combine_slices(proxy.slice, fix_slice(slices, proxy.shape))
+    scheme, netloc, path, query, fragment = urlsplit(proxy.baseurl)
+    url = urlunsplit((
+        scheme, netloc, path + '.dods',
+        quote(proxy.id) + hyperslab(index) + '&' + query,
+        fragment)).rstrip('&')
+    # download and unpack data
+    resp = await session.request(method='GET', url=url)
+    if resp.status >= 400:
+        resp.release()
+        _LOG.warning(f"Could not open {url}: {resp.status}")
+        return None
+    content = await resp.read()
+    dds, data = content.split(b'\nData:\n', 1)
+    dds = str(dds, 'utf-8')
+    # Parse received dataset:
+    dataset = build_dataset(dds)
+    dataset.data = unpack_data(BytesReader(data), dataset)
+    return dataset[proxy.id].data
 
 
 async def _get_variable_infos_from_feature(feature: dict, session) -> (dict, dict):
@@ -939,9 +970,14 @@ class CciOdp:
                        startDate='1900-01-01T00:00:00',
                        endDate='3001-12-31T00:00:00')
         opendap_url = self._get_opendap_url(request)
+        return asyncio.run(self._get_dim_data(dimension_names, opendap_url))
+
+    async def _get_dim_data(self, dimension_names: List[str], opendap_url: str):
         dim_data = {}
-        if opendap_url:
-            dataset = get_opendap_dataset(opendap_url)
+        if not opendap_url:
+            return dim_data
+        async with aiohttp.ClientSession() as session:
+            dataset = await _get_opendap_dataset(opendap_url, session)
             if not dataset:
                 return dim_data
             for dim in dimension_names:
@@ -949,7 +985,8 @@ class CciOdp:
                     dim_data[dim] = dict(size=dataset[dim].size,
                                          chunkSize=dataset[dim].attributes.get('_ChunkSizes'))
                     if dataset[dim].size < 512 * 512:
-                        dim_data[dim]['data'] = dataset[dim].data[:].tolist()
+                        dim_data[dim]['data'] = \
+                            await _get_data_from_opendap_dataset(dataset, session, dim, (slice(0,-1), ))
                     else:
                         dim_data[dim]['data'] = []
                 else:
@@ -1048,12 +1085,17 @@ class CciOdp:
         opendap_url = self._get_opendap_url(request)
         if not opendap_url:
             return None
-        dataset = get_opendap_dataset(opendap_url)
-        if not dataset:
-            return None
-        variable_data = np.array(dataset[var_name][dim_indexes].data[0], dtype=dataset[var_name].dtype.type)
-        result = variable_data.flatten().tobytes()
-        return result
+        asyncio.run(self._get_data_chunk(opendap_url, var_name, dim_indexes))
+
+    async def _get_data_chunk(self, opendap_url: str, var_name: str, dim_indexes: tuple):
+        async with aiohttp.ClientSession() as session:
+            dataset = _get_opendap_dataset(opendap_url, session)
+            if not dataset:
+                return None
+            data = await _get_data_from_opendap_dataset(dataset, session, var_name, dim_indexes)
+            variable_data = np.array(data, dtype=dataset[var_name].dtype.type)
+            result = variable_data.flatten().tobytes()
+            return result
 
     def _get_indexing(self, dataset, dimension: str, bbox: (float, float, float, float),
                       start_date: datetime, end_date: datetime):
