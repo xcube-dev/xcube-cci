@@ -13,7 +13,7 @@ class CciStoreTest(unittest.TestCase):
     @skipIf(os.environ.get('XCUBE_DISABLE_WEB_TESTS', None) == '1', 'XCUBE_DISABLE_WEB_TESTS = 1')
     def setUp(self) -> None:
         cci_odp = CciOdp()
-        config = CubeConfig(dataset_name='esacci.OZONE.month.L3.NP.multi-sensor.multi-platform.MERGED.fv0002.r1',
+        config = CubeConfig(dataset_name='esacci.OZONE.mon.L3.NP.multi-sensor.multi-platform.MERGED.fv0002.r1',
                             variable_names=['surface_pressure', 'O3_vmr', 'O3_du'],
                             geometry=(10, 10, 20, 20),
                             time_range=('2010-02-10', '2010-05-20')

@@ -2,6 +2,7 @@ import numpy as np
 import os
 import unittest
 from datetime import datetime
+from unittest import skip
 from unittest import skipIf
 
 from xcube_cci.cciodp import _retrieve_attribute_info_from_das, find_datetime_format, get_opendap_dataset, CciOdp
@@ -37,12 +38,28 @@ class CciOdpTest(unittest.TestCase):
         self.assertAlmostEqual(0.63038087, data_array[400], 8)
         self.assertAlmostEqual(0.659591, data_array[799], 6)
 
+    @skipIf(os.environ.get('XCUBE_DISABLE_WEB_TESTS', None) == '1', 'XCUBE_DISABLE_WEB_TESTS = 1')
+    def test_get_data_chunk(self):
+        cci_odp = CciOdp()
+        request = dict(parentIdentifier='4eb4e801424a47f7b77434291921f889',
+                       startDate='1997-05-01T00:00:00',
+                       endDate='1997-05-01T00:00:00',
+                       varNames=['surface_pressure']
+                       )
+        dim_indexes = (0, slice(0, 179), slice(0, 359))
+        data = cci_odp.get_data_chunk(request, dim_indexes)
+        self.assertIsNotNone(data)
+        data_array = np.frombuffer(data, dtype=np.float32)
+        self.assertEqual(64261, len(data_array))
+        self.assertAlmostEqual(1024.4185, data_array[-1], 4)
+
+    @skipIf(os.environ.get('XCUBE_DISABLE_WEB_TESTS', None) == '1', 'XCUBE_DISABLE_WEB_TESTS = 1')
     def test_dataset_names(self):
         cci_odp = CciOdp()
         dataset_names = cci_odp.dataset_names
         self.assertIsNotNone(dataset_names)
-        list(dataset_names).sort()
-        self.assertEqual(175, len(dataset_names))
+        list(dataset_names)
+        self.assertEqual(234, len(dataset_names))
         self.assertTrue('esacci.AEROSOL.day.L3C.AER_PRODUCTS.ATSR-2.ERS-2.ORAC.03-02.r1' in dataset_names)
         self.assertTrue('esacci.OC.day.L3S.K_490.multi-sensor.multi-platform.MERGED.3-1.sinusoidal' in dataset_names)
 
@@ -57,7 +74,7 @@ class CciOdpTest(unittest.TestCase):
     @skipIf(os.environ.get('XCUBE_DISABLE_WEB_TESTS', None) == '1', 'XCUBE_DISABLE_WEB_TESTS = 1')
     def test_get_dataset_info(self):
         cci_odp = CciOdp()
-        dataset_info = cci_odp.get_dataset_info('esacci.CLOUD.month.L3C.CLD_PRODUCTS.MODIS.Terra.MODIS_TERRA.2-0.r1')
+        dataset_info = cci_odp.get_dataset_info('esacci.CLOUD.mon.L3C.CLD_PRODUCTS.MODIS.Terra.MODIS_TERRA.2-0.r1')
         self.assertIsNotNone(dataset_info)
         self.assertTrue('lat_res' in dataset_info)
         self.assertEqual(0.5, dataset_info['lat_res'])
@@ -101,6 +118,7 @@ class CciOdpTest(unittest.TestCase):
 
 
     @skipIf(os.environ.get('XCUBE_DISABLE_WEB_TESTS', None) == '1', 'XCUBE_DISABLE_WEB_TESTS = 1')
+    @skip('Test takes long')
     def test_description(self):
         cci_odp = CciOdp()
         description = cci_odp.description
@@ -138,16 +156,16 @@ class CciOdpTest(unittest.TestCase):
         cci_odp = CciOdp()
         nc_attrs = dict(geospatial_lat_resolution=24.2,
                         geospatial_lon_resolution=30.1)
-        self.assertEquals(24.2, cci_odp._get_res(nc_attrs, 'lat'))
-        self.assertEquals(30.1, cci_odp._get_res(nc_attrs, 'lon'))
+        self.assertEqual(24.2, cci_odp._get_res(nc_attrs, 'lat'))
+        self.assertEqual(30.1, cci_odp._get_res(nc_attrs, 'lon'))
 
         nc_attrs = dict(resolution=5.0)
-        self.assertEquals(5.0, cci_odp._get_res(nc_attrs, 'lat'))
-        self.assertEquals(5.0, cci_odp._get_res(nc_attrs, 'lon'))
+        self.assertEqual(5.0, cci_odp._get_res(nc_attrs, 'lat'))
+        self.assertEqual(5.0, cci_odp._get_res(nc_attrs, 'lon'))
 
         nc_attrs = dict(resolution='12x34 degree')
-        self.assertEquals(12.0, cci_odp._get_res(nc_attrs, 'lat'))
-        self.assertEquals(34.0, cci_odp._get_res(nc_attrs, 'lon'))
+        self.assertEqual(12.0, cci_odp._get_res(nc_attrs, 'lat'))
+        self.assertEqual(34.0, cci_odp._get_res(nc_attrs, 'lon'))
 
     def test_find_datetime_format(self):
         time_format, start, end, timedelta = find_datetime_format('fetgzrs2015ydhfbgv')
@@ -213,3 +231,113 @@ class CciOdpTest(unittest.TestCase):
         self.assertEqual(39407, converted_time_data[0])
         self.assertEqual(22403, converted_time_data[1])
         self.assertEqual(25100, converted_time_data[2])
+
+    @skipIf(os.environ.get('XCUBE_DISABLE_WEB_TESTS', None) == '1', 'XCUBE_DISABLE_WEB_TESTS = 1')
+    def test_get_dimension_data(self):
+        cci_odp = CciOdp()
+        dimension_data = cci_odp.get_dimension_data('esacci.AEROSOL.day.L3C.AER_PRODUCTS.ATSR-2.ERS-2.ORAC.03-02.r1',
+                                          ['latitude', 'longitude', 'view', 'aerosol_type'])
+        self.assertIsNotNone(dimension_data)
+        self.assertEqual(dimension_data['latitude']['size'], 180)
+        self.assertEqual(dimension_data['latitude']['chunkSize'], 180)
+        self.assertEqual(dimension_data['latitude']['data'][0], -89.5)
+        self.assertEqual(dimension_data['latitude']['data'][-1], 89.5)
+        self.assertEqual(dimension_data['longitude']['size'], 360)
+        self.assertEqual(dimension_data['longitude']['chunkSize'], 360)
+        self.assertEqual(dimension_data['longitude']['data'][0], -179.5)
+        self.assertEqual(dimension_data['longitude']['data'][-1], 179.5)
+        self.assertEqual(dimension_data['view']['size'], 2)
+        self.assertEqual(dimension_data['view']['chunkSize'], 2)
+        self.assertEqual(dimension_data['view']['data'][0], 0)
+        self.assertEqual(dimension_data['view']['data'][-1], 1)
+        self.assertEqual(dimension_data['aerosol_type']['size'], 10)
+        self.assertEqual(dimension_data['aerosol_type']['chunkSize'], 10)
+        self.assertEqual(dimension_data['aerosol_type']['data'][0], 0)
+        self.assertEqual(dimension_data['aerosol_type']['data'][-1], 9)
+
+        dimension_data = cci_odp.get_dimension_data(
+            'esacci.OC.day.L3S.K_490.multi-sensor.multi-platform.MERGED.3-1.sinusoidal', ['lat', 'lon'])
+        self.assertIsNotNone(dimension_data)
+        self.assertEqual(dimension_data['lat']['size'], 23761676)
+        self.assertEqual(dimension_data['lat']['chunkSize'], 1048576)
+        self.assertEqual(len(dimension_data['lat']['data']), 0)
+        self.assertEqual(dimension_data['lon']['size'], 23761676)
+        self.assertEqual(dimension_data['lon']['chunkSize'], 1048576)
+        self.assertEqual(len(dimension_data['lon']['data']), 0)
+
+    @skipIf(os.environ.get('XCUBE_DISABLE_WEB_TESTS', None) == '1', 'XCUBE_DISABLE_WEB_TESTS = 1')
+    def test_search_ecv(self):
+        cci_odp = CciOdp()
+        aerosol_sources = cci_odp.search(
+            start_date='1990-05-01',
+            end_date='2021-08-01',
+            bbox=(-20, 30, 20, 50),
+            ecv='AEROSOL'
+        )
+        self.assertEqual(24, len(aerosol_sources))
+
+    @skipIf(os.environ.get('XCUBE_DISABLE_WEB_TESTS', None) == '1', 'XCUBE_DISABLE_WEB_TESTS = 1')
+    def test_search_frequency(self):
+        cci_odp = CciOdp()
+        five_day_sources = cci_odp.search(
+            start_date='1990-05-01',
+            end_date='2021-08-01',
+            bbox=(-20, 30, 20, 50),
+            frequency='5 days'
+        )
+        self.assertEqual(21, len(five_day_sources))
+
+    @skipIf(os.environ.get('XCUBE_DISABLE_WEB_TESTS', None) == '1', 'XCUBE_DISABLE_WEB_TESTS = 1')
+    def test_search_processing_level(self):
+        cci_odp = CciOdp()
+        l2p_sources = cci_odp.search(
+            start_date = '1990-05-01',
+            end_date = '2021-08-01',
+            bbox=(-20, 30, 20, 50),
+            processing_level='L2P'
+        )
+        self.assertEqual(34, len(l2p_sources))
+
+    @skipIf(os.environ.get('XCUBE_DISABLE_WEB_TESTS', None) == '1', 'XCUBE_DISABLE_WEB_TESTS = 1')
+    def test_search_product_string(self):
+        cci_odp = CciOdp()
+        avhrr19g_sources = cci_odp.search(
+            start_date = '1990-05-01',
+            end_date = '2021-08-01',
+            bbox=(-20, 30, 20, 50),
+            product_string='AVHRR19_G'
+        )
+        self.assertEqual(3, len(avhrr19g_sources))
+
+    @skipIf(os.environ.get('XCUBE_DISABLE_WEB_TESTS', None) == '1', 'XCUBE_DISABLE_WEB_TESTS = 1')
+    def test_search_product_version(self):
+        cci_odp = CciOdp()
+        v238_sources = cci_odp.search(
+            start_date = '1990-05-01',
+            end_date = '2021-08-01',
+            bbox=(-20, 30, 20, 50),
+            product_version='v2.3.8'
+        )
+        self.assertEqual(3, len(v238_sources))
+
+    @skipIf(os.environ.get('XCUBE_DISABLE_WEB_TESTS', None) == '1', 'XCUBE_DISABLE_WEB_TESTS = 1')
+    def test_search_data_type(self):
+        cci_odp = CciOdp()
+        siconc_sources = cci_odp.search(
+            start_date='2007-05-01',
+            end_date='2009-08-01',
+            bbox=(-20, 30, 20, 50),
+            data_type='SICONC'
+        )
+        self.assertEqual(4, len(siconc_sources))
+
+    @skipIf(os.environ.get('XCUBE_DISABLE_WEB_TESTS', None) == '1', 'XCUBE_DISABLE_WEB_TESTS = 1')
+    def test_search_sensor(self):
+        cci_odp = CciOdp()
+        sciamachy_sources = cci_odp.search(
+            start_date = '1990-05-01',
+            end_date = '2021-08-01',
+            bbox=(-20, 30, 20, 50),
+            sensor='SCIAMACHY'
+        )
+        self.assertEqual(5, len(sciamachy_sources))

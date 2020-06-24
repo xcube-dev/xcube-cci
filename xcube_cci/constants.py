@@ -23,3 +23,5 @@ DEFAULT_CRS = 'http://www.opengis.net/def/crs/EPSG/0/4326'
 DEFAULT_TILE_SIZE = 1000
 CCI_MAX_IMAGE_SIZE = 2500
 DATA_ARRAY_NAME = 'var_data'
+OPENSEARCH_CEDA_URL = "http://opensearch-test.ceda.ac.uk/opensearch/request"
+CCI_ODD_URL = 'http://opensearch-test.ceda.ac.uk/opensearch/description.xml?parentIdentifier=cci'
