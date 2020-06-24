@@ -39,7 +39,9 @@ from xcube.util.jsonschema import JsonStringSchema
 
 from xcube_cci.cciodp import CciOdp
 from xcube_cci.chunkstore import CciChunkStore
+from xcube_cci.constants import CCI_ODD_URL
 from xcube_cci.constants import DEFAULT_CRS
+from xcube_cci.constants import OPENSEARCH_CEDA_URL
 
 DATASET_DATA_TYPE = 'dataset'
 DATA_OPENER_ID = 'dataset:zarr:cci_odp'
@@ -53,8 +55,8 @@ TIME_PERIOD_PATTERN = '[0-9]+[Y|M|W|D|T|S|L|U|N|days|day|hours|hour|hr|h|minutes
 
 class CciOdpDataOpener(DataOpener):
 
-    def __init__(self):
-        self._cci_odp = CciOdp()
+    def __init__(self, cci_odp: CciOdp = None):
+        self._cci_odp = cci_odp
 
     def _describe_data(self, data_ids: List[str]) -> List[DataDescriptor]:
         ds_metadata_list = self._cci_odp.get_dataset_metadata(data_ids)
@@ -88,13 +90,9 @@ class CciOdpDataOpener(DataOpener):
                 var_info = var_infos[var_name]
                 var_dtype = var_info.pop('data_type')
                 var_dims = var_info.pop('dimensions')
-                var_desc = ''
-                if 'long_name' in var_info:
-                    var_desc = var_info.pop('long_name')
                 var_descriptors.append(VariableDescriptor(var_name,
                                                           var_dtype,
                                                           var_dims,
-                                                          var_desc,
                                                           var_info))
             else:
                 var_descriptors.append(VariableDescriptor(var_name, '', ''))
@@ -170,12 +168,20 @@ class CciOdpDataOpener(DataOpener):
 
 class CciOdpDataStore(CciOdpDataOpener, DataStore):
 
-    def __init__(self):
-        super().__init__()
+    def __init__(self, **cciodp_kwargs):
+        super().__init__(CciOdp(**cciodp_kwargs))
 
     @classmethod
     def get_data_store_params_schema(cls) -> JsonObjectSchema:
-        return JsonObjectSchema()
+        cciodp_params = dict(
+            opensearch_url=JsonStringSchema(default=OPENSEARCH_CEDA_URL),
+            opensearch_description_url=JsonStringSchema(default=CCI_ODD_URL)
+        )
+        return JsonObjectSchema(
+            properties=cciodp_params,
+            required=None,
+            additional_properties=False
+        )
 
     @classmethod
     def get_type_ids(cls) -> Tuple[str, ...]:
@@ -247,7 +253,7 @@ class CciOdpDataStore(CciOdpDataOpener, DataStore):
             additional_properties=False)
         return search_schema
 
-    def search_data(self, type_id: str = None, **search_params) -> Iterator[DataDescriptor]:
+    def search_data(self, type_id: str = None, **search_params) -> Iterator[DatasetDescriptor]:
         self._assert_valid_type_id(type_id)
         search_schema = self.get_search_params_schema()
         search_schema.validate_instance(search_params)

@@ -31,8 +31,10 @@ import re
 import urllib.parse
 from datetime import datetime
 from dateutil.relativedelta import relativedelta
-from typing import List, Any, Dict, Tuple, Optional, Union, Sequence, Callable
+from typing import List, Any, Dict, Tuple, Optional, Union, Sequence
 from urllib.parse import quote
+from xcube_cci.constants import CCI_ODD_URL
+from xcube_cci.constants import OPENSEARCH_CEDA_URL
 
 from pydap.client import Functions
 from pydap.handlers.dap import BaseProxy
@@ -50,8 +52,6 @@ from pydap.parsers.das import parse_das, add_attributes
 from six.moves.urllib.parse import urlsplit, urlunsplit
 
 _LOG = logging.getLogger('xcube')
-_OPENSEARCH_CEDA_URL = "http://opensearch-test.ceda.ac.uk/opensearch/request"
-_CCI_ODD_URL = 'http://opensearch-test.ceda.ac.uk/opensearch/description.xml?parentIdentifier=cci'
 ODD_NS = {'os': 'http://a9.com/-/spec/opensearch/1.1/',
           'param': 'http://a9.com/-/spec/opensearch/extensions/parameters/1.0/'}
 DESC_NS = {'gmd': 'http://www.isotc211.org/2005/gmd',
@@ -95,12 +95,12 @@ def _convert_time_from_drs_id(time_value: str) -> str:
         return 'climatology'
     raise ValueError('Unknown time frequency format')
 
-async def _fetch_fid_and_uuid(dataset_id: str) -> (str, str):
+async def _fetch_fid_and_uuid(opensearch_url: str, dataset_id: str) -> (str, str):
     ds_components = dataset_id.split('.')
     query_args = dict(parentIdentifier='cci',
                       drsId=dataset_id
                       )
-    feature_list = await _fetch_opensearch_feature_list(_OPENSEARCH_CEDA_URL, query_args)
+    feature_list = await _fetch_opensearch_feature_list(opensearch_url, query_args)
     if len(feature_list) == 0:
         raise ValueError(f'Could not find any fid for dataset {dataset_id}')
     if len(feature_list) > 1:
@@ -427,11 +427,11 @@ async def _fetch_meta_info(odd_url: str, metadata_url: str) \
         return meta_info_dict
 
 
-async def _fetch_variable_infos(dataset_id: str, session):
+async def _fetch_variable_infos(opensearch_url: str, dataset_id: str, session):
     attributes = {}
     dimensions = {}
     variable_infos = {}
-    feature = await _fetch_feature_at(session, _OPENSEARCH_CEDA_URL, dict(parentIdentifier=dataset_id), 1)
+    feature = await _fetch_feature_at(session, opensearch_url, dict(parentIdentifier=dataset_id), 1)
     if feature is not None:
         variable_infos, attributes = await _get_variable_infos_from_feature(feature, session)
         for variable_info in variable_infos:
@@ -630,18 +630,16 @@ class CciOdp:
     """
     Represents the ESA CCI Open Data Portal
 
-    :param error_policy: "raise" or "warn". If "raise" an exception is raised on failed API requests.
-    :param error_handler: An optional function called with the response from a failed API request.
-    :param enable_warnings: Allow emitting warnings on failed API requests.
+    :param opensearch_url: The base URL to the opensearch service
+    :param opensearch_description_url: The URL to a document describing the capabilities of the opensearch service
     """
 
     def __init__(self,
-                 enable_warnings: bool = False,
-                 error_policy: str = 'fail',
-                 error_handler: Callable[[Any], None] = None):
-        self.error_policy = error_policy or 'fail'
-        self.error_handler = error_handler
-        self.enable_warnings = enable_warnings
+                 opensearch_url: str=OPENSEARCH_CEDA_URL,
+                 opensearch_description_url: str=CCI_ODD_URL
+                 ):
+        self._opensearch_url = opensearch_url
+        self._opensearch_description_url = opensearch_description_url
         self._data_sources = {}
 
     def close(self):
@@ -738,12 +736,12 @@ class CciOdp:
 
     async def _fetch_dataset_names(self):
         async with aiohttp.ClientSession() as session:
-            meta_info_dict = await _extract_metadata_from_odd_url(session, _CCI_ODD_URL)
+            meta_info_dict = await _extract_metadata_from_odd_url(session, self._opensearch_description_url)
             if 'drs_ids' in meta_info_dict:
                 return meta_info_dict['drs_ids']
         if not self._data_sources:
             self._data_sources = {}
-            catalogue = await _fetch_data_source_list_json(_OPENSEARCH_CEDA_URL, dict(parentIdentifier='cci'))
+            catalogue = await _fetch_data_source_list_json(self._opensearch_url, dict(parentIdentifier='cci'))
             if catalogue:
                 tasks = []
                 for catalogue_item in catalogue:
@@ -841,7 +839,7 @@ class CciOdp:
         data_fid = await self._get_fid_for_dataset(dataset_name)
         async with aiohttp.ClientSession() as session:
             data_source['dimensions'], data_source['variable_infos'], data_source['attributes'] = \
-                await _fetch_variable_infos(data_fid, session)
+                await _fetch_variable_infos(self._opensearch_url, data_fid, session)
 
     def _get_var_names(self, variable_infos) -> List:
         # todo support variables with other dimensions
@@ -929,7 +927,7 @@ class CciOdp:
         return results
 
     async def _read_all_data_sources(self):
-        catalogue = await _fetch_data_source_list_json(_OPENSEARCH_CEDA_URL, dict(parentIdentifier='cci'))
+        catalogue = await _fetch_data_source_list_json(self._opensearch_url, dict(parentIdentifier='cci'))
         if catalogue:
             tasks = []
             for catalogue_item in catalogue:
@@ -954,7 +952,7 @@ class CciOdp:
         await asyncio.gather(*create_source_tasks)
 
     async def _fetch_data_source_list_json_and_add_to_catalogue(self, catalogue: dict, dataset_name: str):
-        dataset_catalogue = await _fetch_data_source_list_json(_OPENSEARCH_CEDA_URL,
+        dataset_catalogue = await _fetch_data_source_list_json(self._opensearch_url,
                                                                dict(parentIdentifier='cci',
                                                                     drsId=dataset_name)
                                                                )
@@ -1023,19 +1021,19 @@ class CciOdp:
         await self._ensure_in_data_sources([dataset_name])
         if 'fid' in self._data_sources[dataset_name]:
             return self._data_sources[dataset_name]['fid']
-        fid, uuid = await _fetch_fid_and_uuid(dataset_name)
+        fid, uuid = await _fetch_fid_and_uuid(self._opensearch_url, dataset_name)
         return fid
 
     def _get_opendap_url(self, request: Dict, get_earliest: bool = False):
         start_date = datetime.strptime(request['startDate'], _TIMESTAMP_FORMAT)
         end_date = datetime.strptime(request['endDate'], _TIMESTAMP_FORMAT)
         request['fileFormat'] = '.nc'
-        feature_list = asyncio.run(_fetch_opensearch_feature_list(_OPENSEARCH_CEDA_URL, request))
+        feature_list = asyncio.run(_fetch_opensearch_feature_list(self._opensearch_url, request))
         if len(feature_list) == 0:
             # try without dates. For some data sets, this works better
             request.pop('startDate')
             request.pop('endDate')
-            feature_list = asyncio.run(_fetch_opensearch_feature_list(_OPENSEARCH_CEDA_URL, request))
+            feature_list = asyncio.run(_fetch_opensearch_feature_list(self._opensearch_url, request))
         opendap_url = None
         earliest_date = datetime(2999, 12, 31)
         for feature in feature_list:
