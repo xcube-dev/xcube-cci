@@ -986,7 +986,7 @@ class CciOdp:
                                          chunkSize=dataset[dim].attributes.get('_ChunkSizes'))
                     if dataset[dim].size < 512 * 512:
                         dim_data[dim]['data'] = \
-                            await _get_data_from_opendap_dataset(dataset, session, dim, (slice(0,-1), ))
+                            await _get_data_from_opendap_dataset(dataset, session, dim, (slice(None,None,None), ))
                     else:
                         dim_data[dim]['data'] = []
                 else:
