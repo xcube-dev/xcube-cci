@@ -1,3 +1,4 @@
+import numpy
 import os
 import pandas as pd
 import unittest
@@ -40,3 +41,31 @@ class CciChunkStoreTest(unittest.TestCase):
         self.assertEqual(slice(0, 9), dim_indexes[1])
         self.assertEqual(slice(0, 90), dim_indexes[2])
         self.assertEqual(slice(0, 180), dim_indexes[3])
+
+    @skipIf(os.environ.get('XCUBE_DISABLE_WEB_TESTS', None) == '1', 'XCUBE_DISABLE_WEB_TESTS = 1')
+    def test_get_encoding(self):
+        encoding_dict = self._store.get_encoding('surface_pressure')
+        self.assertTrue('fill_value' in encoding_dict)
+        self.assertTrue('dtype' in encoding_dict)
+        self.assertFalse('compressor' in encoding_dict)
+        self.assertFalse('order' in encoding_dict)
+        self.assertTrue(numpy.isnan(encoding_dict['fill_value']))
+        self.assertEqual('float32', encoding_dict['dtype'])
+
+    @skipIf(os.environ.get('XCUBE_DISABLE_WEB_TESTS', None) == '1', 'XCUBE_DISABLE_WEB_TESTS = 1')
+    def test_get_attrs(self):
+        attrs = self._store.get_attrs('surface_pressure')
+        self.assertTrue('standard_name' in attrs)
+        self.assertTrue('long_name' in attrs)
+        self.assertTrue('units' in attrs)
+        self.assertTrue('fill_value' in attrs)
+        self.assertTrue('chunk_sizes' in attrs)
+        self.assertTrue('data_type' in attrs)
+        self.assertTrue('dimensions' in attrs)
+        self.assertEqual('surface_air_pressure', attrs['standard_name'])
+        self.assertEqual('Pressure at the bottom of the atmosphere.', attrs['long_name'])
+        self.assertEqual('hPa', attrs['units'])
+        self.assertTrue(numpy.isnan(attrs['fill_value']))
+        self.assertEqual([1, 180, 360], attrs['chunk_sizes'])
+        self.assertEqual('float32', attrs['data_type'])
+        self.assertEqual(['time', 'lat', 'lon'], attrs['dimensions'])

@@ -56,7 +56,7 @@ class ZarrCciOdpDatasetAccessor(ZarrDatasetOpener, DatasetDescriber, DatasetIter
         return iter(self._cci_odp.dataset_names)
 
     def describe_dataset(self, dataset_id: str) -> DatasetDescriptor:
-        ds_metadata = self._cci_odp.get_dataset_metadata(dataset_id)
+        ds_metadata = self._cci_odp.get_dataset_metadata([dataset_id])[0]
         dims = ds_metadata['dimensions']
         attrs = ds_metadata.get('attributes', {}).get('NC_GLOBAL', {})
         temporal_resolution = attrs.get('time_coverage_resolution', '')[1:]

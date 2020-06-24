@@ -486,7 +486,7 @@ class CciStore(RemoteStore):
 
     def ensure_metadata_read(self):
         if self._metadata is None:
-            self._metadata = self._cci_odp.get_dataset_metadata(self._cube_config.dataset_name)
+            self._metadata = self._cci_odp.get_dataset_metadata(self._cube_config.dataset_name)[0]
 
     def get_time_range_for_num_days(self, num_days: int, start_time: datetime, end_time: datetime):
         temp_start_time = datetime(start_time.year, start_time.month, start_time.day)

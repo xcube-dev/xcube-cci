@@ -29,6 +29,8 @@ from abc import abstractmethod, ABCMeta
 from collections import MutableMapping
 from typing import Iterator, Any, List, Dict, Tuple, Callable, Iterable, KeysView, Mapping, Union
 
+from xcube.core.store.store import DataStoreError
+
 import numpy as np
 import pandas as pd
 import re
@@ -138,7 +140,9 @@ class RemoteChunkStore(MutableMapping, metaclass=ABCMeta):
         for variable_name in self._variable_names:
             var_encoding = self.get_encoding(variable_name)
             var_attrs = self.get_attrs(variable_name)
-            dimensions = var_attrs['dimensions']
+            dimensions = var_attrs.get('dimensions', None)
+            if not dimensions:
+                raise DataStoreError(f'Could not determine dimensions of variable {variable_name}')
             var_attrs.update(_ARRAY_DIMENSIONS=dimensions)
             chunk_sizes = var_attrs['chunk_sizes']
             sizes = []
@@ -401,7 +405,7 @@ class CciChunkStore(RemoteChunkStore):
                  observer: Callable = None,
                  trace_store_calls=False):
         self._cci_odp = cci_odp
-        self._metadata = self._cci_odp.get_dataset_metadata(dataset_id)
+        self._metadata = self._cci_odp.get_dataset_metadata([dataset_id])[0]
         super().__init__(dataset_id,
                          cube_params,
                          observer=observer,

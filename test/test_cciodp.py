@@ -2,6 +2,7 @@ import numpy as np
 import os
 import unittest
 from datetime import datetime
+from unittest import skip
 from unittest import skipIf
 
 from xcube_cci.cciodp import _retrieve_attribute_info_from_das, find_datetime_format, get_opendap_dataset, CciOdp
@@ -117,6 +118,7 @@ class CciOdpTest(unittest.TestCase):
 
 
     @skipIf(os.environ.get('XCUBE_DISABLE_WEB_TESTS', None) == '1', 'XCUBE_DISABLE_WEB_TESTS = 1')
+    @skip('Test takes long')
     def test_description(self):
         cci_odp = CciOdp()
         description = cci_odp.description
@@ -264,7 +266,7 @@ class CciOdpTest(unittest.TestCase):
         self.assertEqual(len(dimension_data['lon']['data']), 0)
 
     @skipIf(os.environ.get('XCUBE_DISABLE_WEB_TESTS', None) == '1', 'XCUBE_DISABLE_WEB_TESTS = 1')
-    def test_search(self):
+    def test_search_ecv(self):
         cci_odp = CciOdp()
         aerosol_sources = cci_odp.search(
             start_date='1990-05-01',
@@ -272,7 +274,11 @@ class CciOdpTest(unittest.TestCase):
             bbox=(-20, 30, 20, 50),
             ecv='AEROSOL'
         )
-        self.assertEqual(28, len(aerosol_sources))
+        self.assertEqual(24, len(aerosol_sources))
+
+    @skipIf(os.environ.get('XCUBE_DISABLE_WEB_TESTS', None) == '1', 'XCUBE_DISABLE_WEB_TESTS = 1')
+    def test_search_frequency(self):
+        cci_odp = CciOdp()
         five_day_sources = cci_odp.search(
             start_date='1990-05-01',
             end_date='2021-08-01',
@@ -280,20 +286,21 @@ class CciOdpTest(unittest.TestCase):
             frequency='5 days'
         )
         self.assertEqual(21, len(five_day_sources))
-        ral_sources = cci_odp.search(
-            start_date='2007-05-01',
-            end_date='2009-08-01',
-            bbox=(-20, 30, 20, 50),
-            institute='Rutherford Appleton Laboratory'
-        )
-        self.assertEqual(3, len(ral_sources))
+
+    @skipIf(os.environ.get('XCUBE_DISABLE_WEB_TESTS', None) == '1', 'XCUBE_DISABLE_WEB_TESTS = 1')
+    def test_search_processing_level(self):
+        cci_odp = CciOdp()
         l2p_sources = cci_odp.search(
             start_date = '1990-05-01',
             end_date = '2021-08-01',
             bbox=(-20, 30, 20, 50),
             processing_level='L2P'
         )
-        self.assertEqual(35, len(l2p_sources))
+        self.assertEqual(34, len(l2p_sources))
+
+    @skipIf(os.environ.get('XCUBE_DISABLE_WEB_TESTS', None) == '1', 'XCUBE_DISABLE_WEB_TESTS = 1')
+    def test_search_product_string(self):
+        cci_odp = CciOdp()
         avhrr19g_sources = cci_odp.search(
             start_date = '1990-05-01',
             end_date = '2021-08-01',
@@ -301,6 +308,10 @@ class CciOdpTest(unittest.TestCase):
             product_string='AVHRR19_G'
         )
         self.assertEqual(3, len(avhrr19g_sources))
+
+    @skipIf(os.environ.get('XCUBE_DISABLE_WEB_TESTS', None) == '1', 'XCUBE_DISABLE_WEB_TESTS = 1')
+    def test_search_product_version(self):
+        cci_odp = CciOdp()
         v238_sources = cci_odp.search(
             start_date = '1990-05-01',
             end_date = '2021-08-01',
@@ -308,6 +319,10 @@ class CciOdpTest(unittest.TestCase):
             product_version='v2.3.8'
         )
         self.assertEqual(3, len(v238_sources))
+
+    @skipIf(os.environ.get('XCUBE_DISABLE_WEB_TESTS', None) == '1', 'XCUBE_DISABLE_WEB_TESTS = 1')
+    def test_search_data_type(self):
+        cci_odp = CciOdp()
         siconc_sources = cci_odp.search(
             start_date='2007-05-01',
             end_date='2009-08-01',
@@ -315,6 +330,10 @@ class CciOdpTest(unittest.TestCase):
             data_type='SICONC'
         )
         self.assertEqual(4, len(siconc_sources))
+
+    @skipIf(os.environ.get('XCUBE_DISABLE_WEB_TESTS', None) == '1', 'XCUBE_DISABLE_WEB_TESTS = 1')
+    def test_search_sensor(self):
+        cci_odp = CciOdp()
         sciamachy_sources = cci_odp.search(
             start_date = '1990-05-01',
             end_date = '2021-08-01',
@@ -322,10 +341,3 @@ class CciOdpTest(unittest.TestCase):
             sensor='SCIAMACHY'
         )
         self.assertEqual(5, len(sciamachy_sources))
-        noaa14_sources = cci_odp.search(
-            start_date = '1990-05-01',
-            end_date = '2021-08-01',
-            bbox=(-20, 30, 20, 50),
-            platform='NOAA-14'
-        )
-        self.assertEqual(3, len(noaa14_sources))

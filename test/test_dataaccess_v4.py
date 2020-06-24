@@ -4,6 +4,7 @@ import unittest
 from unittest import skipIf
 
 from xcube_cci.dataaccess_v4 import CciOdpDataStore
+from xcube.core.store.descriptor import DatasetDescriptor
 
 class DataAccessorTest(unittest.TestCase):
 
@@ -12,9 +13,9 @@ class DataAccessorTest(unittest.TestCase):
 
     @skipIf(os.environ.get('XCUBE_DISABLE_WEB_TESTS', None) == '1', 'XCUBE_DISABLE_WEB_TESTS = 1')
     def test_describe_dataset(self):
-
         descriptor = self.store.describe_data('esacci.OZONE.mon.L3.NP.multi-sensor.multi-platform.MERGED.fv0002.r1')
         self.assertIsNotNone(descriptor)
+        self.assertIsInstance(descriptor, DatasetDescriptor)
         self.assertEqual('esacci.OZONE.mon.L3.NP.multi-sensor.multi-platform.MERGED.fv0002.r1', descriptor.data_id)
         self.assertEqual(['lon', 'lat', 'layers', 'air_pressure', 'time'], list(descriptor.dims.keys()))
         self.assertEqual(360, descriptor.dims['lon'])
@@ -66,12 +67,12 @@ class DataAccessorTest(unittest.TestCase):
 
     @skipIf(os.environ.get('XCUBE_DISABLE_WEB_TESTS', None) == '1', 'XCUBE_DISABLE_WEB_TESTS = 1')
     def test_search(self):
-        search_result = list(self.store.search_data(ecv='FIRE'))
+        search_result = list(self.store.search_data(ecv='FIRE', processing_level='L4', product_string='MODIS_TERRA'))
         self.assertIsNotNone(search_result)
         self.assertEqual(1, len(search_result))
         self.assertEqual(5, len(search_result[0].dims))
         self.assertEqual(6, len(search_result[0].data_vars))
-        self.assertEqual('esacci.FIRE.mon.L4.BA.MODIS.Terra.MODIS_TERRA.v5-1.r1', search_result[0].data_id)
+        self.assertEqual('esacci.FIRE.mon.L4.BA.MODIS.Terra.MODIS_TERRA.v5-1.grid', search_result[0].data_id)
         self.assertEqual('31D', search_result[0].time_period)
         self.assertEqual((0.25, 0.25), search_result[0].spatial_res)
         self.assertEqual('dataset', search_result[0].type_id)

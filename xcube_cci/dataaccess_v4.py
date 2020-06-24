@@ -23,7 +23,7 @@ import re
 import xarray as xr
 import zarr
 
-from typing import Any, Iterator, Tuple
+from typing import Any, Iterator, List, Tuple
 
 from xcube.core.store.accessor import DataOpener
 from xcube.core.store.descriptor import DataDescriptor
@@ -56,14 +56,24 @@ class CciOdpDataOpener(DataOpener):
     def __init__(self):
         self._cci_odp = CciOdp()
 
+    def _describe_data(self, data_ids: List[str]) -> List[DataDescriptor]:
+        ds_metadata_list = self._cci_odp.get_dataset_metadata(data_ids)
+        data_descriptors = []
+        for i, ds_metadata in enumerate(ds_metadata_list):
+            data_descriptors.append(self._get_data_descriptor_from_metadata(data_ids[i], ds_metadata))
+        return data_descriptors
+
     def describe_data(self, data_id: str) -> DataDescriptor:
         try:
-            ds_metadata = self._cci_odp.get_dataset_metadata(data_id)
-        except ValueError as e:
+            ds_metadata = self._cci_odp.get_dataset_metadata([data_id])[0]
+            return self._get_data_descriptor_from_metadata(data_id, ds_metadata)
+        except ValueError:
             raise DataStoreError(f'Cannot describe metadata. "{data_id}" does not seem to be a valid identifier.')
-        dims = ds_metadata['dimensions']
+
+    def _get_data_descriptor_from_metadata(self, data_id: str, ds_metadata: dict) -> DatasetDescriptor:
+        dims = ds_metadata.get('dimensions', {})
         attrs = ds_metadata.get('attributes', {}).get('NC_GLOBAL', {})
-        temporal_resolution = attrs.get('time_coverage_resolution', '')[1:]
+        temporal_resolution = attrs.get('time_coverage_resolution', 'P')[1:]
         if re.match(TIME_PERIOD_PATTERN, temporal_resolution) is None:
             temporal_resolution = None
         dataset_info = self._cci_odp.get_dataset_info(data_id, ds_metadata)
@@ -224,13 +234,13 @@ class CciOdpDataStore(CciOdpDataOpener, DataStore):
                 'K_490', 'SSMV', 'IOP', 'OC_PRODUCTS', 'RRS', 'SEC', 'SSTdepth', 'SWH', 'AAI', 'AOD', 'GLL', 'LCCS',
                 'SICONC', 'SSMS', 'SSS', 'AEX', 'NP', 'TC', 'WB']),
             sensor = JsonStringSchema(enum=[
-                'multi-sensor', 'ATSR-2', 'AATSR', 'TANSO-FTS', 'RA-2', 'SCIAMACHY', 'SIRAL', 'MODIS', 'ATSR',
-                'AVHRR-2', 'AVHRR-3', 'GOMOS', 'MERIS', 'RA', 'SMR', 'ACE-FTS', 'AMI-SCAT', 'ASAR', 'AltiKa', 'GFO-RA',
-                'MIPAS', 'OSIRIS', 'Poseidon-2', 'Poseidon-3']),
+                'ATSR-2', 'AATSR', 'TANSO-FTS', 'RA-2', 'SCIAMACHY', 'SIRAL', 'MODIS', 'ATSR', 'AVHRR-2', 'AVHRR-3',
+                'GOMOS', 'MERIS', 'RA', 'SMR', 'ACE-FTS', 'AMI-SCAT', 'ASAR', 'AltiKa', 'GFO-RA', 'MIPAS', 'OSIRIS',
+                'Poseidon-2', 'Poseidon-3']),
             platform = JsonStringSchema(enum=[
-                'multi-platform', 'Envisat', 'ERS-2', 'GOSAT', 'CryoSat-2', 'GRACE', 'ERS-1', 'Metop-A', 'NOAA-11',
-                'NOAA-12', 'NOAA-14', 'NOAA-15', 'NOAA-16', 'NOAA-17', 'NOAA-18', 'NOAA-19', 'NOAA-7', 'NOAA-9', 'ODIN',
-                'Terra', 'GFO', 'Jason-1', 'Jason-2', 'SARAL', 'Aqua', 'RadarSat-2'])
+                'Envisat', 'ERS-2', 'GOSAT', 'CryoSat-2', 'GRACE', 'ERS-1', 'Metop-A', 'NOAA-11', 'NOAA-12', 'NOAA-14',
+                'NOAA-15', 'NOAA-16', 'NOAA-17', 'NOAA-18', 'NOAA-19', 'NOAA-7', 'NOAA-9', 'ODIN', 'Terra', 'GFO',
+                'Jason-1', 'Jason-2', 'SARAL', 'Aqua', 'RadarSat-2'])
         )
         search_schema = JsonObjectSchema(
             properties=dict(**search_params),
