@@ -25,3 +25,5 @@ CCI_MAX_IMAGE_SIZE = 2500
 DATA_ARRAY_NAME = 'var_data'
 OPENSEARCH_CEDA_URL = "http://opensearch-test.ceda.ac.uk/opensearch/request"
 CCI_ODD_URL = 'http://opensearch-test.ceda.ac.uk/opensearch/description.xml?parentIdentifier=cci'
+
+DATA_OPENER_ID = 'dataset:zarr:cciodp'

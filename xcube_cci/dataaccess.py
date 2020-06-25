@@ -40,11 +40,11 @@ from xcube.util.jsonschema import JsonStringSchema
 from xcube_cci.cciodp import CciOdp
 from xcube_cci.chunkstore import CciChunkStore
 from xcube_cci.constants import CCI_ODD_URL
+from xcube_cci.constants import DATA_OPENER_ID
 from xcube_cci.constants import DEFAULT_CRS
 from xcube_cci.constants import OPENSEARCH_CEDA_URL
 
 DATASET_DATA_TYPE = 'dataset'
-DATA_OPENER_ID = 'dataset:zarr:cci_odp'
 
 CRS_PATTERN = 'http://www.opengis.net/def/crs/EPSG/0/[0-9]{4,5}'
 WKT_PATTERN = '[A-Z]*\(\([0-9 0-9,*]+\)\)'
