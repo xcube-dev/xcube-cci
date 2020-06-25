@@ -40,20 +40,20 @@ class CciOdpDataOpenerTest(unittest.TestCase):
         schema = self.opener.get_open_data_params_schema(
             'esacci.OZONE.mon.L3.NP.multi-sensor.multi-platform.MERGED.fv0002.r1').to_dict()
         self.assertIsNotNone(schema)
-        self.assertTrue('var_names' in schema['properties'])
-        self.assertTrue('chunk_sizes' in schema['properties'])
+        self.assertTrue('variable_names' in schema['properties'])
+        # self.assertTrue('chunk_sizes' in schema['properties'])
         self.assertTrue('time_range' in schema['properties'])
         self.assertTrue('bbox' in schema['properties'])
-        self.assertTrue('geometry_wkt' in schema['properties'])
+        # self.assertTrue('geometry_wkt' in schema['properties'])
         self.assertTrue('spatial_res' in schema['properties'])
-        self.assertTrue('spatial_res_unit' in schema['properties'])
+        # self.assertTrue('spatial_res_unit' in schema['properties'])
         self.assertTrue('crs' in schema['properties'])
         self.assertTrue('time_period' in schema['properties'])
 
     @skipIf(os.environ.get('XCUBE_DISABLE_WEB_TESTS', None) == '1', 'XCUBE_DISABLE_WEB_TESTS = 1')
     def test_open_dataset(self):
         dataset = self.opener.open_data('esacci.OZONE.mon.L3.NP.multi-sensor.multi-platform.MERGED.fv0002.r1',
-                                        var_names=['surface_pressure', 'O3_du', 'O3e_du'],
+                                        variable_names=['surface_pressure', 'O3_du', 'O3e_du'],
                                         time_range=['2009-05-02', '2009-08-31'])
         self.assertIsNotNone(dataset)
         self.assertTrue('surface_pressure' in dataset.variables)

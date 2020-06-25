@@ -17,7 +17,7 @@ class CciChunkStoreTest(unittest.TestCase):
         time_range = (pd.to_datetime('2010-02-10', utc=True), pd.to_datetime('2010-05-20', utc=True))
         cube_params = dict(
             time_range=time_range,
-            var_names=['O3_vmr']
+            variable_names=['O3_vmr']
         )
         self._store = CciChunkStore(cci_odp, dataset_id, cube_params)
 

@@ -111,9 +111,9 @@ class CciOdpDataOpener(DataOpener):
         dsd = self.describe_data(data_id) if data_id else None
 
         cube_params = dict(
-            var_names=JsonArraySchema(items=JsonStringSchema(
+            variable_names=JsonArraySchema(items=JsonStringSchema(
                 enum=[v.name for v in dsd.data_vars] if dsd and dsd.data_vars else None)),
-            chunk_sizes=JsonArraySchema(items=JsonIntegerSchema()),
+            # chunk_sizes=JsonArraySchema(items=JsonIntegerSchema()),
             time_range=JsonArraySchema(items=(JsonStringSchema(format='date-time'),
                                               JsonStringSchema(format='date-time')))
         )
@@ -122,9 +122,9 @@ class CciOdpDataOpener(DataOpener):
                                         JsonNumberSchema(),
                                         JsonNumberSchema(),
                                         JsonNumberSchema())),
-            geometry_wkt=JsonStringSchema(pattern=WKT_PATTERN),
+            # geometry_wkt=JsonStringSchema(pattern=WKT_PATTERN),
             spatial_res=JsonNumberSchema(exclusive_minimum=0.0),
-            spatial_res_unit=JsonStringSchema(default='deg'),
+            # spatial_res_unit=JsonStringSchema(default='deg'),
             crs=JsonStringSchema(pattern=CRS_PATTERN, default=DEFAULT_CRS),
             time_period=JsonStringSchema(pattern=TIME_PERIOD_PATTERN)
         )
@@ -134,7 +134,7 @@ class CciOdpDataOpener(DataOpener):
                             ),
             required=[
                 # cube_params
-                'var_names',
+                'variable_names',
                 'time_range',
             ],
             additional_properties=False
@@ -145,8 +145,8 @@ class CciOdpDataOpener(DataOpener):
         cci_schema = self.get_open_data_params_schema(data_id)
         cci_schema.validate_instance(open_params)
         cube_kwargs, open_params = cci_schema.process_kwargs_subset(open_params, (
-            'var_names',
-            'chunk_sizes',
+            'variable_names',
+            # 'chunk_sizes',
             'time_range'
         ))
         max_cache_size: int = 2 ** 30
@@ -157,7 +157,7 @@ class CciOdpDataOpener(DataOpener):
         raw_ds = xr.open_zarr(chunk_store)
         normalization_kwargs, open_params = cci_schema.process_kwargs_subset(open_params, (
             'bbox',
-            'geometry_wkt',
+            # 'geometry_wkt',
             'spatial_res',
             'crs',
             'time_period'

@@ -63,7 +63,7 @@ class RemoteChunkStore(MutableMapping, metaclass=ABCMeta):
                  cube_params: Mapping[str, Any] = None,
                  observer: Callable = None,
                  trace_store_calls=False):
-        self._variable_names = cube_params.get('var_names', [])
+        self._variable_names = cube_params.get('variable_names', [])
         self._observers = [observer] if observer is not None else []
         self._trace_store_calls = trace_store_calls
 
