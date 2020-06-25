@@ -20,23 +20,21 @@
 # SOFTWARE.
 
 import re
+from typing import Any, Iterator, List, Tuple
+
 import xarray as xr
 import zarr
 
-from typing import Any, Iterator, List, Tuple
-
-from xcube.core.store.accessor import DataOpener
-from xcube.core.store.descriptor import DataDescriptor
-from xcube.core.store.descriptor import DatasetDescriptor
-from xcube.core.store.descriptor import VariableDescriptor
-from xcube.core.store.store import DataStore
-from xcube.core.store.store import DataStoreError
+from xcube.core.store import DataDescriptor
+from xcube.core.store import DataOpener
+from xcube.core.store import DataStore
+from xcube.core.store import DataStoreError
+from xcube.core.store import DatasetDescriptor
+from xcube.core.store import VariableDescriptor
 from xcube.util.jsonschema import JsonArraySchema
-from xcube.util.jsonschema import JsonIntegerSchema
 from xcube.util.jsonschema import JsonNumberSchema
 from xcube.util.jsonschema import JsonObjectSchema
 from xcube.util.jsonschema import JsonStringSchema
-
 from xcube_cci.cciodp import CciOdp
 from xcube_cci.chunkstore import CciChunkStore
 from xcube_cci.constants import CCI_ODD_URL
@@ -199,18 +197,19 @@ class CciOdpDataStore(CciOdpDataOpener, DataStore):
         search_params = dict(
             start_date=JsonStringSchema(format='date-time'),
             end_date=JsonStringSchema(format='date-time'),
-            bbox = JsonArraySchema(items=(JsonNumberSchema(),
-                                          JsonNumberSchema(),
-                                          JsonNumberSchema(),
-                                          JsonNumberSchema())),
-            ecv = JsonStringSchema(enum=[
-                'ICESHEETS','AEROSOL', 'OC', 'GHG', 'OZONE', 'SEAICE', 'SST', 'CLOUD', 'SOILMOISTURE', 'FIRE', 'LC',
+            bbox=JsonArraySchema(items=(JsonNumberSchema(),
+                                        JsonNumberSchema(),
+                                        JsonNumberSchema(),
+                                        JsonNumberSchema())),
+            ecv=JsonStringSchema(enum=[
+                'ICESHEETS', 'AEROSOL', 'OC', 'GHG', 'OZONE', 'SEAICE', 'SST', 'CLOUD', 'SOILMOISTURE', 'FIRE', 'LC',
                 'SEASTATE', 'SEASURFACESALINITY', 'GLACIERS', 'SEALEVEL']),
-            frequency = JsonStringSchema(enum=[
+            frequency=JsonStringSchema(enum=[
                 'month', 'day', 'satellite orbit frequency' '5 days', '8 days', 'climatology', '13 years', '15 days',
                 '5 years', 'year']),
-            institute = JsonStringSchema(enum=[
-                'Plymouth Marine Laboratory','Alfred-Wegener-Institut Helmholtz-Zentrum für Polar- und Meeresforschung',
+            institute=JsonStringSchema(enum=[
+                'Plymouth Marine Laboratory',
+                'Alfred-Wegener-Institut Helmholtz-Zentrum für Polar- und Meeresforschung',
                 'ENVironmental Earth Observation IT GmbH', 'multi-institution', 'DTU Space',
                 'Vienna University of Technology', 'Deutscher Wetterdienst', 'Netherlands Institute for Space Research',
                 'Technische Universität Dresden', 'Institute of Environmental Physics',
@@ -219,8 +218,8 @@ class CciOdpDataStore(CciOdpDataOpener, DataStore):
                 'Belgian Institute for Space Aeronomy', 'Deutsches Zentrum fuer Luft- und Raumfahrt',
                 'Freie Universitaet Berlin', 'Royal Netherlands Meteorological Institute',
                 'The Geological Survey of Denmark and Greenland']),
-            processing_level = JsonStringSchema(enum=['L3S', 'L3C', 'L2P', 'L4', 'L2' 'L3', 'L3U']),
-            product_string = JsonStringSchema(enum=[
+            processing_level=JsonStringSchema(enum=['L3S', 'L3C', 'L2P', 'L4', 'L2' 'L3', 'L3U']),
+            product_string=JsonStringSchema(enum=[
                 'MERGED (20)', 'ADV ', 'ORAC', 'SU', 'AATSR', 'ATSR1', 'ATSR2', 'AVHRR07_G', 'AVHRR09_G', 'AVHRR11_G',
                 'AVHRR12_G', 'AVHRR14_G', 'AVHRR15_G', 'AVHRR16_G', 'AVHRR17_G', 'AVHRR18_G', 'AVHRR19_G', 'AVHRRMTA_G',
                 'MODIS_TERRA', 'Map', 'OSTIA', 'ACTIVE', 'COMBINED', 'EMMA', 'MERIS_ENVISAT', 'MSI', 'OCFP', 'PASSIVE',
@@ -229,21 +228,21 @@ class CciOdpDataStore(CciOdpDataOpener, DataStore):
                 'MERGED_OI_7DAY_RUNNINGMEAN_DAILY_25km', 'MERGED_OI_Monthly_CENTRED_15Day_25km', 'MERIS-AATSR',
                 'MIPAS_ENVISAT', 'MODIS_AQUA', 'MZM', 'OCPR', 'OSIRIS_ODIN', 'SCIAMACHY_ENVISAT', 'SMM', 'SMR_ODIN',
                 'SRPR', 'Saral']),
-            product_version = JsonStringSchema(enum=[
+            product_version=JsonStringSchema(enum=[
                 '1.1', '2.0', 'esp 2.1', '2.1', '4.0', '3.1', 'undefined', 'v0001', '1.2', 'v1.0', '03.02', '2.30',
                 '4.21', '04.4', '04.5', '1.0', '2.2', 'v1.1', 'v1.2', 'v2.3.8', '01.08', 'v0002', 'v1.3', 'v4.0', '0.1',
                 '1.3', '1.5.7', '1.6.1', '2.0.7', '2.19', '3.0', '4-0', '4.21u', 'ch4_v1.2', 'fv0002', 'fv0100', 'v0.1',
                 'v02.01.02', 'v1.4', 'v1.5', 'v2-1', 'v2.0', 'v2.2', 'v2.2a', 'v2.2b', 'v2.2c', 'v3.0', 'v5.1',
                 'v7-0-1', 'v7.0', 'v7.2']),
-            data_type = JsonStringSchema(enum=[
+            data_type=JsonStringSchema(enum=[
                 'IV', 'AER_PRODUCTS', 'LP', 'SITHICK', 'CH4', 'CLD_PRODUCTS', 'GMB', 'SSTskin', 'CO2', 'BA', 'CHLOR_A',
                 'K_490', 'SSMV', 'IOP', 'OC_PRODUCTS', 'RRS', 'SEC', 'SSTdepth', 'SWH', 'AAI', 'AOD', 'GLL', 'LCCS',
                 'SICONC', 'SSMS', 'SSS', 'AEX', 'NP', 'TC', 'WB']),
-            sensor = JsonStringSchema(enum=[
+            sensor=JsonStringSchema(enum=[
                 'ATSR-2', 'AATSR', 'TANSO-FTS', 'RA-2', 'SCIAMACHY', 'SIRAL', 'MODIS', 'ATSR', 'AVHRR-2', 'AVHRR-3',
                 'GOMOS', 'MERIS', 'RA', 'SMR', 'ACE-FTS', 'AMI-SCAT', 'ASAR', 'AltiKa', 'GFO-RA', 'MIPAS', 'OSIRIS',
                 'Poseidon-2', 'Poseidon-3']),
-            platform = JsonStringSchema(enum=[
+            platform=JsonStringSchema(enum=[
                 'Envisat', 'ERS-2', 'GOSAT', 'CryoSat-2', 'GRACE', 'ERS-1', 'Metop-A', 'NOAA-11', 'NOAA-12', 'NOAA-14',
                 'NOAA-15', 'NOAA-16', 'NOAA-17', 'NOAA-18', 'NOAA-19', 'NOAA-7', 'NOAA-9', 'ODIN', 'Terra', 'GFO',
                 'Jason-1', 'Jason-2', 'SARAL', 'Aqua', 'RadarSat-2'])

@@ -29,7 +29,7 @@ from abc import abstractmethod, ABCMeta
 from collections import MutableMapping
 from typing import Iterator, Any, List, Dict, Tuple, Callable, Iterable, KeysView, Mapping, Union
 
-from xcube.core.store.store import DataStoreError
+from xcube.core.store import DataStoreError
 
 import numpy as np
 import pandas as pd
