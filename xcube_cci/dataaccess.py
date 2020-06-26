@@ -44,11 +44,25 @@ from xcube_cci.constants import OPENSEARCH_CEDA_URL
 
 DATASET_DATA_TYPE = 'dataset'
 
+CCI_ID_PATTERN = 'esacci\..+\..+\..+\..+\..+\..+\..+\..+\..+'
 CRS_PATTERN = 'http://www.opengis.net/def/crs/EPSG/0/[0-9]{4,5}'
 WKT_PATTERN = '[A-Z]*\(\([0-9 0-9,*]+\)\)'
 TIME_PERIOD_PATTERN = '[0-9]+[Y|M|W|D|T|S|L|U|N|days|day|hours|hour|hr|h|minutes|minute|min|m|seconds|second|sec|' \
                       'milliseconds|millisecond|millis|milli|microseconds|microsecond|micros|micro|' \
                       'nanoseconds|nanosecond|nanos|nano|ns]'
+_FREQUENCY_TO_ADJECTIVE = {
+    'mon': 'Monthly',
+    'day': 'Daily',
+    'satellite-orbit-frequency': '',
+    '5-days': '5 day',
+    '8-days': '8 day',
+    'climatology': '',
+    '13-yrs': '13 year',
+    '15-days': '15 day',
+    '5-yrs': '5 year',
+    'yr': 'year'
+}
+
 
 
 class CciOdpDataOpener(DataOpener):
@@ -77,7 +91,7 @@ class CciOdpDataOpener(DataOpener):
         if re.match(TIME_PERIOD_PATTERN, temporal_resolution) is None:
             temporal_resolution = None
         dataset_info = self._cci_odp.get_dataset_info(data_id, ds_metadata)
-        spatial_resolution = (dataset_info['lat_res'], dataset_info['lon_res'])
+        spatial_resolution = dataset_info['lat_res']
         bbox = dataset_info['bbox']
         temporal_coverage = (dataset_info['temporal_coverage_start'], dataset_info['temporal_coverage_end'])
         var_descriptors = []
@@ -94,6 +108,7 @@ class CciOdpDataOpener(DataOpener):
                                                           var_info))
             else:
                 var_descriptors.append(VariableDescriptor(var_name, '', ''))
+        data_schema = self.get_open_data_params_schema()
         return DatasetDescriptor(
             data_id=data_id,
             dims=dims,
@@ -102,7 +117,8 @@ class CciOdpDataOpener(DataOpener):
             bbox=bbox,
             spatial_res=spatial_resolution,
             time_range=temporal_coverage,
-            time_period=temporal_resolution
+            time_period=temporal_resolution,
+            open_params_schema=data_schema
         )
 
     def get_open_data_params_schema(self, data_id: str = None, opener_id: str = None) -> JsonObjectSchema:
@@ -111,21 +127,10 @@ class CciOdpDataOpener(DataOpener):
         cube_params = dict(
             variable_names=JsonArraySchema(items=JsonStringSchema(
                 enum=[v.name for v in dsd.data_vars] if dsd and dsd.data_vars else None)),
-            # chunk_sizes=JsonArraySchema(items=JsonIntegerSchema()),
             time_range=JsonArraySchema(items=(JsonStringSchema(format='date-time'),
                                               JsonStringSchema(format='date-time')))
         )
         normalization_params = dict(
-            bbox=JsonArraySchema(items=(JsonNumberSchema(),
-                                        JsonNumberSchema(),
-                                        JsonNumberSchema(),
-                                        JsonNumberSchema())),
-            # geometry_wkt=JsonStringSchema(pattern=WKT_PATTERN),
-            spatial_res=JsonNumberSchema(exclusive_minimum=0.0),
-            # spatial_res_unit=JsonStringSchema(default='deg'),
-            # crs=JsonStringSchema(pattern=CRS_PATTERN, default=DEFAULT_CRS),
-            crs=JsonStringSchema(default=DEFAULT_CRS),
-            time_period=JsonStringSchema(pattern=TIME_PERIOD_PATTERN)
         )
         cci_schema = JsonObjectSchema(
             properties=dict(**cube_params,
@@ -186,9 +191,21 @@ class CciOdpDataStore(CciOdpDataOpener, DataStore):
     def get_type_ids(cls) -> Tuple[str, ...]:
         return DATASET_DATA_TYPE,
 
-    def get_data_ids(self, type_id: str = None) -> Iterator[str]:
+    def get_data_ids(self, type_id: str = None) -> Iterator[Tuple[str, str]]:
         self._assert_valid_type_id(type_id)
-        return iter(self._cci_odp.dataset_names)
+        data_ids = self._cci_odp.dataset_names
+        tuples = ((data_id, self._create_human_readable_title_from_id(data_id)) for data_id in data_ids)
+        return iter(tuples)
+
+    def _create_human_readable_title_from_id(self, id: str) -> str:
+        split_id = id.split('.')
+        version = split_id[-2]
+        if not version.startswith('v'):
+            version = f'v{version}'
+        version = version.replace('-', '.')
+        return f'{split_id[1]} CCI: {_FREQUENCY_TO_ADJECTIVE[split_id[2]]} {split_id[5]} {split_id[3]} ' \
+               f'{split_id[7]} {split_id[4]}, {version}'
+
 
     def has_data(self, data_id: str) -> bool:
         return data_id in self._cci_odp.dataset_names

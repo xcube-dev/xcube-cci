@@ -31,7 +31,7 @@ class CciOdpDataOpenerTest(unittest.TestCase):
         self.assertEqual(('time', 'lat', 'lon'), descriptor.data_vars[0].dims)
         self.assertEqual('float32', descriptor.data_vars[0].dtype)
         self.assertIsNone(descriptor.crs)
-        self.assertEqual((1.0, 1.0), descriptor.spatial_res)
+        self.assertEqual(1.0, descriptor.spatial_res)
         self.assertEqual(('2000-02-01T00:00:00', '2014-12-31T23:59:59'), descriptor.time_range)
         self.assertEqual('1M', descriptor.time_period)
 
@@ -41,14 +41,7 @@ class CciOdpDataOpenerTest(unittest.TestCase):
             'esacci.OZONE.mon.L3.NP.multi-sensor.multi-platform.MERGED.fv0002.r1').to_dict()
         self.assertIsNotNone(schema)
         self.assertTrue('variable_names' in schema['properties'])
-        # self.assertTrue('chunk_sizes' in schema['properties'])
         self.assertTrue('time_range' in schema['properties'])
-        self.assertTrue('bbox' in schema['properties'])
-        # self.assertTrue('geometry_wkt' in schema['properties'])
-        self.assertTrue('spatial_res' in schema['properties'])
-        # self.assertTrue('spatial_res_unit' in schema['properties'])
-        self.assertTrue('crs' in schema['properties'])
-        self.assertTrue('time_period' in schema['properties'])
 
     @skipIf(os.environ.get('XCUBE_DISABLE_WEB_TESTS', None) == '1', 'XCUBE_DISABLE_WEB_TESTS = 1')
     def test_open_dataset(self):
@@ -98,7 +91,7 @@ class CciOdpDataStoreTest(unittest.TestCase):
         self.assertEqual(6, len(search_result[0].data_vars))
         self.assertEqual('esacci.FIRE.mon.L4.BA.MODIS.Terra.MODIS_TERRA.v5-1.grid', search_result[0].data_id)
         self.assertEqual('31D', search_result[0].time_period)
-        self.assertEqual((0.25, 0.25), search_result[0].spatial_res)
+        self.assertEqual(0.25, search_result[0].spatial_res)
         self.assertEqual('dataset', search_result[0].type_id)
         self.assertEqual(('2000-02-01T00:00:00', '2014-12-31T23:59:59'), search_result[0].time_range)
 
@@ -113,4 +106,11 @@ class CciOdpDataStoreTest(unittest.TestCase):
         self.assertIsNotNone(dataset_ids_iter)
         dataset_ids = list(dataset_ids_iter)
         self.assertEqual(234, len(dataset_ids))
-        self.assertTrue('esacci.AEROSOL.day.L3C.AER_PRODUCTS.ATSR-2.ERS-2.ORAC.03-02.r1' in dataset_ids)
+
+    def test_create_human_readable_title_from_id(self):
+        self.assertEqual('OZONE CCI: Monthly multi-sensor L3 MERGED NP, vfv0002',
+                         self.store._create_human_readable_title_from_id(
+                             'esacci.OZONE.mon.L3.NP.multi-sensor.multi-platform.MERGED.fv0002.r1'))
+        self.assertEqual('LC CCI: 13 year ASAR L4 Map WB, v4.0',
+                         self.store._create_human_readable_title_from_id(
+                             'esacci.LC.13-yrs.L4.WB.ASAR.Envisat.Map.4-0.r1'))
