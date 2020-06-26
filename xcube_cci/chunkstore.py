@@ -534,9 +534,8 @@ class CciChunkStore(RemoteChunkStore):
             data = bytearray()
             var_info = self._metadata.get('variable_infos', {}).get(var_name, {})
             length = 1
-            for dim_index in dim_indexes:
-                if type(dim_index) == slice:
-                    length *= (dim_index.stop - dim_index.start)
+            for chunk_size in var_info.get('chunk_sizes', {}):
+                length *= chunk_size
             dtype = np.dtype(self._SAMPLE_TYPE_TO_DTYPE[var_info['data_type']])
             var_array = np.full(shape=length, fill_value=var_info['fill_value'], dtype=dtype)
             data += var_array.tobytes()
@@ -548,7 +547,7 @@ class CciChunkStore(RemoteChunkStore):
         chunk_sizes = self._metadata.get('variable_infos', {}).get(var_name, {}).get('chunk_sizes', [])
         for i, var_dimension in enumerate(var_dimensions):
             if var_dimension == 'time':
-                dim_indexes.append(0)
+                dim_indexes.append(slice(None, None, None))
                 continue
             dim_size = self._metadata.get('dimensions', {}).get(var_dimension, -1)
             if dim_size < 0:

@@ -86,8 +86,8 @@ class CciOdpDataOpener(DataOpener):
         for var_name in var_names:
             if var_name in var_infos:
                 var_info = var_infos[var_name]
-                var_dtype = var_info.pop('data_type')
-                var_dims = var_info.pop('dimensions')
+                var_dtype = var_info['data_type']
+                var_dims = var_info['dimensions']
                 var_descriptors.append(VariableDescriptor(var_name,
                                                           var_dtype,
                                                           var_dims,
@@ -123,7 +123,8 @@ class CciOdpDataOpener(DataOpener):
             # geometry_wkt=JsonStringSchema(pattern=WKT_PATTERN),
             spatial_res=JsonNumberSchema(exclusive_minimum=0.0),
             # spatial_res_unit=JsonStringSchema(default='deg'),
-            crs=JsonStringSchema(pattern=CRS_PATTERN, default=DEFAULT_CRS),
+            # crs=JsonStringSchema(pattern=CRS_PATTERN, default=DEFAULT_CRS),
+            crs=JsonStringSchema(default=DEFAULT_CRS),
             time_period=JsonStringSchema(pattern=TIME_PERIOD_PATTERN)
         )
         cci_schema = JsonObjectSchema(

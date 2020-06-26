@@ -286,6 +286,8 @@ async def _get_opendap_dataset(url: str, session):
 
 async def _get_data_from_opendap_dataset(dataset, session, variable_name, slices):
     proxy = dataset[variable_name].data
+    if type(proxy) == list:
+        proxy = proxy[0]
     # build download url
     index = combine_slices(proxy.slice, fix_slice(slices, proxy.shape))
     scheme, netloc, path, query, fragment = urlsplit(proxy.baseurl)
@@ -1087,7 +1089,7 @@ class CciOdp:
 
     async def _get_data_chunk(self, opendap_url: str, var_name: str, dim_indexes: tuple):
         async with aiohttp.ClientSession() as session:
-            dataset = _get_opendap_dataset(opendap_url, session)
+            dataset = await _get_opendap_dataset(opendap_url, session)
             if not dataset:
                 return None
             data = await _get_data_from_opendap_dataset(dataset, session, var_name, dim_indexes)
