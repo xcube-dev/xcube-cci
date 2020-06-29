@@ -32,6 +32,7 @@ from xcube.core.store import DataStoreError
 from xcube.core.store import DatasetDescriptor
 from xcube.core.store import VariableDescriptor
 from xcube.util.jsonschema import JsonArraySchema
+from xcube.util.jsonschema import JsonBooleanSchema
 from xcube.util.jsonschema import JsonNumberSchema
 from xcube.util.jsonschema import JsonObjectSchema
 from xcube.util.jsonschema import JsonStringSchema
@@ -172,8 +173,17 @@ class CciOdpDataOpener(DataOpener):
 
 class CciOdpDataStore(CciOdpDataOpener, DataStore):
 
-    def __init__(self, **cciodp_kwargs):
-        super().__init__(CciOdp(**cciodp_kwargs))
+    def __init__(self, **store_params):
+        cci_schema = self.get_data_store_params_schema()
+        cci_schema.validate_instance(store_params)
+        store_kwargs, store_params = cci_schema.process_kwargs_subset(store_params, (
+            'opensearch_url',
+            'opensearch_description_url'
+        ))
+        normalize_kwargs, store_params = cci_schema.process_kwargs.subset(store_params, (
+            'normalize_params'
+        ))
+        super().__init__(CciOdp(**store_kwargs))
 
     @classmethod
     def get_data_store_params_schema(cls) -> JsonObjectSchema:
@@ -181,8 +191,13 @@ class CciOdpDataStore(CciOdpDataOpener, DataStore):
             opensearch_url=JsonStringSchema(default=OPENSEARCH_CEDA_URL),
             opensearch_description_url=JsonStringSchema(default=CCI_ODD_URL)
         )
+        normalization_params = dict(
+            normalize_params=JsonBooleanSchema(default=False)
+        )
         return JsonObjectSchema(
-            properties=cciodp_params,
+            properties=dict(**cciodp_params,
+                            **normalization_params
+                            ),
             required=None,
             additional_properties=False
         )
