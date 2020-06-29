@@ -46,7 +46,7 @@ class CciOdpTest(unittest.TestCase):
                        endDate='1997-05-01T00:00:00',
                        varNames=['surface_pressure']
                        )
-        dim_indexes = (0, slice(0, 179), slice(0, 359))
+        dim_indexes = (slice(None, None), slice(0, 179), slice(0, 359))
         data = cci_odp.get_data_chunk(request, dim_indexes)
         self.assertIsNotNone(data)
         data_array = np.frombuffer(data, dtype=np.float32)
@@ -118,7 +118,7 @@ class CciOdpTest(unittest.TestCase):
 
 
     @skipIf(os.environ.get('XCUBE_DISABLE_WEB_TESTS', None) == '1', 'XCUBE_DISABLE_WEB_TESTS = 1')
-    @skip('Test takes long')
+    # @skip('Test takes long')
     def test_description(self):
         cci_odp = CciOdp()
         description = cci_odp.description
