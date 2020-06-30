@@ -32,6 +32,7 @@ from xcube.core.store import DataStoreError
 from xcube.core.store import DatasetDescriptor
 from xcube.core.store import VariableDescriptor
 from xcube.util.jsonschema import JsonArraySchema
+from xcube.util.jsonschema import JsonBooleanSchema
 from xcube.util.jsonschema import JsonNumberSchema
 from xcube.util.jsonschema import JsonObjectSchema
 from xcube.util.jsonschema import JsonStringSchema
@@ -39,8 +40,9 @@ from xcube_cci.cciodp import CciOdp
 from xcube_cci.chunkstore import CciChunkStore
 from xcube_cci.constants import CCI_ODD_URL
 from xcube_cci.constants import DATA_OPENER_ID
-from xcube_cci.constants import DEFAULT_CRS
 from xcube_cci.constants import OPENSEARCH_CEDA_URL
+from xcube_cci.constants import DEFAULT_CRS
+from xcube_cci.subsetting import subset_spatial
 
 DATASET_DATA_TYPE = 'dataset'
 
@@ -126,11 +128,17 @@ class CciOdpDataOpener(DataOpener):
             time_range=JsonArraySchema(items=(JsonStringSchema(format='date-time'),
                                               JsonStringSchema(format='date-time')))
         )
-        normalization_params = dict(
+        subsetting_params = dict(
+            crs=JsonStringSchema(const=DEFAULT_CRS),
+            bbox=JsonArraySchema(items=(
+                JsonNumberSchema(minimum=-180, maximum=180),
+                JsonNumberSchema(minimum=-90, maximum=90),
+                JsonNumberSchema(minimum=-180, maximum=180),
+                JsonNumberSchema(minimum=-90, maximum=90))),
         )
         cci_schema = JsonObjectSchema(
             properties=dict(**cube_params,
-                            **normalization_params
+                            **subsetting_params
                             ),
             required=[
                 # cube_params
@@ -146,7 +154,6 @@ class CciOdpDataOpener(DataOpener):
         cci_schema.validate_instance(open_params)
         cube_kwargs, open_params = cci_schema.process_kwargs_subset(open_params, (
             'variable_names',
-            # 'chunk_sizes',
             'time_range'
         ))
         max_cache_size: int = 2 ** 30
@@ -154,22 +161,29 @@ class CciOdpDataOpener(DataOpener):
         chunk_store = CciChunkStore(cci_odp, data_id, cube_kwargs)
         if max_cache_size:
             chunk_store = zarr.LRUStoreCache(chunk_store, max_cache_size)
-        raw_ds = xr.open_zarr(chunk_store)
-        normalization_kwargs, open_params = cci_schema.process_kwargs_subset(open_params, (
+        ds = xr.open_zarr(chunk_store)
+        subsetting_kwargs, open_params = cci_schema.process_kwargs_subset(open_params, (
             'bbox',
-            # 'geometry_wkt',
-            'spatial_res',
             'crs',
-            'time_period'
         ))
-        return raw_ds
-        # return cci_normalize(raw_ds, dataset_id, cube_params, cci_odp)
+        if 'bbox' in subsetting_kwargs:
+            ds = subset_spatial(ds, **subsetting_kwargs)
+        return ds
 
 
 class CciOdpDataStore(CciOdpDataOpener, DataStore):
 
-    def __init__(self, **cciodp_kwargs):
-        super().__init__(CciOdp(**cciodp_kwargs))
+    def __init__(self, **store_params):
+        cci_schema = self.get_data_store_params_schema()
+        cci_schema.validate_instance(store_params)
+        store_kwargs, store_params = cci_schema.process_kwargs_subset(store_params, (
+            'opensearch_url',
+            'opensearch_description_url'
+        ))
+        normalize_kwargs, store_params = cci_schema.process_kwargs_subset(store_params, (
+            'normalize_params'
+        ))
+        super().__init__(CciOdp(**store_kwargs))
 
     @property
     def description(self) -> dict:
@@ -189,8 +203,13 @@ class CciOdpDataStore(CciOdpDataOpener, DataStore):
             opensearch_url=JsonStringSchema(default=OPENSEARCH_CEDA_URL),
             opensearch_description_url=JsonStringSchema(default=CCI_ODD_URL)
         )
+        normalization_params = dict(
+            normalize_params=JsonBooleanSchema(default=False)
+        )
         return JsonObjectSchema(
-            properties=cciodp_params,
+            properties=dict(**cciodp_params,
+                            **normalization_params
+                            ),
             required=None,
             additional_properties=False
         )

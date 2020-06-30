@@ -1,17 +1,21 @@
+import datetime as dt
 import os
 import unittest
 
+from unittest import skip
 from unittest import skipIf
 
 from xcube_cci.cciodp import CciOdp
 from xcube_cci.dataaccess import CciOdpDataOpener
 from xcube_cci.dataaccess import CciOdpDataStore
+from xcube.core.normalize import normalize_dataset
 from xcube.core.store.descriptor import DatasetDescriptor
+from xcube.core.verify import assert_cube
 
 class CciOdpDataOpenerTest(unittest.TestCase):
 
     def setUp(self) -> None:
-        self.opener = CciOdpDataOpener(CciOdp())
+        self.opener = CciOdpDataOpener(cci_odp=CciOdp())
 
     @skipIf(os.environ.get('XCUBE_DISABLE_WEB_TESTS', None) == '1', 'XCUBE_DISABLE_WEB_TESTS = 1')
     def test_describe_dataset(self):
@@ -32,7 +36,7 @@ class CciOdpDataOpenerTest(unittest.TestCase):
         self.assertEqual('float32', descriptor.data_vars[0].dtype)
         self.assertIsNone(descriptor.crs)
         self.assertEqual(1.0, descriptor.spatial_res)
-        self.assertEqual(('2000-02-01T00:00:00', '2014-12-31T23:59:59'), descriptor.time_range)
+        self.assertEqual(('1997-01-01T00:00:00', '2008-12-31T00:00:00'), descriptor.time_range)
         self.assertEqual('1M', descriptor.time_period)
 
     @skipIf(os.environ.get('XCUBE_DISABLE_WEB_TESTS', None) == '1', 'XCUBE_DISABLE_WEB_TESTS = 1')
@@ -47,7 +51,9 @@ class CciOdpDataOpenerTest(unittest.TestCase):
     def test_open_dataset(self):
         dataset = self.opener.open_data('esacci.OZONE.mon.L3.NP.multi-sensor.multi-platform.MERGED.fv0002.r1',
                                         variable_names=['surface_pressure', 'O3_du', 'O3e_du'],
-                                        time_range=['2009-05-02', '2009-08-31'])
+                                        time_range=['2009-05-02', '2009-08-31'],
+                                        bbox=[-10.0, 40.0, 10.0, 60.0]
+                                        )
         self.assertIsNotNone(dataset)
         self.assertTrue('surface_pressure' in dataset.variables)
         self.assertTrue('O3_du' in dataset.variables)
@@ -59,6 +65,7 @@ class CciOdpDataStoreTest(unittest.TestCase):
     def setUp(self) -> None:
         self.store = CciOdpDataStore()
 
+    @skip('Test takes long')
     def test_description(self):
         description = self.store.description
         self.assertIsNotNone(description)
@@ -102,7 +109,7 @@ class CciOdpDataStoreTest(unittest.TestCase):
         self.assertEqual('31D', search_result[0].time_period)
         self.assertEqual(0.25, search_result[0].spatial_res)
         self.assertEqual('dataset', search_result[0].type_id)
-        self.assertEqual(('2000-02-01T00:00:00', '2014-12-31T23:59:59'), search_result[0].time_range)
+        self.assertEqual(('2001-01-01T00:00:00', '2019-12-31T23:59:59'), search_result[0].time_range)
 
     @skipIf(os.environ.get('XCUBE_DISABLE_WEB_TESTS', None) == '1', 'XCUBE_DISABLE_WEB_TESTS = 1')
     def test_has_data(self):
@@ -123,3 +130,53 @@ class CciOdpDataStoreTest(unittest.TestCase):
         self.assertEqual('LC CCI: 13 year ASAR L4 Map WB, v4.0',
                          self.store._create_human_readable_title_from_id(
                              'esacci.LC.13-yrs.L4.WB.ASAR.Envisat.Map.4-0.r1'))
+
+
+class CciDataNormalizationTest(unittest.TestCase):
+    @skip('Execute to test whether all data sets can be normalized')
+    def test_normalization(self):
+        all_data = self.store.search_data()
+        datasets_without_variables = []
+        datasets_with_unsupported_frequencies = []
+        datasets_that_could_not_be_opened = {}
+        good_datasets = []
+        for data in all_data:
+            if 'satellite-orbit-frequency' in data.data_id or 'climatology' in data.data_id:
+                print(f'Cannot read data due to unsupported frequency')
+                datasets_with_unsupported_frequencies.append(data.data_id)
+                continue
+            if not data.data_vars or len(data.data_vars) < 1:
+                print(f'Dataset {data.data_id} has not enough variables to open. Will skip.')
+                datasets_without_variables.append(data.data_id)
+                continue
+            print(f'Attempting to open {data.data_id} ...')
+            variable_names = []
+            for i in range(min(3, len(data.data_vars))):
+                variable_names.append(data.data_vars[i].name)
+            start_time = dt.datetime.strptime(data.time_range[0], '%Y-%m-%dT%H:%M:%S').timestamp()
+            end_time = dt.datetime.strptime(data.time_range[1], '%Y-%m-%dT%H:%M:%S').timestamp()
+            center_time = start_time + (end_time - start_time)
+            delta = dt.timedelta(days=30)
+            range_start = (dt.datetime.fromtimestamp(center_time) - delta).strftime('%Y-%m-%d')
+            range_end = (dt.datetime.fromtimestamp(center_time) + delta).strftime('%Y-%m-%d')
+            dataset = self.store.open_data(data_id=data.data_id,
+                                           variable_names=variable_names,
+                                           time_range=[range_start, range_end]
+                                           )
+            print(f'Attempting to normalize {data.data_id} ...')
+            cube = normalize_dataset(dataset)
+            try:
+                print(f'Asserting {data.data_id} ...')
+                assert_cube(cube)
+                good_datasets.append(data.data_id)
+            except ValueError as e:
+                print(e)
+                datasets_that_could_not_be_opened[data.data_id] = e
+                continue
+        print(f'Datasets with unsupported frequencies (#{len(datasets_with_unsupported_frequencies)}): '
+              f'{datasets_with_unsupported_frequencies}')
+        print(f'Datasets without variables (#{len(datasets_without_variables)}): '
+              f'{datasets_without_variables}')
+        print(f'Datasets that could not be opened (#{len(datasets_that_could_not_be_opened)}): '
+              f'{datasets_that_could_not_be_opened}')
+        print(f'Datasets that were verified (#{len(good_datasets)}): {good_datasets}')

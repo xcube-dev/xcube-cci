@@ -118,7 +118,7 @@ class CciOdpTest(unittest.TestCase):
 
 
     @skipIf(os.environ.get('XCUBE_DISABLE_WEB_TESTS', None) == '1', 'XCUBE_DISABLE_WEB_TESTS = 1')
-    # @skip('Test takes long')
+    @skip('Test takes long')
     def test_description(self):
         cci_odp = CciOdp()
         description = cci_odp.description
