@@ -15,7 +15,7 @@ from xcube.core.verify import assert_cube
 class CciOdpDataOpenerTest(unittest.TestCase):
 
     def setUp(self) -> None:
-        self.opener = CciOdpDataOpener(CciOdp())
+        self.opener = CciOdpDataOpener(cci_odp=CciOdp())
 
     @skipIf(os.environ.get('XCUBE_DISABLE_WEB_TESTS', None) == '1', 'XCUBE_DISABLE_WEB_TESTS = 1')
     def test_describe_dataset(self):
@@ -36,7 +36,7 @@ class CciOdpDataOpenerTest(unittest.TestCase):
         self.assertEqual('float32', descriptor.data_vars[0].dtype)
         self.assertIsNone(descriptor.crs)
         self.assertEqual(1.0, descriptor.spatial_res)
-        self.assertEqual(('2000-02-01T00:00:00', '2014-12-31T23:59:59'), descriptor.time_range)
+        self.assertEqual(('1997-01-01T00:00:00', '2008-12-31T00:00:00'), descriptor.time_range)
         self.assertEqual('1M', descriptor.time_period)
 
     @skipIf(os.environ.get('XCUBE_DISABLE_WEB_TESTS', None) == '1', 'XCUBE_DISABLE_WEB_TESTS = 1')
@@ -65,6 +65,7 @@ class CciOdpDataStoreTest(unittest.TestCase):
     def setUp(self) -> None:
         self.store = CciOdpDataStore()
 
+    @skip('Test takes long')
     def test_description(self):
         description = self.store.description
         self.assertIsNotNone(description)
@@ -108,7 +109,7 @@ class CciOdpDataStoreTest(unittest.TestCase):
         self.assertEqual('31D', search_result[0].time_period)
         self.assertEqual(0.25, search_result[0].spatial_res)
         self.assertEqual('dataset', search_result[0].type_id)
-        self.assertEqual(('2000-02-01T00:00:00', '2014-12-31T23:59:59'), search_result[0].time_range)
+        self.assertEqual(('2001-01-01T00:00:00', '2019-12-31T23:59:59'), search_result[0].time_range)
 
     @skipIf(os.environ.get('XCUBE_DISABLE_WEB_TESTS', None) == '1', 'XCUBE_DISABLE_WEB_TESTS = 1')
     def test_has_data(self):
