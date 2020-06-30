@@ -133,9 +133,11 @@ class CciOdpDataStoreTest(unittest.TestCase):
 
 
 class CciDataNormalizationTest(unittest.TestCase):
+
     @skip('Execute to test whether all data sets can be normalized')
     def test_normalization(self):
-        all_data = self.store.search_data()
+        store = CciOdpDataStore()
+        all_data = store.search_data()
         datasets_without_variables = []
         datasets_with_unsupported_frequencies = []
         datasets_that_could_not_be_opened = {}
@@ -159,7 +161,7 @@ class CciDataNormalizationTest(unittest.TestCase):
             delta = dt.timedelta(days=30)
             range_start = (dt.datetime.fromtimestamp(center_time) - delta).strftime('%Y-%m-%d')
             range_end = (dt.datetime.fromtimestamp(center_time) + delta).strftime('%Y-%m-%d')
-            dataset = self.store.open_data(data_id=data.data_id,
+            dataset = store.open_data(data_id=data.data_id,
                                            variable_names=variable_names,
                                            time_range=[range_start, range_end]
                                            )
