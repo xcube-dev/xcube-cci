@@ -25,6 +25,7 @@ from typing import Any, Iterator, List, Tuple
 import xarray as xr
 import zarr
 
+from xcube.core.normalize import normalize_dataset
 from xcube.core.store import DataDescriptor
 from xcube.core.store import DataOpener
 from xcube.core.store import DataStore
@@ -32,7 +33,6 @@ from xcube.core.store import DataStoreError
 from xcube.core.store import DatasetDescriptor
 from xcube.core.store import VariableDescriptor
 from xcube.util.jsonschema import JsonArraySchema
-from xcube.util.jsonschema import JsonBooleanSchema
 from xcube.util.jsonschema import JsonNumberSchema
 from xcube.util.jsonschema import JsonObjectSchema
 from xcube.util.jsonschema import JsonStringSchema
@@ -66,11 +66,13 @@ _FREQUENCY_TO_ADJECTIVE = {
 }
 
 
-
 class CciOdpDataOpener(DataOpener):
 
-    def __init__(self, cci_odp: CciOdp = None):
+    def __init__(self,
+                 normalize_data: bool = True,
+                 cci_odp: CciOdp = None):
         self._cci_odp = cci_odp
+        self._normalize_data = normalize_data
 
     def _describe_data(self, data_ids: List[str]) -> List[DataDescriptor]:
         ds_metadata_list = self._cci_odp.get_dataset_metadata(data_ids)
@@ -166,6 +168,8 @@ class CciOdpDataOpener(DataOpener):
             'bbox',
             'crs',
         ))
+        if self._normalize_data:
+            ds = normalize_dataset(ds)
         if 'bbox' in subsetting_kwargs:
             ds = subset_spatial(ds, **subsetting_kwargs)
         return ds
@@ -173,17 +177,16 @@ class CciOdpDataOpener(DataOpener):
 
 class CciOdpDataStore(CciOdpDataOpener, DataStore):
 
-    def __init__(self, **store_params):
+    def __init__(self,
+                 normalize_data: bool = True,
+                 **store_params):
         cci_schema = self.get_data_store_params_schema()
         cci_schema.validate_instance(store_params)
         store_kwargs, store_params = cci_schema.process_kwargs_subset(store_params, (
             'opensearch_url',
             'opensearch_description_url'
         ))
-        normalize_kwargs, store_params = cci_schema.process_kwargs_subset(store_params, (
-            'normalize_params'
-        ))
-        super().__init__(CciOdp(**store_kwargs))
+        super().__init__(normalize_data, CciOdp(**store_kwargs))
 
     @property
     def description(self) -> dict:
@@ -203,13 +206,8 @@ class CciOdpDataStore(CciOdpDataOpener, DataStore):
             opensearch_url=JsonStringSchema(default=OPENSEARCH_CEDA_URL),
             opensearch_description_url=JsonStringSchema(default=CCI_ODD_URL)
         )
-        normalization_params = dict(
-            normalize_params=JsonBooleanSchema(default=False)
-        )
         return JsonObjectSchema(
-            properties=dict(**cciodp_params,
-                            **normalization_params
-                            ),
+            properties=dict(**cciodp_params),
             required=None,
             additional_properties=False
         )
