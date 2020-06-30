@@ -714,8 +714,8 @@ class CciOdp:
         data_info['lon_res'] = self._get_res(nc_attrs, 'lon')
         data_info['bbox'] = (float(dataset_metadata['bbox_minx']), float(dataset_metadata['bbox_miny']),
                              float(dataset_metadata['bbox_maxx']), float(dataset_metadata['bbox_maxy']))
-        data_info['temporal_coverage_start'] = '2000-02-01T00:00:00'
-        data_info['temporal_coverage_end'] = '2014-12-31T23:59:59'
+        data_info['temporal_coverage_start'] = dataset_metadata.get('temporal_coverage_start', '')
+        data_info['temporal_coverage_end'] = dataset_metadata.get('temporal_coverage_end', '')
         data_info['var_names'] = self.var_names(dataset_id)
         return data_info
 

@@ -144,7 +144,7 @@ class RemoteChunkStore(MutableMapping, metaclass=ABCMeta):
             if not dimensions:
                 raise DataStoreError(f'Could not determine dimensions of variable {variable_name}')
             var_attrs.update(_ARRAY_DIMENSIONS=dimensions)
-            chunk_sizes = var_attrs['chunk_sizes']
+            chunk_sizes = var_attrs.get('chunk_sizes',  [-1] * len(dimensions))
             sizes = []
             self._time_indexes[variable_name] = -1
             for i, dimension_name in enumerate(dimensions):
@@ -152,6 +152,9 @@ class RemoteChunkStore(MutableMapping, metaclass=ABCMeta):
                 if dimension_name == 'time':
                     chunk_sizes[i] = 1
                     self._time_indexes[variable_name] = i
+                if chunk_sizes[i] == -1:
+                    chunk_sizes[i] = sizes[i]
+            var_attrs['chunk_sizes'] = chunk_sizes
             self._add_remote_array(variable_name,
                                    sizes,
                                    chunk_sizes,
@@ -451,7 +454,7 @@ class CciChunkStore(RemoteChunkStore):
             num_days = int(time_period.split('-')[0])
             temp_start_time = datetime(start_time.year, start_time.month, start_time.day)
             temp_start_time -= relativedelta(days=num_days - 1)
-            temp_start_time = self._cci_odp.get_earliest_start_date(self.cube_config.dataset_name,
+            temp_start_time = self._cci_odp.get_earliest_start_date(dataset_id,
                                                                     datetime.strftime(temp_start_time,
                                                                                       _TIMESTAMP_FORMAT),
                                                                     iso_end_time,
@@ -467,6 +470,26 @@ class CciChunkStore(RemoteChunkStore):
             end_time = datetime.fromordinal(end_time_ordinal)
             end_time += relativedelta(days=1, microseconds=-1)
             delta = relativedelta(days=num_days, microseconds=-1)
+        elif re.compile('[0-9]*-yrs').search(time_period):
+            num_years = int(time_period.split('-')[0])
+            temp_start_time = datetime(start_time.year, start_time.month, start_time.day)
+            temp_start_time -= relativedelta(years=num_years - 1)
+            temp_start_time = self._cci_odp.get_earliest_start_date(dataset_id,
+                                                                    datetime.strftime(temp_start_time,
+                                                                                      _TIMESTAMP_FORMAT),
+                                                                    iso_end_time,
+                                                                    f'{num_years} years')
+            if temp_start_time:
+                start_time = temp_start_time
+            else:
+                start_time = datetime(start_time.year, start_time.month, start_time.day)
+            start_time_ordinal = start_time.toordinal()
+            end_time_ordinal = end_time.toordinal()
+            end_time_ordinal = start_time_ordinal + int(np.ceil((end_time_ordinal - start_time_ordinal) /
+                                                                float(num_years)) * num_years)
+            end_time = datetime.fromordinal(end_time_ordinal)
+            end_time += relativedelta(years=1, microseconds=-1)
+            delta = relativedelta(years=num_years, microseconds=-1)
         else:
             # todo add support for satellite-orbit-frequency
             return []
@@ -544,7 +567,7 @@ class CciChunkStore(RemoteChunkStore):
     def _get_dimension_indexes_for_chunk(self, var_name: str, chunk_index: Tuple[int, ...]) -> tuple:
         dim_indexes = []
         var_dimensions = self._metadata.get('variable_infos', {}).get(var_name, {}).get('dimensions', [])
-        chunk_sizes = self._metadata.get('variable_infos', {}).get(var_name, {}).get('chunk_sizes', [])
+        chunk_sizes = self.get_attrs(var_name).get('chunk_sizes', [])
         for i, var_dimension in enumerate(var_dimensions):
             if var_dimension == 'time':
                 dim_indexes.append(slice(None, None, None))
