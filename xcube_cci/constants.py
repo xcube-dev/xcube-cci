@@ -27,3 +27,5 @@ OPENSEARCH_CEDA_URL = "http://opensearch-test.ceda.ac.uk/opensearch/request"
 CCI_ODD_URL = 'http://opensearch-test.ceda.ac.uk/opensearch/description.xml?parentIdentifier=cci'
 
 DATA_OPENER_ID = 'dataset:zarr:cciodp'
+WGS84_CRS = 'http://www.opengis.net/def/crs/EPSG/0/4326'
+DEFAULT_CRS = WGS84_CRS

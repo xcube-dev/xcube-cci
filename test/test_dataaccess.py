@@ -51,7 +51,9 @@ class CciOdpDataOpenerTest(unittest.TestCase):
     def test_open_dataset(self):
         dataset = self.opener.open_data('esacci.OZONE.mon.L3.NP.multi-sensor.multi-platform.MERGED.fv0002.r1',
                                         variable_names=['surface_pressure', 'O3_du', 'O3e_du'],
-                                        time_range=['2009-05-02', '2009-08-31'])
+                                        time_range=['2009-05-02', '2009-08-31'],
+                                        bbox=[-10.0, 40.0, 10.0, 60.0]
+                                        )
         self.assertIsNotNone(dataset)
         self.assertTrue('surface_pressure' in dataset.variables)
         self.assertTrue('O3_du' in dataset.variables)
