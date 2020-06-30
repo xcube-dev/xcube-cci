@@ -180,7 +180,7 @@ class CciOdpDataStore(CciOdpDataOpener, DataStore):
             'opensearch_url',
             'opensearch_description_url'
         ))
-        normalize_kwargs, store_params = cci_schema.process_kwargs.subset(store_params, (
+        normalize_kwargs, store_params = cci_schema.process_kwargs_subset(store_params, (
             'normalize_params'
         ))
         super().__init__(CciOdp(**store_kwargs))
