@@ -1028,7 +1028,7 @@ class CciOdp:
             start_time_attributes = ['time_coverage_start', 'start_date']
             attributes = dataset.attributes.get('NC_GLOBAL', {})
             for start_time_attribute in start_time_attributes:
-                start_time_string = attributes[start_time_attribute]
+                start_time_string = attributes.get(start_time_attribute, '')
                 time_format, start, end, timedelta = find_datetime_format(start_time_string)
                 if time_format:
                     start_time = datetime.strptime(start_time_string[start:end], time_format)
