@@ -108,22 +108,18 @@ class CciOdpDataOpener(DataOpener):
                                                           var_info))
             else:
                 var_descriptors.append(VariableDescriptor(var_name, '', ''))
-        data_schema = self.get_open_data_params_schema()
-        return DatasetDescriptor(
-            data_id=data_id,
-            dims=dims,
-            data_vars=var_descriptors,
-            attrs=attrs,
-            bbox=bbox,
-            spatial_res=spatial_resolution,
-            time_range=temporal_coverage,
-            time_period=temporal_resolution,
-            open_params_schema=data_schema
-        )
+        descriptor = DatasetDescriptor(data_id=data_id, dims=dims, data_vars=var_descriptors, attrs=attrs, bbox=bbox,
+                                       spatial_res=spatial_resolution, time_range=temporal_coverage,
+                                       time_period=temporal_resolution)
+        data_schema = self._get_open_data_params_schema(descriptor)
+        descriptor.open_params_schema = data_schema
+        return descriptor
 
     def get_open_data_params_schema(self, data_id: str = None, opener_id: str = None) -> JsonObjectSchema:
         dsd = self.describe_data(data_id) if data_id else None
+        return self._get_open_data_params_schema(dsd)
 
+    def _get_open_data_params_schema(self, dsd: DataDescriptor):
         cube_params = dict(
             variable_names=JsonArraySchema(items=JsonStringSchema(
                 enum=[v.name for v in dsd.data_vars] if dsd and dsd.data_vars else None)),
@@ -174,6 +170,18 @@ class CciOdpDataStore(CciOdpDataOpener, DataStore):
 
     def __init__(self, **cciodp_kwargs):
         super().__init__(CciOdp(**cciodp_kwargs))
+
+    @property
+    def description(self) -> dict:
+        all_data = list(self.search_data())
+        datasets = []
+        for data in all_data:
+            datasets.append(data.to_dict())
+        description = dict(store_id='cciodp',
+                           description='ESA CCI Open Data Portal',
+                           datasets=datasets
+                           )
+        return description
 
     @classmethod
     def get_data_store_params_schema(cls) -> JsonObjectSchema:
