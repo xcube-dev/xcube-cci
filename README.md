@@ -4,13 +4,15 @@ An [xcube plugin]() that allows generating data cubes from the ESA CCI Open Data
 
 ## Setup
 
-First install [`xcube`](https://github.com/dcs4cop/xcube), then the `xcube_cci` plugin.
+First install [`xcube`](https://github.com/dcs4cop/xcube), 
+then the `xcube_cci` plugin.
 
 ### Install xcube
 
-`xcube` is available from conda-forge. You can install it with
+Once xcube 0.5 becomes available on [conda-forge](https://conda-forge.org/), 
+you can install it with
     
-    $ conda create --name xcube xcube>=0.4
+    $ conda create --name xcube xcube>=0.5
     $ conda activate xcube
 
 If you prefer to build `xcube` from source, use:
@@ -39,8 +41,13 @@ Once `xcube_cci` is available from conda-forge:
 
 ### Test:
 
-    $ pytest
+You can run the unit tests for `xcube_cci` by executing
 
+```
+$ pytest
+```
+
+in the `xcube-cci` repository.
     
 ## Tools
 
