@@ -167,6 +167,14 @@ class CciOdpTest(unittest.TestCase):
         self.assertEqual(12.0, cci_odp._get_res(nc_attrs, 'lat'))
         self.assertEqual(34.0, cci_odp._get_res(nc_attrs, 'lon'))
 
+        nc_attrs = dict(spatial_resolution='926.62543305 m')
+        self.assertEqual(926.62543305, cci_odp._get_res(nc_attrs, 'lat'))
+        self.assertEqual(926.62543305, cci_odp._get_res(nc_attrs, 'lon'))
+
+        nc_attrs = dict(spatial_resolution='60km x 30km at nadir (along-track x across-track)')
+        self.assertEqual(60.0, cci_odp._get_res(nc_attrs, 'lat'))
+        self.assertEqual(30.0, cci_odp._get_res(nc_attrs, 'lon'))
+
     def test_find_datetime_format(self):
         time_format, start, end, timedelta = find_datetime_format('fetgzrs2015ydhfbgv')
         self.assertEqual('%Y', time_format)
