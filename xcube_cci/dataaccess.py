@@ -94,20 +94,16 @@ class CciOdpDataOpener(DataOpener):
                         data_descriptor.dims['lon'] = data_descriptor.dims.pop('longitude')
                 if data_descriptor.data_vars:
                     for data_var in data_descriptor.data_vars:
-                        if data_var.dims != ['time', 'lat', 'lon']:
+                        if data_var.dims != ('time', 'lat', 'lon'):
                             other_dims = []
                             for dim in data_var.dims:
                                 if dim not in default_dims:
                                     other_dims.append(dim)
-                            if len(other_dims) == 0:
-                                data_var.dims = ['time', 'lat', 'lon']
-                                data_var.ndim = 3
-                            else:
-                                new_dims = ['time', 'lat', 'lon']
-                                for i in range(len(other_dims)):
-                                    new_dims.insert(i + 1, other_dims[i])
-                                data_var.dims = new_dims
-                                data_var.ndim = len(new_dims)
+                            new_dims = ['time', 'lat', 'lon']
+                            for i in range(len(other_dims)):
+                                new_dims.insert(i + 1, other_dims[i])
+                            data_var.dims = tuple(new_dims)
+                            data_var.ndim = len(new_dims)
             return data_descriptor
         except ValueError:
             raise DataStoreError(f'Cannot describe metadata. "{data_id}" does not seem to be a valid identifier.')
