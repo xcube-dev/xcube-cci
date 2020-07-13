@@ -754,7 +754,7 @@ class CciOdp:
             if catalogue:
                 tasks = []
                 for catalogue_item in catalogue:
-                    tasks.append(self._create_data_source(catalogue[catalogue_item], catalogue_item))
+                    tasks.append(self._create_data_source(session, catalogue[catalogue_item], catalogue_item))
                 await asyncio.gather(*tasks)
         return list(self._data_sources.keys())
 
