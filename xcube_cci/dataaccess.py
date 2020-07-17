@@ -42,6 +42,7 @@ from xcube_cci.constants import CCI_ODD_URL
 from xcube_cci.constants import DATA_OPENER_ID
 from xcube_cci.constants import OPENSEARCH_CEDA_URL
 from xcube_cci.constants import DEFAULT_CRS
+from xcube_cci.normalize import normalize_cci_dataset
 from xcube_cci.subsetting import subset_spatial
 
 DATASET_DATA_TYPE = 'dataset'
@@ -189,6 +190,7 @@ class CciOdpDataOpener(DataOpener):
             'crs',
         ))
         if self._normalize_data:
+            ds = normalize_cci_dataset(ds)
             ds = normalize_dataset(ds)
         if 'bbox' in subsetting_kwargs:
             ds = subset_spatial(ds, **subsetting_kwargs)
