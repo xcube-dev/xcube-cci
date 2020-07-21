@@ -729,12 +729,15 @@ class CciOdp:
         for name in [attr_name, 'resolution', 'spatial_resolution']:
             if name in nc_attrs:
                 res_attr = nc_attrs[name]
-                if type(res_attr) == float:
-                    return res_attr
-                elif type(res_attr) == int:
-                    return float(res_attr)
-                return float(res_attr.split('(')[0].split('x')[index].split('deg')[0].split('degree')[0].
-                             split('km')[0].split('m')[0])
+                try:
+                    if type(res_attr) == float:
+                        return res_attr
+                    elif type(res_attr) == int:
+                        return float(res_attr)
+                    return float(res_attr.split('(')[0].split('x')[index].split('deg')[0].split('degree')[0].
+                                split('km')[0].split('m')[0])
+                except ValueError:
+                    continue
         return -1.0
 
     def get_dataset_metadata(self, dataset_ids: List[str]) -> List[dict]:
