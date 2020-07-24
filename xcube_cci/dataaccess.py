@@ -133,6 +133,10 @@ class CciOdpDataOpener(DataOpener):
                                                           var_info))
             else:
                 var_descriptors.append(VariableDescriptor(var_name, '', ''))
+        ds_metadata.pop('dimensions')
+        ds_metadata.pop('variable_infos')
+        ds_metadata.pop('attributes')
+        attrs.update(ds_metadata)
         descriptor = DatasetDescriptor(data_id=data_id, dims=dims, data_vars=var_descriptors, attrs=attrs, bbox=bbox,
                                        spatial_res=spatial_resolution, time_range=temporal_coverage,
                                        time_period=temporal_resolution)
