@@ -95,6 +95,7 @@ def _convert_time_from_drs_id(time_value: str) -> str:
         return 'climatology'
     raise ValueError('Unknown time frequency format')
 
+
 def _run_with_session(function, *params):
     return asyncio.run(_run_with_session_executor(function, *params))
 
@@ -641,8 +642,8 @@ class CciOdp:
     """
 
     def __init__(self,
-                 opensearch_url: str=OPENSEARCH_CEDA_URL,
-                 opensearch_description_url: str=CCI_ODD_URL
+                 opensearch_url: str = OPENSEARCH_CEDA_URL,
+                 opensearch_description_url: str = CCI_ODD_URL
                  ):
         self._opensearch_url = opensearch_url
         self._opensearch_description_url = opensearch_description_url
@@ -705,7 +706,7 @@ class CciOdp:
         set_name = split_name[1].replace('Level ', 'L').replace(', version ', ' v').replace(', Version ', ' v')
         return f'{cci_name}:{set_name}'
 
-    def get_dataset_info(self, dataset_id: str, dataset_metadata: dict=None) -> dict:
+    def get_dataset_info(self, dataset_id: str, dataset_metadata: dict = None) -> dict:
         data_info = {}
         if not dataset_metadata:
             dataset_metadata = self.get_dataset_metadata([dataset_id])[0]
@@ -735,7 +736,7 @@ class CciOdp:
                     elif type(res_attr) == int:
                         return float(res_attr)
                     return float(res_attr.split('(')[0].split('x')[index].split('deg')[0].split('degree')[0].
-                                split('km')[0].split('m')[0])
+                                 split('km')[0].split('m')[0])
                 except ValueError:
                     continue
         return -1.0
@@ -868,18 +869,18 @@ class CciOdp:
         return variables
 
     def search(self,
-               start_date: Optional[str]=None,
-               end_date: Optional[str]=None,
-               bbox: Optional[Tuple[float, float, float, float]]=None,
-               ecv: Optional[str]=None,
-               frequency: Optional[str]=None,
-               institute: Optional[str]=None,
-               processing_level: Optional[str]=None,
-               product_string: Optional[str]=None,
-               product_version: Optional[str]=None,
-               data_type: Optional[str]=None,
-               sensor: Optional[str]=None,
-               platform: Optional[str]=None) -> List[str]:
+               start_date: Optional[str] = None,
+               end_date: Optional[str] = None,
+               bbox: Optional[Tuple[float, float, float, float]] = None,
+               ecv: Optional[str] = None,
+               frequency: Optional[str] = None,
+               institute: Optional[str] = None,
+               processing_level: Optional[str] = None,
+               product_string: Optional[str] = None,
+               product_version: Optional[str] = None,
+               data_type: Optional[str] = None,
+               sensor: Optional[str] = None,
+               platform: Optional[str] = None) -> List[str]:
         candidate_names = []
         if not self._data_sources and not ecv and not frequency and not processing_level and not data_type and \
                 not product_string and not product_version:
@@ -1002,14 +1003,14 @@ class CciOdp:
                 dim_data[dim] = dict(size=dataset[dim].size, chunkSize=dataset[dim].attributes.get('_ChunkSizes'))
                 if dataset[dim].size < 512 * 512:
                     dim_data[dim]['data'] = \
-                        await _get_data_from_opendap_dataset(dataset, session, dim, (slice(None,None,None), ))
+                        await _get_data_from_opendap_dataset(dataset, session, dim, (slice(None, None, None),))
                 else:
                     dim_data[dim]['data'] = []
             else:
                 dim_data[dim] = dict(size=dimension_names[dim],
-                                        chunkSize=dimension_names[dim],
-                                        data=list(range(dimension_names[dim]))
-                                        )
+                                     chunkSize=dimension_names[dim],
+                                     data=list(range(dimension_names[dim]))
+                                     )
         return dim_data
 
     def get_earliest_start_date(self, dataset_name: str, start_time: str, end_time: str, frequency: str) -> \
@@ -1032,6 +1033,34 @@ class CciOdp:
                     return start_time
         return None
 
+    def _get_feature_list(self, request):
+        feature_list = _run_with_session(_fetch_opensearch_feature_list, self._opensearch_url, request)
+        if len(feature_list) == 0:
+            # try without dates. For some data sets, this works better
+            request.pop('startDate')
+            request.pop('endDate')
+            feature_list = _run_with_session(_fetch_opensearch_feature_list, self._opensearch_url, request)
+        return feature_list
+
+    def get_time_ranges_satellite_orbit_frequency(self, dataset_name: str, start_time: str, end_time: str) -> \
+            List[Tuple[datetime, datetime]]:
+        request = dict(parentIdentifier=self.get_fid_for_dataset(dataset_name),
+                       startDate=start_time,
+                       endDate=end_time,
+                       fileFormat='.nc')
+
+        start_date = datetime.strptime(request['startDate'], _TIMESTAMP_FORMAT)
+        end_date = datetime.strptime(request['endDate'], _TIMESTAMP_FORMAT)
+        request['fileFormat'] = '.nc'
+        feature_list = self._get_feature_list(request)
+
+        request_time_ranges = []
+        for feature in feature_list:
+            date = datetime.strptime(feature['properties']['date'].split('/')[0], _TIMESTAMP_FORMAT)
+            if start_date <= date <= end_date:
+                request_time_ranges.append((date, date))
+        return request_time_ranges
+
     def get_fid_for_dataset(self, dataset_name: str) -> str:
         return _run_with_session(self._get_fid_for_dataset, dataset_name)
 
@@ -1046,12 +1075,7 @@ class CciOdp:
         start_date = datetime.strptime(request['startDate'], _TIMESTAMP_FORMAT)
         end_date = datetime.strptime(request['endDate'], _TIMESTAMP_FORMAT)
         request['fileFormat'] = '.nc'
-        feature_list = _run_with_session(_fetch_opensearch_feature_list, self._opensearch_url, request)
-        if len(feature_list) == 0:
-            # try without dates. For some data sets, this works better
-            request.pop('startDate')
-            request.pop('endDate')
-            feature_list = _run_with_session(_fetch_opensearch_feature_list, self._opensearch_url, request)
+        feature_list = self._get_feature_list(request)
         opendap_url = None
         earliest_date = datetime(2999, 12, 31)
         for feature in feature_list:
