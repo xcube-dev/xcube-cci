@@ -24,6 +24,8 @@ import pandas as pd
 import xarray as xr
 import warnings
 
+from typing import Optional
+
 from xcube_cci.timeutil import get_timestamps_from_string
 
 
@@ -163,3 +165,33 @@ def _normalize_missing_time(ds: xr.Dataset) -> xr.Dataset:
         ds.coords['time_bnds'].encoding['units'] = 'days since 1970-01-01'
 
     return ds
+
+
+def normalize_dims_description(dims: dict) -> dict:
+    if 'latitude' in dims:
+        dims['lat'] = dims.pop('latitude')
+    if 'longitude' in dims:
+        dims['lon'] = dims.pop('longitude')
+    if 'latitude_centers' in dims:
+        dims['lat'] = dims.pop('latitude_centers')
+        dims['lon'] = dims['lat'] * 2
+    return dims
+
+
+def normalize_variable_dims_description(var_dims: tuple) -> Optional[tuple]:
+    if ('lat' in var_dims and 'lon' in var_dims) or \
+            ('latitude' in var_dims and 'longitude' in var_dims) or \
+            ('latitude_centers' in var_dims):
+        # dataset cannot be normalized
+        # return None
+        default_dims = ['time', 'lat', 'lon', 'latitude', 'longitude', 'latitude_centers']
+        if var_dims != ('time', 'lat', 'lon'):
+            other_dims = []
+            for dim in var_dims:
+                if dim not in default_dims:
+                    other_dims.append(dim)
+            new_dims = ['time', 'lat', 'lon']
+            for i in range(len(other_dims)):
+                new_dims.insert(i + 1, other_dims[i])
+            var_dims = tuple(new_dims)
+        return var_dims

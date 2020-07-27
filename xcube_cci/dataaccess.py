@@ -43,6 +43,8 @@ from xcube_cci.constants import DATA_OPENER_ID
 from xcube_cci.constants import OPENSEARCH_CEDA_URL
 from xcube_cci.constants import DEFAULT_CRS
 from xcube_cci.normalize import normalize_cci_dataset
+from xcube_cci.normalize import normalize_dims_description
+from xcube_cci.normalize import normalize_variable_dims_description
 from xcube_cci.subsetting import subset_spatial
 
 DATASET_DATA_TYPE = 'dataset'
@@ -67,13 +69,30 @@ _FREQUENCY_TO_ADJECTIVE = {
 }
 
 
+def _normalize_dataset(ds: xr.Dataset) -> xr.Dataset:
+    ds = normalize_cci_dataset(ds)
+    ds = normalize_dataset(ds)
+    return ds
+
+
+def _return_input(anything: Any) -> Any:
+    return anything
+
+
 class CciOdpDataOpener(DataOpener):
 
     def __init__(self,
                  normalize_data: bool = True,
                  cci_odp: CciOdp = None):
         self._cci_odp = cci_odp
-        self._normalize_data = normalize_data
+        if normalize_data:
+            self._normalize_dims_func = normalize_dims_description
+            self._normalize_var_dims_func = normalize_variable_dims_description
+            self._normalize_dataset_func = _normalize_dataset
+        else:
+            self._normalize_dims_func = _return_input
+            self._normalize_var_dims_func = _return_input
+            self._normalize_dataset_func = _return_input
 
     def _describe_data(self, data_ids: List[str]) -> List[DataDescriptor]:
         ds_metadata_list = self._cci_odp.get_dataset_metadata(data_ids)
@@ -85,32 +104,12 @@ class CciOdpDataOpener(DataOpener):
     def describe_data(self, data_id: str) -> DataDescriptor:
         try:
             ds_metadata = self._cci_odp.get_dataset_metadata([data_id])[0]
-            data_descriptor = self._get_data_descriptor_from_metadata(data_id, ds_metadata)
-            if self._normalize_data:
-                default_dims = ['lat', 'lon', 'latitude', 'longitude', 'time']
-                if data_descriptor.dims:
-                    if 'latitude' in data_descriptor.dims:
-                        data_descriptor.dims['lat'] = data_descriptor.dims.pop('latitude')
-                    if 'longitude' in data_descriptor.dims:
-                        data_descriptor.dims['lon'] = data_descriptor.dims.pop('longitude')
-                if data_descriptor.data_vars:
-                    for data_var in data_descriptor.data_vars:
-                        if data_var.dims != ('time', 'lat', 'lon'):
-                            other_dims = []
-                            for dim in data_var.dims:
-                                if dim not in default_dims:
-                                    other_dims.append(dim)
-                            new_dims = ['time', 'lat', 'lon']
-                            for i in range(len(other_dims)):
-                                new_dims.insert(i + 1, other_dims[i])
-                            data_var.dims = tuple(new_dims)
-                            data_var.ndim = len(new_dims)
-            return data_descriptor
+            return self._get_data_descriptor_from_metadata(data_id, ds_metadata)
         except ValueError:
             raise DataStoreError(f'Cannot describe metadata. "{data_id}" does not seem to be a valid identifier.')
 
     def _get_data_descriptor_from_metadata(self, data_id: str, ds_metadata: dict) -> DatasetDescriptor:
-        dims = ds_metadata.get('dimensions', {})
+        dims = self._normalize_dims_func(ds_metadata.get('dimensions', {}))
         attrs = ds_metadata.get('attributes', {}).get('NC_GLOBAL', {})
         temporal_resolution = attrs.get('time_coverage_resolution', 'P')[1:]
         if re.match(TIME_PERIOD_PATTERN, temporal_resolution) is None:
@@ -126,11 +125,9 @@ class CciOdpDataOpener(DataOpener):
             if var_name in var_infos:
                 var_info = var_infos[var_name]
                 var_dtype = var_info['data_type']
-                var_dims = var_info['dimensions']
-                var_descriptors.append(VariableDescriptor(var_name,
-                                                          var_dtype,
-                                                          var_dims,
-                                                          var_info))
+                var_dims = self._normalize_var_dims_func(var_info['dimensions'])
+                if var_dims:
+                    var_descriptors.append(VariableDescriptor(var_name, var_dtype, var_dims, var_info))
             else:
                 var_descriptors.append(VariableDescriptor(var_name, '', ''))
         ds_metadata.pop('dimensions')
@@ -193,9 +190,7 @@ class CciOdpDataOpener(DataOpener):
             'bbox',
             'crs',
         ))
-        if self._normalize_data:
-            ds = normalize_cci_dataset(ds)
-            ds = normalize_dataset(ds)
+        ds = self._normalize_dataset_func(ds)
         if 'bbox' in subsetting_kwargs:
             ds = subset_spatial(ds, **subsetting_kwargs)
         return ds
