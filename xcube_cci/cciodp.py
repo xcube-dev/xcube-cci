@@ -709,7 +709,8 @@ class CciOdp:
 
     async def _get_earliest_start_date(self, session, dataset_name: str, start_time: str, end_time: str,
                                        frequency: str) -> Optional[datetime]:
-        query_args = dict(parentIdentifier=self.get_fid_for_dataset(dataset_name),
+        fid = await self._get_fid_for_dataset(session, dataset_name)
+        query_args = dict(parentIdentifier=fid,
                           startDate=start_time,
                           endDate=end_time,
                           frequency=frequency,
@@ -738,14 +739,21 @@ class CciOdp:
 
     def get_time_ranges_satellite_orbit_frequency(self, dataset_name: str, start_time: str, end_time: str) -> \
             List[Tuple[datetime, datetime]]:
-        request = dict(parentIdentifier=self.get_fid_for_dataset(dataset_name),
+        return _run_with_session(self._get_time_ranges_satellite_orbit_frequency, dataset_name, start_time, end_time)
+
+    async def _get_time_ranges_satellite_orbit_frequency(self, session,
+                                                         dataset_name: str,
+                                                         start_time: str,
+                                                         end_time: str) -> List[Tuple[datetime, datetime]]:
+        fid = await self._get_fid_for_dataset(session, dataset_name)
+        request = dict(parentIdentifier=fid,
                        startDate=start_time,
                        endDate=end_time,
                        fileFormat='.nc')
 
         start_date = datetime.strptime(request['startDate'], _TIMESTAMP_FORMAT)
         end_date = datetime.strptime(request['endDate'], _TIMESTAMP_FORMAT)
-        feature_list = _run_with_session(self._get_feature_list, request)
+        feature_list = await self._get_feature_list(session, request)
 
         request_time_ranges = []
         for feature in feature_list:
