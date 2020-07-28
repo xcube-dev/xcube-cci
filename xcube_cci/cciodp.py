@@ -27,13 +27,19 @@ import json
 import logging
 import lxml.etree as etree
 import numpy as np
+import random
 import re
+import time
 import urllib.parse
+import warnings
 from datetime import datetime
 from dateutil.relativedelta import relativedelta
 from typing import List, Any, Dict, Tuple, Optional, Union, Sequence
 from urllib.parse import quote
 from xcube_cci.constants import CCI_ODD_URL
+from xcube_cci.constants import DEFAULT_NUM_RETRIES
+from xcube_cci.constants import DEFAULT_RETRY_BACKOFF_MAX
+from xcube_cci.constants import DEFAULT_RETRY_BACKOFF_BASE
 from xcube_cci.constants import OPENSEARCH_CEDA_URL
 
 from pydap.client import Functions
@@ -104,27 +110,6 @@ async def _run_with_session_executor(function, *params):
         return await function(session, *params)
 
 
-async def _fetch_fid_and_uuid(session, opensearch_url: str, dataset_id: str) -> (str, str):
-    ds_components = dataset_id.split('.')
-    query_args = dict(parentIdentifier='cci',
-                      drsId=dataset_id
-                      )
-    feature_list = await _fetch_opensearch_feature_list(session, opensearch_url, query_args)
-    if len(feature_list) == 0:
-        raise ValueError(f'Could not find any fid for dataset {dataset_id}')
-    if len(feature_list) > 1:
-        for feature in feature_list:
-            title = feature.get("properties", {}).get("title", '')
-            if ds_components[9] in title:
-                fid = feature.get("properties", {}).get("identifier", None)
-                uuid = feature.get("id", "uuid=").split("uuid=")[-1]
-                return fid, uuid
-        raise ValueError(f'Could not unambiguously determine fid for dataset {dataset_id}')
-    fid = feature_list[0].get("properties", {}).get("identifier", None)
-    uuid = feature_list[0].get("id", "uuid=").split("uuid=")[-1]
-    return fid, uuid
-
-
 def _get_feature_dict_from_feature(feature: dict) -> Optional[dict]:
     fc_props = feature.get("properties", {})
     feature_dict = {}
@@ -147,43 +132,6 @@ def _get_feature_dict_from_feature(feature: dict) -> Optional[dict]:
     return feature_dict
 
 
-async def _fetch_data_source_list_json(session, base_url, query_args) -> Sequence:
-    feature_collection_list = await _fetch_opensearch_feature_list(session, base_url, query_args)
-    catalogue = {}
-    for fc in feature_collection_list:
-        fc_props = fc.get("properties", {})
-        fc_id = fc_props.get("identifier", None)
-        if not fc_id:
-            continue
-        catalogue[fc_id] = _get_feature_dict_from_feature(fc)
-    return catalogue
-
-
-async def _fetch_opensearch_feature_list(session, base_url, query_args) -> List:
-    """
-    Return JSON value read from Opensearch web service.
-    :return:
-    """
-    start_page = 1
-    maximum_records = 1000
-    full_feature_list = []
-    while True:
-        paging_query_args = dict(query_args or {})
-        paging_query_args.update(startPage=start_page, maximumRecords=maximum_records,
-                                 httpAccept='application/geo+json')
-        url = base_url + '?' + urllib.parse.urlencode(paging_query_args)
-        resp = await session.request(method='GET', url=url)
-        resp.raise_for_status()
-        json_text = await resp.read()
-        json_dict = json.loads(json_text.decode('utf-8'))
-        feature_list = json_dict.get("features", [])
-        full_feature_list.extend(feature_list)
-        if len(feature_list) < maximum_records:
-            break
-        start_page += 1
-    return full_feature_list
-
-
 def _get_variables_from_feature(feature: dict) -> List:
     feature_props = feature.get("properties", {})
     variables = feature_props.get("variables", [])
@@ -195,263 +143,6 @@ def _get_variables_from_feature(feature: dict) -> List:
             'long_name': variable.get("long_name", None)}
         variable_dicts.append(variable_dict)
     return variable_dicts
-
-
-async def _fetch_feature_at(session, base_url, query_args, index) -> Optional[Dict]:
-    paging_query_args = dict(query_args or {})
-    maximum_records = 1
-    paging_query_args.update(startPage=index, maximumRecords=maximum_records, httpAccept='application/geo+json',
-                             fileFormat='.nc')
-    url = base_url + '?' + urllib.parse.urlencode(paging_query_args)
-    resp = await session.request(method='GET', url=url)
-    resp.raise_for_status()
-    json_text = await resp.read()
-    json_dict = json.loads(json_text.decode('utf-8'))
-    feature_list = json_dict.get("features", [])
-    if len(feature_list) > 0:
-        return feature_list[0]
-    return None
-
-
-def _replace_ending_number_brackets(das: str) -> str:
-    number_signs = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '0']
-    for number_sign in number_signs:
-        das = das.replace(f'{number_sign};\n', f'{number_sign}],\n')
-    return das
-
-
-async def _get_content_from_opendap_url(url: str, part: str, res_dict: dict, session):
-    scheme, netloc, path, query, fragment = urlsplit(url)
-    url = urlunsplit((scheme, netloc, path + f'.{part}', query, fragment))
-    resp = await session.request(method='GET', url=url)
-    if resp.status >= 400:
-        resp.release()
-        _LOG.warning(f"Could not open {url}: {resp.status}")
-    else:
-        res_dict[part] = await resp.read()
-        res_dict[part] = str(res_dict[part], 'utf-8')
-
-
-def get_opendap_dataset(url: str):
-    return _run_with_session(_get_opendap_dataset, url)
-
-
-async def _get_opendap_dataset(session, url: str):
-    tasks = []
-    res_dict = {}
-    tasks.append(_get_content_from_opendap_url(url, 'dds', res_dict, session))
-    tasks.append(_get_content_from_opendap_url(url, 'das', res_dict, session))
-    await asyncio.gather(*tasks)
-    if 'dds' not in res_dict or 'das' not in res_dict:
-        _LOG.warning('Could not open opendap url. No dds or das file provided.')
-        return
-    if res_dict['dds'] == '':
-        _LOG.warning('Could not open opendap url. dds file is empty.')
-        return
-    dataset = build_dataset(res_dict['dds'])
-    add_attributes(dataset, parse_das(res_dict['das']))
-
-    # remove any projection from the url, leaving selections
-    scheme, netloc, path, query, fragment = urlsplit(url)
-    projection, selection = parse_ce(query)
-    url = urlunsplit((scheme, netloc, path, '&'.join(selection), fragment))
-
-    # now add data proxies
-    for var in walk(dataset, BaseType):
-        var.data = BaseProxy(url, var.id, var.dtype, var.shape)
-    for var in walk(dataset, SequenceType):
-        template = copy.copy(var)
-        var.data = SequenceProxy(url, template)
-
-    # apply projections
-    for var in projection:
-        target = dataset
-        while var:
-            token, index = var.pop(0)
-            target = target[token]
-            if isinstance(target, BaseType):
-                target.data.slice = fix_slice(index, target.shape)
-            elif isinstance(target, GridType):
-                index = fix_slice(index, target.array.shape)
-                target.array.data.slice = index
-                for s, child in zip(index, target.maps):
-                    target[child].data.slice = (s,)
-            elif isinstance(target, SequenceType):
-                target.data.slice = index
-
-    # retrieve only main variable for grid types:
-    for var in walk(dataset, GridType):
-        var.set_output_grid(True)
-
-    dataset.functions = Functions(url)
-
-    return dataset
-
-
-async def _get_data_from_opendap_dataset(dataset, session, variable_name, slices):
-    proxy = dataset[variable_name].data
-    if type(proxy) == list:
-        proxy = proxy[0]
-    # build download url
-    index = combine_slices(proxy.slice, fix_slice(slices, proxy.shape))
-    scheme, netloc, path, query, fragment = urlsplit(proxy.baseurl)
-    url = urlunsplit((
-        scheme, netloc, path + '.dods',
-        quote(proxy.id) + hyperslab(index) + '&' + query,
-        fragment)).rstrip('&')
-    # download and unpack data
-    resp = await session.request(method='GET', url=url)
-    if resp.status >= 400:
-        resp.release()
-        _LOG.warning(f"Could not open {url}: {resp.status}")
-        return None
-    content = await resp.read()
-    dds, data = content.split(b'\nData:\n', 1)
-    dds = str(dds, 'utf-8')
-    # Parse received dataset:
-    dataset = build_dataset(dds)
-    dataset.data = unpack_data(BytesReader(data), dataset)
-    return dataset[proxy.id].data
-
-
-async def _get_variable_infos_from_feature(feature: dict, session) -> (dict, dict):
-    feature_info = _extract_feature_info(feature)
-    opendap_url = f"{feature_info[4]['Opendap']}"
-    dataset = await _get_opendap_dataset(session, opendap_url)
-    if not dataset:
-        _LOG.warning(f'Could not extract information about variables and attributes from {opendap_url}')
-        return {}, {}
-    variable_infos = {}
-    for key in dataset.keys():
-        fixed_key = key.replace('%2E', '_').replace('.', '_')
-        variable_infos[fixed_key] = dataset[key].attributes
-        if '_FillValue' in variable_infos[fixed_key]:
-            variable_infos[fixed_key]['fill_value'] = variable_infos[fixed_key]['_FillValue']
-            variable_infos[fixed_key].pop('_FillValue')
-        if '_ChunkSizes' in variable_infos[fixed_key]:
-            variable_infos[fixed_key]['chunk_sizes'] = variable_infos[fixed_key]['_ChunkSizes']
-            variable_infos[fixed_key].pop('_ChunkSizes')
-        variable_infos[fixed_key]['data_type'] = dataset[key].dtype.name
-        variable_infos[fixed_key]['dimensions'] = list(dataset[key].dimensions)
-        variable_infos[fixed_key]['size'] = dataset[key].size
-    return variable_infos, dataset.attributes
-
-
-def _retrieve_attribute_info_from_das(das: str) -> dict:
-    if len(das) == 0:
-        return {}
-    das = das.replace(' "', '": "')
-    json_das = _handle_numeric_attribute_names(das)
-    json_das = json_das.replace('Attributes', '{\n  "Attributes').replace(' {\n    ', '": {\n    "') \
-        .replace('{\n    "    ', '{\n      "').replace(';\n        ', '",\n      "').replace('}\n    ', '},\n    '). \
-        replace(',\n    },\n    ', '\n    },\n    "').replace('""', '"'). \
-        replace(';\n    }\n    ', '"\n    },\n    "').replace(';\n    }\n}', '\n    }\n  }\n}')
-    json_das = prettify_dict_names(json_das)
-    dict = json.loads(json_das)
-    return dict['Attributes']
-
-
-def _handle_numeric_attribute_names(das: str) -> str:
-    numeric_attribute_names = ['_ChunkSizes', 'min', 'max', 'resolution']
-    for numeric_attribute_name in numeric_attribute_names:
-        appearances = set(re.findall(numeric_attribute_name + ' [-|0-9|.|, ]+;\n[ ]*', das))
-        for appearance in appearances:
-            fixed_appearance = appearance.replace(f'{numeric_attribute_name} ', f'{numeric_attribute_name}": [')
-            fixed_appearance = fixed_appearance.replace(';', '],')
-            fixed_appearance = f'{fixed_appearance}"'
-            das = das.replace(appearance, fixed_appearance)
-    das = das.replace('"}', '}')
-    fill_value_appearances = set(re.findall('_FillValue [-|0-9|.|NaN]+;\n {8}', das))
-    for fill_value_appearance in fill_value_appearances:
-        fixed_appearance = fill_value_appearance.replace('_FillValue ', '_FillValue": "')
-        fixed_appearance = fixed_appearance.replace(';\n        ', '",\n      "')
-        das = das.replace(fill_value_appearance, fixed_appearance)
-    return das
-
-
-def prettify_dict_names(das: str) -> str:
-    ugly_keys = set(re.findall('"[A-Z]+[a-z]+[0-9]* [a-zA-Z_]+":', das))
-    for ugly_key in ugly_keys:
-        das = das.replace(ugly_key, f'"{ugly_key.split(" ")[1]}')
-    das = das.replace('_ChunkSizes', 'chunk_sizes')
-    das = das.replace('_FillValue', 'fill_value')
-    return das
-
-
-async def _get_infos_from_feature(session, feature: dict) -> tuple:
-    feature_info = _extract_feature_info(feature)
-    opendap_dds_url = f"{feature_info[4]['Opendap']}.dds"
-    resp = await session.request(method='GET', url=opendap_dds_url)
-    if resp.status >= 400:
-        resp.release()
-        _LOG.warning(f"Could not open {opendap_dds_url}: {resp.status}")
-        return {}, {}
-    content = await resp.read()
-    return _retrieve_infos_from_dds(str(content, 'utf-8').split('\n'))
-
-
-def _retrieve_infos_from_dds(dds_lines: List) -> tuple:
-    dimensions = {}
-    variable_infos = {}
-    dim_info_pattern = '[a-zA-Z0-9_]+ [a-zA-Z0-9_]+[\[\w* = \d{1,7}\]]*;'
-    type_and_name_pattern = '[a-zA-Z0-9_]+'
-    dimension_pattern = '\[[a-zA-Z]* = \d{1,7}\]'
-    for dds_line in dds_lines:
-        if type(dds_line) is bytes:
-            dds_line = str(dds_line, 'utf-8')
-        dim_info_search_res = re.search(dim_info_pattern, dds_line)
-        if dim_info_search_res is None:
-            continue
-        type_and_name = re.findall(type_and_name_pattern, dim_info_search_res.string)
-        if type_and_name[1] not in variable_infos:
-            dimension_names = []
-            variable_dimensions = re.findall(dimension_pattern, dim_info_search_res.string)
-            for variable_dimension in variable_dimensions:
-                dimension_name, dimension_size = variable_dimension[1:-1].split(' = ')
-                dimension_names.append(dimension_name)
-                if dimension_name not in dimensions:
-                    dimensions[dimension_name] = int(dimension_size)
-            variable_infos[type_and_name[1]] = {'data_type': type_and_name[0], 'dimensions': dimension_names}
-    return dimensions, variable_infos
-
-
-async def _fetch_meta_info(session, odd_url: str, metadata_url: str) -> Dict:
-    meta_info_dict = {}
-    if odd_url:
-        meta_info_dict = await _extract_metadata_from_odd_url(session, odd_url)
-    if metadata_url:
-        desc_metadata = await _extract_metadata_from_descxml_url(session, metadata_url)
-        for item in desc_metadata:
-            if not item in meta_info_dict:
-                meta_info_dict[item] = desc_metadata[item]
-    _harmonize_info_field_names(meta_info_dict, 'file_format', 'file_formats')
-    _harmonize_info_field_names(meta_info_dict, 'platform_id', 'platform_ids')
-    _harmonize_info_field_names(meta_info_dict, 'sensor_id', 'sensor_ids')
-    _harmonize_info_field_names(meta_info_dict, 'processing_level', 'processing_levels')
-    _harmonize_info_field_names(meta_info_dict, 'time_frequency', 'time_frequencies')
-    return meta_info_dict
-
-
-async def _fetch_variable_infos(opensearch_url: str, dataset_id: str, session):
-    attributes = {}
-    dimensions = {}
-    variable_infos = {}
-    feature = await _fetch_feature_at(session, opensearch_url, dict(parentIdentifier=dataset_id), 1)
-    if feature is not None:
-        variable_infos, attributes = await _get_variable_infos_from_feature(feature, session)
-        for variable_info in variable_infos:
-            for dimension in variable_infos[variable_info]['dimensions']:
-                if not dimension in dimensions:
-                    if dimension == 'bin_index':
-                        dimensions[dimension] = variable_infos[variable_info]['size']
-                    elif not dimension in variable_infos and variable_info.split('_')[-1] == 'bnds':
-                        dimensions[dimension] = 2
-                    else:
-                        if dimension not in variable_infos and len(variable_infos[variable_info]['dimensions']):
-                            dimensions[dimension] = variable_infos[variable_info]['size']
-                        else:
-                            dimensions[dimension] = variable_infos[dimension]['size']
-    return dimensions, variable_infos, attributes
 
 
 def _harmonize_info_field_names(catalogue: dict, single_field_name: str, multiple_fields_name: str,
@@ -470,19 +161,6 @@ def _harmonize_info_field_names(catalogue: dict, single_field_name: str, multipl
                     and (multiple_items_name is None or catalogue[single_field_name] != multiple_items_name):
                 catalogue[multiple_fields_name].append(catalogue[single_field_name])
             catalogue.pop(single_field_name)
-
-
-async def _extract_metadata_from_descxml_url(session, descxml_url: str = None) -> dict:
-    if not descxml_url:
-        return {}
-    resp = await session.request(method='GET', url=descxml_url)
-    resp.raise_for_status()
-    descxml = etree.XML(await resp.read())
-    try:
-        return _extract_metadata_from_descxml(descxml)
-    except etree.ParseError:
-        _LOG.info(f'Cannot read metadata from {descxml_url} due to parsing error.')
-        return {}
 
 
 def _extract_metadata_from_descxml(descxml: etree.XML) -> dict:
@@ -569,15 +247,6 @@ def find_datetime_format(filename: str) -> Tuple[Optional[str], int, int, relati
     return None, -1, -1, relativedelta()
 
 
-async def _extract_metadata_from_odd_url(session: aiohttp.ClientSession, odd_url: str = None) -> dict:
-    if not odd_url:
-        return {}
-    resp = await session.request(method='GET', url=odd_url)
-    resp.raise_for_status()
-    xml_text = await resp.read()
-    return _extract_metadata_from_odd(etree.XML(xml_text))
-
-
 def _extract_metadata_from_odd(odd_xml: etree.XML) -> dict:
     metadata = {}
     metadata_names = {'ecv': ['ecv', 'ecvs'], 'frequency': ['time_frequency', 'time_frequencies'],
@@ -642,10 +311,18 @@ class CciOdp:
 
     def __init__(self,
                  opensearch_url: str=OPENSEARCH_CEDA_URL,
-                 opensearch_description_url: str=CCI_ODD_URL
+                 opensearch_description_url: str=CCI_ODD_URL,
+                 enable_warnings: bool = False,
+                 num_retries: int = DEFAULT_NUM_RETRIES,
+                 retry_backoff_max: int = DEFAULT_RETRY_BACKOFF_MAX,
+                 retry_backoff_base: float = DEFAULT_RETRY_BACKOFF_BASE,
                  ):
         self._opensearch_url = opensearch_url
         self._opensearch_description_url = opensearch_description_url
+        self._enable_warnings = enable_warnings
+        self._num_retries = num_retries
+        self._retry_backoff_max = retry_backoff_max
+        self._retry_backoff_base = retry_backoff_base
         self._data_sources = {}
 
     def close(self):
@@ -748,12 +425,12 @@ class CciOdp:
         return metadata
 
     async def _fetch_dataset_names(self, session):
-        meta_info_dict = await _extract_metadata_from_odd_url(session, self._opensearch_description_url)
+        meta_info_dict = await self._extract_metadata_from_odd_url(session, self._opensearch_description_url)
         if 'drs_ids' in meta_info_dict:
             return meta_info_dict['drs_ids']
         if not self._data_sources:
             self._data_sources = {}
-            catalogue = await _fetch_data_source_list_json(session, self._opensearch_url, dict(parentIdentifier='cci'))
+            catalogue = await self._fetch_data_source_list_json(session, self._opensearch_url, dict(parentIdentifier='cci'))
             if catalogue:
                 tasks = []
                 for catalogue_item in catalogue:
@@ -762,9 +439,9 @@ class CciOdp:
         return list(self._data_sources.keys())
 
     async def _create_data_source(self, session, json_dict: dict, datasource_id: str):
-        meta_info = await _fetch_meta_info(session,
-                                           json_dict.get('odd_url', None),
-                                           json_dict.get('metadata_url', None))
+        meta_info = await self._fetch_meta_info(session,
+                                                json_dict.get('odd_url', None),
+                                                json_dict.get('metadata_url', None))
         drs_ids = self._get_as_list(meta_info, 'drs_id', 'drs_ids')
         for drs_id in drs_ids:
             meta_info = meta_info.copy()
@@ -853,7 +530,7 @@ class CciOdp:
             return
         data_fid = await self._get_fid_for_dataset(session, dataset_name)
         data_source['dimensions'], data_source['variable_infos'], data_source['attributes'] = \
-            await _fetch_variable_infos(self._opensearch_url, data_fid, session)
+            await self._fetch_variable_infos(self._opensearch_url, data_fid, session)
 
     def _get_var_names(self, variable_infos) -> List:
         # todo support variables with other dimensions
@@ -941,7 +618,7 @@ class CciOdp:
         return results
 
     async def _read_all_data_sources(self, session):
-        catalogue = await _fetch_data_source_list_json(session,
+        catalogue = await self._fetch_data_source_list_json(session,
                                                        self._opensearch_url,
                                                        dict(parentIdentifier='cci'))
         if catalogue:
@@ -970,11 +647,10 @@ class CciOdp:
         await asyncio.gather(*create_source_tasks)
 
     async def _fetch_data_source_list_json_and_add_to_catalogue(self, session, catalogue: dict, dataset_name: str):
-        dataset_catalogue = await _fetch_data_source_list_json(session,
-                                                               self._opensearch_url,
-                                                               dict(parentIdentifier='cci',
-                                                                    drsId=dataset_name)
-                                                               )
+        dataset_catalogue = await self._fetch_data_source_list_json(session,
+                                                                    self._opensearch_url,
+                                                                    dict(parentIdentifier='cci',
+                                                                    drsId=dataset_name))
         catalogue.update(dataset_catalogue)
 
     def _get_datetime_from_string(self, time_as_string: str) -> datetime:
@@ -994,7 +670,7 @@ class CciOdp:
         dim_data = {}
         if not opendap_url:
             return dim_data
-        dataset = await _get_opendap_dataset(session, opendap_url)
+        dataset = await self._get_opendap_dataset(session, opendap_url)
         if not dataset:
             return dim_data
         for dim in dimension_names:
@@ -1002,7 +678,7 @@ class CciOdp:
                 dim_data[dim] = dict(size=dataset[dim].size, chunkSize=dataset[dim].attributes.get('_ChunkSizes'))
                 if dataset[dim].size < 512 * 512:
                     dim_data[dim]['data'] = \
-                        await _get_data_from_opendap_dataset(dataset, session, dim, (slice(None,None,None), ))
+                        await self._get_data_from_opendap_dataset(dataset, session, dim, (slice(None,None,None), ))
                 else:
                     dim_data[dim]['data'] = []
             else:
@@ -1025,7 +701,7 @@ class CciOdp:
                           fileFormat='.nc')
         opendap_url = await self._get_opendap_url(session, query_args, get_earliest=True)
         if opendap_url:
-            dataset = await _get_opendap_dataset(session, opendap_url)
+            dataset = await self._get_opendap_dataset(session, opendap_url)
             start_time_attributes = ['time_coverage_start', 'start_date']
             attributes = dataset.attributes.get('NC_GLOBAL', {})
             for start_time_attribute in start_time_attributes:
@@ -1043,19 +719,19 @@ class CciOdp:
         await self._ensure_in_data_sources(session, [dataset_name])
         if 'fid' in self._data_sources[dataset_name]:
             return self._data_sources[dataset_name]['fid']
-        fid, uuid = await _fetch_fid_and_uuid(session, self._opensearch_url, dataset_name)
+        fid, uuid = await self._fetch_fid_and_uuid(session, self._opensearch_url, dataset_name)
         return fid
 
     async def _get_opendap_url(self, session, request: Dict, get_earliest: bool = False):
         start_date = datetime.strptime(request['startDate'], _TIMESTAMP_FORMAT)
         end_date = datetime.strptime(request['endDate'], _TIMESTAMP_FORMAT)
         request['fileFormat'] = '.nc'
-        feature_list = await _fetch_opensearch_feature_list(session, self._opensearch_url, request)
+        feature_list = await self._fetch_opensearch_feature_list(session, self._opensearch_url, request)
         if len(feature_list) == 0:
             # try without dates. For some data sets, this works better
             request.pop('startDate')
             request.pop('endDate')
-            feature_list = await _fetch_opensearch_feature_list(session, self._opensearch_url, request)
+            feature_list = await self._fetch_opensearch_feature_list(session, self._opensearch_url, request)
         opendap_url = None
         earliest_date = datetime(2999, 12, 31)
         for feature in feature_list:
@@ -1084,7 +760,7 @@ class CciOdp:
         opendap_url = await self._get_opendap_url(session, request)
         if not opendap_url:
             return None
-        dataset = await _get_opendap_dataset(session, opendap_url)
+        dataset = await self._get_opendap_dataset(session, opendap_url)
         # todo support more dimensions
         supported_dimensions = ['lat', 'lon', 'time', 'latitude', 'longitude']
         result = bytearray()
@@ -1113,10 +789,10 @@ class CciOdp:
         opendap_url = await self._get_opendap_url(session, request)
         if not opendap_url:
             return None
-        dataset = await _get_opendap_dataset(session, opendap_url)
+        dataset = await self._get_opendap_dataset(session, opendap_url)
         if not dataset:
             return None
-        data = await _get_data_from_opendap_dataset(dataset, session, var_name, dim_indexes)
+        data = await self._get_data_from_opendap_dataset(dataset, session, var_name, dim_indexes)
         variable_data = np.array(data, dtype=dataset[var_name].dtype.type)
         result = variable_data.flatten().tobytes()
         return result
@@ -1157,3 +833,266 @@ class CciOdp:
         if start_index != end_index:
             return slice(start_index, end_index)
         return start_index
+
+    async def _fetch_fid_and_uuid(self, session, opensearch_url: str, dataset_id: str) -> (str, str):
+        ds_components = dataset_id.split('.')
+        query_args = dict(parentIdentifier='cci',
+                          drsId=dataset_id
+                          )
+        feature_list = await self._fetch_opensearch_feature_list(session, opensearch_url, query_args)
+        if len(feature_list) == 0:
+            raise ValueError(f'Could not find any fid for dataset {dataset_id}')
+        if len(feature_list) > 1:
+            for feature in feature_list:
+                title = feature.get("properties", {}).get("title", '')
+                if ds_components[9] in title:
+                    fid = feature.get("properties", {}).get("identifier", None)
+                    uuid = feature.get("id", "uuid=").split("uuid=")[-1]
+                    return fid, uuid
+            raise ValueError(f'Could not unambiguously determine fid for dataset {dataset_id}')
+        fid = feature_list[0].get("properties", {}).get("identifier", None)
+        uuid = feature_list[0].get("id", "uuid=").split("uuid=")[-1]
+        return fid, uuid
+
+    async def _fetch_data_source_list_json(self, session, base_url, query_args) -> Sequence:
+        feature_collection_list = await self._fetch_opensearch_feature_list(session, base_url, query_args)
+        catalogue = {}
+        for fc in feature_collection_list:
+            fc_props = fc.get("properties", {})
+            fc_id = fc_props.get("identifier", None)
+            if not fc_id:
+                continue
+            catalogue[fc_id] = _get_feature_dict_from_feature(fc)
+        return catalogue
+
+    async def _fetch_opensearch_feature_list(self, session, base_url, query_args) -> List:
+        """
+        Return JSON value read from Opensearch web service.
+        :return:
+        """
+        start_page = 1
+        maximum_records = 1000
+        full_feature_list = []
+        while True:
+            paging_query_args = dict(query_args or {})
+            paging_query_args.update(startPage=start_page, maximumRecords=maximum_records,
+                                     httpAccept='application/geo+json')
+            url = base_url + '?' + urllib.parse.urlencode(paging_query_args)
+            resp = await self.get_response(session, url)
+            if resp:
+                json_text = await resp.read()
+                json_dict = json.loads(json_text.decode('utf-8'))
+                feature_list = json_dict.get("features", [])
+                full_feature_list.extend(feature_list)
+                if len(feature_list) < maximum_records:
+                    break
+            start_page += 1
+        return full_feature_list
+
+    async def _fetch_variable_infos(self, opensearch_url: str, dataset_id: str, session):
+        attributes = {}
+        dimensions = {}
+        variable_infos = {}
+        feature = await self._fetch_feature_at(session, opensearch_url, dict(parentIdentifier=dataset_id), 1)
+        if feature is not None:
+            variable_infos, attributes = await self._get_variable_infos_from_feature(feature, session)
+            for variable_info in variable_infos:
+                for dimension in variable_infos[variable_info]['dimensions']:
+                    if not dimension in dimensions:
+                        if dimension == 'bin_index':
+                            dimensions[dimension] = variable_infos[variable_info]['size']
+                        elif not dimension in variable_infos and variable_info.split('_')[-1] == 'bnds':
+                            dimensions[dimension] = 2
+                        else:
+                            if dimension not in variable_infos and len(variable_infos[variable_info]['dimensions']):
+                                dimensions[dimension] = variable_infos[variable_info]['size']
+                            else:
+                                dimensions[dimension] = variable_infos[dimension]['size']
+        return dimensions, variable_infos, attributes
+
+    async def _fetch_feature_at(self, session, base_url, query_args, index) -> Optional[Dict]:
+        paging_query_args = dict(query_args or {})
+        maximum_records = 1
+        paging_query_args.update(startPage=index, maximumRecords=maximum_records, httpAccept='application/geo+json',
+                                 fileFormat='.nc')
+        url = base_url + '?' + urllib.parse.urlencode(paging_query_args)
+        resp = await self.get_response(session, url)
+        if resp:
+            json_text = await resp.read()
+            json_dict = json.loads(json_text.decode('utf-8'))
+            feature_list = json_dict.get("features", [])
+            if len(feature_list) > 0:
+                return feature_list[0]
+        return None
+
+    async def _fetch_meta_info(self, session, odd_url: str, metadata_url: str) -> Dict:
+        meta_info_dict = {}
+        if odd_url:
+            meta_info_dict = await self._extract_metadata_from_odd_url(session, odd_url)
+        if metadata_url:
+            desc_metadata = await self._extract_metadata_from_descxml_url(session, metadata_url)
+            for item in desc_metadata:
+                if not item in meta_info_dict:
+                    meta_info_dict[item] = desc_metadata[item]
+        _harmonize_info_field_names(meta_info_dict, 'file_format', 'file_formats')
+        _harmonize_info_field_names(meta_info_dict, 'platform_id', 'platform_ids')
+        _harmonize_info_field_names(meta_info_dict, 'sensor_id', 'sensor_ids')
+        _harmonize_info_field_names(meta_info_dict, 'processing_level', 'processing_levels')
+        _harmonize_info_field_names(meta_info_dict, 'time_frequency', 'time_frequencies')
+        return meta_info_dict
+
+    async def _extract_metadata_from_descxml_url(self, session, descxml_url: str = None) -> dict:
+        if not descxml_url:
+            return {}
+        resp = await self.get_response(session, descxml_url)
+        if resp:
+            descxml = etree.XML(await resp.read())
+            try:
+                return _extract_metadata_from_descxml(descxml)
+            except etree.ParseError:
+                _LOG.info(f'Cannot read metadata from {descxml_url} due to parsing error.')
+        return {}
+
+    async def _extract_metadata_from_odd_url(self, session: aiohttp.ClientSession, odd_url: str = None) -> dict:
+        if not odd_url:
+            return {}
+        resp = await self.get_response(session, odd_url)
+        if not resp:
+            return {}
+        xml_text = await resp.read()
+        return _extract_metadata_from_odd(etree.XML(xml_text))
+
+    async def _get_variable_infos_from_feature(self, feature: dict, session) -> (dict, dict):
+        feature_info = _extract_feature_info(feature)
+        opendap_url = f"{feature_info[4]['Opendap']}"
+        dataset = await self._get_opendap_dataset(session, opendap_url)
+        if not dataset:
+            _LOG.warning(f'Could not extract information about variables and attributes from {opendap_url}')
+            return {}, {}
+        variable_infos = {}
+        for key in dataset.keys():
+            fixed_key = key.replace('%2E', '_').replace('.', '_')
+            variable_infos[fixed_key] = dataset[key].attributes
+            if '_FillValue' in variable_infos[fixed_key]:
+                variable_infos[fixed_key]['fill_value'] = variable_infos[fixed_key]['_FillValue']
+                variable_infos[fixed_key].pop('_FillValue')
+            if '_ChunkSizes' in variable_infos[fixed_key]:
+                variable_infos[fixed_key]['chunk_sizes'] = variable_infos[fixed_key]['_ChunkSizes']
+                variable_infos[fixed_key].pop('_ChunkSizes')
+            variable_infos[fixed_key]['data_type'] = dataset[key].dtype.name
+            variable_infos[fixed_key]['dimensions'] = list(dataset[key].dimensions)
+            variable_infos[fixed_key]['size'] = dataset[key].size
+        return variable_infos, dataset.attributes
+
+    def get_opendap_dataset(self, url: str):
+        return _run_with_session(self._get_opendap_dataset, url)
+
+    async def _get_opendap_dataset(self, session, url: str):
+        tasks = []
+        res_dict = {}
+        tasks.append(self._get_content_from_opendap_url(url, 'dds', res_dict, session))
+        tasks.append(self._get_content_from_opendap_url(url, 'das', res_dict, session))
+        await asyncio.gather(*tasks)
+        if 'dds' not in res_dict or 'das' not in res_dict:
+            _LOG.warning('Could not open opendap url. No dds or das file provided.')
+            return
+        if res_dict['dds'] == '':
+            _LOG.warning('Could not open opendap url. dds file is empty.')
+            return
+        dataset = build_dataset(res_dict['dds'])
+        add_attributes(dataset, parse_das(res_dict['das']))
+
+        # remove any projection from the url, leaving selections
+        scheme, netloc, path, query, fragment = urlsplit(url)
+        projection, selection = parse_ce(query)
+        url = urlunsplit((scheme, netloc, path, '&'.join(selection), fragment))
+
+        # now add data proxies
+        for var in walk(dataset, BaseType):
+            var.data = BaseProxy(url, var.id, var.dtype, var.shape)
+        for var in walk(dataset, SequenceType):
+            template = copy.copy(var)
+            var.data = SequenceProxy(url, template)
+
+        # apply projections
+        for var in projection:
+            target = dataset
+            while var:
+                token, index = var.pop(0)
+                target = target[token]
+                if isinstance(target, BaseType):
+                    target.data.slice = fix_slice(index, target.shape)
+                elif isinstance(target, GridType):
+                    index = fix_slice(index, target.array.shape)
+                    target.array.data.slice = index
+                    for s, child in zip(index, target.maps):
+                        target[child].data.slice = (s,)
+                elif isinstance(target, SequenceType):
+                    target.data.slice = index
+
+        # retrieve only main variable for grid types:
+        for var in walk(dataset, GridType):
+            var.set_output_grid(True)
+
+        dataset.functions = Functions(url)
+
+        return dataset
+
+    async def _get_content_from_opendap_url(self, url: str, part: str, res_dict: dict, session):
+        scheme, netloc, path, query, fragment = urlsplit(url)
+        url = urlunsplit((scheme, netloc, path + f'.{part}', query, fragment))
+        resp = await self.get_response(session, url)
+        if resp:
+            res_dict[part] = await resp.read()
+            res_dict[part] = str(res_dict[part], 'utf-8')
+
+    async def _get_data_from_opendap_dataset(self, dataset, session, variable_name, slices):
+        proxy = dataset[variable_name].data
+        if type(proxy) == list:
+            proxy = proxy[0]
+        # build download url
+        index = combine_slices(proxy.slice, fix_slice(slices, proxy.shape))
+        scheme, netloc, path, query, fragment = urlsplit(proxy.baseurl)
+        url = urlunsplit((
+            scheme, netloc, path + '.dods',
+            quote(proxy.id) + hyperslab(index) + '&' + query,
+            fragment)).rstrip('&')
+        # download and unpack data
+        resp = await self.get_response(session, url)
+        if not resp:
+            return None
+        content = await resp.read()
+        dds, data = content.split(b'\nData:\n', 1)
+        dds = str(dds, 'utf-8')
+        # Parse received dataset:
+        dataset = build_dataset(dds)
+        dataset.data = unpack_data(BytesReader(data), dataset)
+        return dataset[proxy.id].data
+
+    async def get_response(self, session: aiohttp.ClientSession, url: str) -> Optional[aiohttp.ClientResponse]:
+        num_retries = self._num_retries
+        retry_backoff_max = self._retry_backoff_max  # ms
+        retry_backoff_base = self._retry_backoff_base
+        response = None
+        for i in range(num_retries):
+            resp = await session.request(method='GET', url=url)
+            if resp.status == 200:
+                return resp
+            elif 500 <= resp.status < 600:
+                # Retry (immediately) on 5xx errors
+                continue
+            elif resp.status == 429:
+                # Retry after 'Retry-After' with exponential backoff
+                retry_min = int(response.headers.get('Retry-After', '100'))
+                retry_backoff = random.random() * retry_backoff_max
+                retry_total = retry_min + retry_backoff
+                if self._enable_warnings:
+                    retry_message = f'Error 429: Too Many Requests. ' \
+                                    f'Attempt {i + 1} of {num_retries} to retry after ' \
+                                    f'{"%.2f" % retry_min} + {"%.2f" % retry_backoff} = {"%.2f" % retry_total} ms...'
+                    warnings.warn(retry_message)
+                time.sleep(retry_total / 1000.0)
+                retry_backoff_max *= retry_backoff_base
+            else:
+                break
+        return None
