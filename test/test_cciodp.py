@@ -48,14 +48,14 @@ class CciOdpTest(unittest.TestCase):
         dataset_names = cci_odp.dataset_names
         self.assertIsNotNone(dataset_names)
         list(dataset_names)
-        self.assertEqual(234, len(dataset_names))
+        self.assertEqual(274, len(dataset_names))
         self.assertTrue('esacci.AEROSOL.day.L3C.AER_PRODUCTS.ATSR-2.ERS-2.ORAC.03-02.r1' in dataset_names)
         self.assertTrue('esacci.OC.day.L3S.K_490.multi-sensor.multi-platform.MERGED.3-1.sinusoidal' in dataset_names)
 
     @skipIf(os.environ.get('XCUBE_DISABLE_WEB_TESTS', None) == '1', 'XCUBE_DISABLE_WEB_TESTS = 1')
     def test_var_names(self):
         cci_odp = CciOdp()
-        var_names = cci_odp.var_names('esacci.OC.8-days.L3S.K_490.multi-sensor.multi-platform.MERGED.4-0.geographic')
+        var_names = cci_odp.var_names('esacci.OC.mon.L3S.CHLOR_A.multi-sensor.multi-platform.MERGED.4-2.r1')
         self.assertIsNotNone(var_names)
         self.assertEqual(['MERIS_nobs_sum', 'MODISA_nobs_sum', 'SeaWiFS_nobs_sum', 'VIIRS_nobs_sum', 'kd_490',
                           'kd_490_bias', 'kd_490_rmsd', 'total_nobs_sum'], var_names)
@@ -272,7 +272,7 @@ class CciOdpTest(unittest.TestCase):
             bbox=(-20, 30, 20, 50),
             ecv='AEROSOL'
         )
-        self.assertEqual(24, len(aerosol_sources))
+        self.assertEqual(25, len(aerosol_sources))
 
     @skipIf(os.environ.get('XCUBE_DISABLE_WEB_TESTS', None) == '1', 'XCUBE_DISABLE_WEB_TESTS = 1')
     def test_search_frequency(self):
@@ -305,7 +305,7 @@ class CciOdpTest(unittest.TestCase):
             bbox=(-20, 30, 20, 50),
             product_string='AVHRR19_G'
         )
-        self.assertEqual(3, len(avhrr19g_sources))
+        self.assertEqual(5, len(avhrr19g_sources))
 
     @skipIf(os.environ.get('XCUBE_DISABLE_WEB_TESTS', None) == '1', 'XCUBE_DISABLE_WEB_TESTS = 1')
     def test_search_product_version(self):

@@ -604,7 +604,9 @@ class CciOdp:
             converted_end_date = self._get_datetime_from_string(end_date)
         _run_with_session(self._ensure_in_data_sources, candidate_names)
         for candidate_name in candidate_names:
-            data_source_info = self._data_sources[candidate_name]
+            data_source_info = self._data_sources.get(candidate_name, None)
+            if not data_source_info:
+                continue
             if institute is not None and ('institute' not in data_source_info or
                                           institute != data_source_info['institute']):
                 continue
