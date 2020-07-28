@@ -1051,7 +1051,6 @@ class CciOdp:
 
         start_date = datetime.strptime(request['startDate'], _TIMESTAMP_FORMAT)
         end_date = datetime.strptime(request['endDate'], _TIMESTAMP_FORMAT)
-        request['fileFormat'] = '.nc'
         feature_list = self._get_feature_list(request)
 
         request_time_ranges = []

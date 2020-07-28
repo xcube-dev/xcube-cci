@@ -22,7 +22,7 @@ class CciChunkStoreTest(unittest.TestCase):
         )
         self._store = CciChunkStore(cci_odp, dataset_id, cube_params)
 
-    # @skipIf(os.environ.get('XCUBE_DISABLE_WEB_TESTS', None) == '1', 'XCUBE_DISABLE_WEB_TESTS = 1')
+    @skipIf(os.environ.get('XCUBE_DISABLE_WEB_TESTS', None) == '1', 'XCUBE_DISABLE_WEB_TESTS = 1')
     def test_get_time_ranges(self):
         time_range = (pd.to_datetime('2010-02-10', utc=True), pd.to_datetime('2010-05-20', utc=True))
         cube_params = dict(time_range=time_range)
