@@ -1,3 +1,7 @@
+## Changes in 0.6.0. dev
+
+- xcube-cci can now get the time ranges for satellite-orbit-frequency datasets available via opensearch 
+
 ## Changes in 0.5.0.
  
 Initial version. 
