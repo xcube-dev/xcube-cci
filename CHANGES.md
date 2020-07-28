@@ -1,3 +1,10 @@
+## Changes in 0.6.0.
+Introduced new optional parameters to CciStore:
+- enable_warnings
+- num_retries
+- _retry_backoff_max
+- _retry_backoff_base
+
 ## Changes in 0.5.0.
  
 Initial version. 
