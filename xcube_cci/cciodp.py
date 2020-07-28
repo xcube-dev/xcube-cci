@@ -982,15 +982,15 @@ class CciOdp:
         return datetime.strptime(time_as_string[start:end], time_format)
 
     def get_dimension_data(self, dataset_name: str, dimension_names: List[str]):
-        fid = _run_with_session(self._get_fid_for_dataset, dataset_name)
+        dimension_data = _run_with_session(self._get_dim_data, dataset_name, dimension_names)
+        return dimension_data
+
+    async def _get_dim_data(self, session, dataset_name: str, dimension_names: List[str]):
+        fid = await self._get_fid_for_dataset(session, dataset_name)
         request = dict(parentIdentifier=fid,
                        startDate='1900-01-01T00:00:00',
                        endDate='3001-12-31T00:00:00')
-        opendap_url = self._get_opendap_url(request)
-        dimension_data = _run_with_session(self._get_dim_data, dimension_names, opendap_url)
-        return dimension_data
-
-    async def _get_dim_data(self, session, dimension_names: List[str], opendap_url: str):
+        opendap_url = await self._get_opendap_url(session, request)
         dim_data = {}
         if not opendap_url:
             return dim_data
@@ -1014,14 +1014,18 @@ class CciOdp:
 
     def get_earliest_start_date(self, dataset_name: str, start_time: str, end_time: str, frequency: str) -> \
             Optional[datetime]:
+        return _run_with_session(self._get_earliest_start_date, dataset_name, start_time, end_time, frequency)
+
+    async def _get_earliest_start_date(self, session, dataset_name: str, start_time: str, end_time: str,
+                                       frequency: str) -> Optional[datetime]:
         query_args = dict(parentIdentifier=self.get_fid_for_dataset(dataset_name),
                           startDate=start_time,
                           endDate=end_time,
                           frequency=frequency,
                           fileFormat='.nc')
-        opendap_url = self._get_opendap_url(query_args, get_earliest=True)
+        opendap_url = await self._get_opendap_url(session, query_args, get_earliest=True)
         if opendap_url:
-            dataset = get_opendap_dataset(opendap_url)
+            dataset = await _get_opendap_dataset(session, opendap_url)
             start_time_attributes = ['time_coverage_start', 'start_date']
             attributes = dataset.attributes.get('NC_GLOBAL', {})
             for start_time_attribute in start_time_attributes:
@@ -1042,16 +1046,16 @@ class CciOdp:
         fid, uuid = await _fetch_fid_and_uuid(session, self._opensearch_url, dataset_name)
         return fid
 
-    def _get_opendap_url(self, request: Dict, get_earliest: bool = False):
+    async def _get_opendap_url(self, session, request: Dict, get_earliest: bool = False):
         start_date = datetime.strptime(request['startDate'], _TIMESTAMP_FORMAT)
         end_date = datetime.strptime(request['endDate'], _TIMESTAMP_FORMAT)
         request['fileFormat'] = '.nc'
-        feature_list = _run_with_session(_fetch_opensearch_feature_list, self._opensearch_url, request)
+        feature_list = await _fetch_opensearch_feature_list(session, self._opensearch_url, request)
         if len(feature_list) == 0:
             # try without dates. For some data sets, this works better
             request.pop('startDate')
             request.pop('endDate')
-            feature_list = _run_with_session(_fetch_opensearch_feature_list, self._opensearch_url, request)
+            feature_list = await _fetch_opensearch_feature_list(session, self._opensearch_url, request)
         opendap_url = None
         earliest_date = datetime(2999, 12, 31)
         for feature in feature_list:
@@ -1070,13 +1074,17 @@ class CciOdp:
 
     def get_data(self, request: Dict, bbox: Tuple[float, float, float, float], dim_indexes: dict, dim_flipped: dict) \
             -> Optional[bytes]:
+        return _run_with_session(self._get_data, request, bbox, dim_indexes, dim_flipped)
+
+    async def _get_data(self, session, request: Dict, bbox: Tuple[float, float, float, float], dim_indexes: dict,
+                        dim_flipped: dict) -> Optional[bytes]:
         start_date = datetime.strptime(request['startDate'], _TIMESTAMP_FORMAT)
         end_date = datetime.strptime(request['endDate'], _TIMESTAMP_FORMAT)
         var_names = request['varNames']
-        opendap_url = self._get_opendap_url(request)
+        opendap_url = await self._get_opendap_url(session, request)
         if not opendap_url:
             return None
-        dataset = get_opendap_dataset(opendap_url)
+        dataset = await _get_opendap_dataset(session, opendap_url)
         # todo support more dimensions
         supported_dimensions = ['lat', 'lon', 'time', 'latitude', 'longitude']
         result = bytearray()
@@ -1097,14 +1105,14 @@ class CciOdp:
         return result
 
     def get_data_chunk(self, request: Dict, dim_indexes: Tuple) -> Optional[bytes]:
-        var_name = request['varNames'][0]
-        opendap_url = self._get_opendap_url(request)
-        if not opendap_url:
-            return None
-        data_chunk = _run_with_session(self._get_data_chunk, opendap_url, var_name, dim_indexes)
+        data_chunk = _run_with_session(self._get_data_chunk, request, dim_indexes)
         return data_chunk
 
-    async def _get_data_chunk(self, session, opendap_url: str, var_name: str, dim_indexes: tuple) -> Optional[bytes]:
+    async def _get_data_chunk(self, session, request: Dict, dim_indexes: Tuple) -> Optional[bytes]:
+        var_name = request['varNames'][0]
+        opendap_url = await self._get_opendap_url(session, request)
+        if not opendap_url:
+            return None
         dataset = await _get_opendap_dataset(session, opendap_url)
         if not dataset:
             return None
