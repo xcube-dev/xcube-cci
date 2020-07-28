@@ -503,26 +503,6 @@ class CciChunkStore(RemoteChunkStore):
             this = next + delta_ms
         return request_time_ranges
 
-    def _get_time_range_for_num_days(self, num_days: int, start_time: datetime, end_time: datetime):
-        temp_start_time = datetime(start_time.year, start_time.month, start_time.day)
-        temp_start_time -= relativedelta(days=num_days - 1)
-        temp_start_time = self._cci_odp.get_earliest_start_date(self.cube_config.dataset_name,
-                                                                datetime.strftime(temp_start_time, _TIMESTAMP_FORMAT),
-                                                                datetime.strftime(end_time, _TIMESTAMP_FORMAT),
-                                                                f'{num_days} days')
-        if temp_start_time:
-            start_time = temp_start_time
-        else:
-            start_time = datetime(start_time.year, start_time.month, start_time.day)
-        start_time_ordinal = start_time.toordinal()
-        end_time_ordinal = end_time.toordinal()
-        end_time_ordinal = start_time_ordinal + int(np.ceil((end_time_ordinal - start_time_ordinal) /
-                                                            float(num_days)) * num_days)
-        end_time = datetime.fromordinal(end_time_ordinal)
-        end_time += relativedelta(days=1, microseconds=-1)
-        delta = relativedelta(days=num_days, microseconds=-1)
-        return start_time, end_time, delta
-
     def get_dimension_data(self, dataset_id: str):
         dimension_names = self._metadata['dimensions']
         return self._cci_odp.get_dimension_data(dataset_id, dimension_names)
