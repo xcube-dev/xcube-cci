@@ -1,6 +1,11 @@
-## Changes in 0.6.0. dev
+## Changes in 0.6.0.
+xcube-cci can now get the time ranges for satellite-orbit-frequency datasets available via opensearch 
 
-- xcube-cci can now get the time ranges for satellite-orbit-frequency datasets available via opensearch 
+Introduced new optional parameters to CciStore:
+- enable_warnings
+- num_retries
+- _retry_backoff_max
+- _retry_backoff_base
 
 ## Changes in 0.5.0.
  
