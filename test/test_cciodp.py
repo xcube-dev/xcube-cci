@@ -12,13 +12,13 @@ class CciOdpTest(unittest.TestCase):
     def test_retrieve_attribute_info_from_das(self):
         das_file = os.path.join(os.path.dirname(__file__),
                                 "resources/ESACCI-OZONE-L3-NP-MERGED-KNMI-199701-fv0002.nc.das")
-        das = open(das_file)
-        das_read = das.read()
-        attribute_info = _retrieve_attribute_info_from_das(das_read)
-        self.assertEqual(15, len(attribute_info))
-        self.assertTrue('surface_pressure' in attribute_info)
-        self.assertTrue('fill_value' in attribute_info['surface_pressure'])
-        self.assertEqual('NaN', attribute_info['surface_pressure']['fill_value'])
+        with open(das_file) as das:
+            das_read = das.read()
+            attribute_info = _retrieve_attribute_info_from_das(das_read)
+            self.assertEqual(15, len(attribute_info))
+            self.assertTrue('surface_pressure' in attribute_info)
+            self.assertTrue('fill_value' in attribute_info['surface_pressure'])
+            self.assertEqual('NaN', attribute_info['surface_pressure']['fill_value'])
 
     @skipIf(os.environ.get('XCUBE_DISABLE_WEB_TESTS', None) == '1', 'XCUBE_DISABLE_WEB_TESTS = 1')
     def test_get_data(self):
