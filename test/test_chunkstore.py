@@ -8,6 +8,7 @@ from unittest import skipIf
 from xcube_cci.cciodp import CciOdp
 from xcube_cci.chunkstore import CciChunkStore
 
+
 class CciChunkStoreTest(unittest.TestCase):
 
     @skipIf(os.environ.get('XCUBE_DISABLE_WEB_TESTS', None) == '1', 'XCUBE_DISABLE_WEB_TESTS = 1')
@@ -27,10 +28,36 @@ class CciChunkStoreTest(unittest.TestCase):
         cube_params = dict(time_range=time_range)
         time_ranges = self._store.get_time_ranges(
             'esacci.OZONE.mon.L3.NP.multi-sensor.multi-platform.MERGED.fv0002.r1', cube_params)
-        self.assertEqual([('2010-02-01T00:00:00', '2010-02-28T23:59:59'),
-                          ('2010-03-01T00:00:00', '2010-03-31T23:59:59'),
-                          ('2010-04-01T00:00:00', '2010-04-30T23:59:59'),
-                          ('2010-05-01T00:00:00', '2010-05-31T23:59:59')],
+        self.assertEqual([('2010-02-01T00:00:00', '2010-03-01T00:00:00'),
+                          ('2010-03-01T00:00:00', '2010-04-01T00:00:00'),
+                          ('2010-04-01T00:00:00', '2010-05-01T00:00:00'),
+                          ('2010-05-01T00:00:00', '2010-06-01T00:00:00')],
+                         [(tr[0].isoformat(), tr[1].isoformat()) for tr in time_ranges])
+        # get_time_range test for satellite-orbit-frequency data
+        time_range = (pd.to_datetime('2002-07-24', utc=True), pd.to_datetime('2002-07-24', utc=True))
+        cube_params = dict(time_range=time_range)
+        time_ranges = self._store.get_time_ranges(
+            'esacci.SST.satellite-orbit-frequency.L3U.SSTskin.AATSR.Envisat.AATSR.2-1.r1', cube_params)
+        self.assertEqual([('2002-07-24T12:33:21', '2002-07-24T12:33:21'),
+                          ('2002-07-24T14:13:57', '2002-07-24T14:13:57'),
+                          ('2002-07-24T15:54:33', '2002-07-24T15:54:33'),
+                          ('2002-07-24T17:35:09', '2002-07-24T17:35:09'),
+                          ('2002-07-24T19:15:45', '2002-07-24T19:15:45'),
+                          ('2002-07-24T20:56:21', '2002-07-24T20:56:21'),
+                          ('2002-07-24T22:36:57', '2002-07-24T22:36:57'),
+                          ('2002-07-24T01:17:39', '2002-07-24T01:17:39'),
+                          ('2002-07-24T02:58:15', '2002-07-24T02:58:15'),
+                          ('2002-07-24T04:38:51', '2002-07-24T04:38:51'),
+                          ('2002-07-24T06:19:27', '2002-07-24T06:19:27'),
+                          ('2002-07-24T08:00:03', '2002-07-24T08:00:03'),
+                          ('2002-07-24T09:40:39', '2002-07-24T09:40:39'),
+                          ('2002-07-24T11:21:15', '2002-07-24T11:21:15'),
+                          ('2002-07-24T13:01:51', '2002-07-24T13:01:51'),
+                          ('2002-07-24T14:42:27', '2002-07-24T14:42:27'),
+                          ('2002-07-24T16:23:03', '2002-07-24T16:23:03'),
+                          ('2002-07-24T18:03:39', '2002-07-24T18:03:39'),
+                          ('2002-07-24T19:44:15', '2002-07-24T19:44:15'),
+                          ('2002-07-24T21:24:51', '2002-07-24T21:24:51')],
                          [(tr[0].isoformat(), tr[1].isoformat()) for tr in time_ranges])
 
     @skipIf(os.environ.get('XCUBE_DISABLE_WEB_TESTS', None) == '1', 'XCUBE_DISABLE_WEB_TESTS = 1')

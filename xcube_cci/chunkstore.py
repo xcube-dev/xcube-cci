@@ -144,7 +144,7 @@ class RemoteChunkStore(MutableMapping, metaclass=ABCMeta):
             if not dimensions:
                 raise DataStoreError(f'Could not determine dimensions of variable {variable_name}')
             var_attrs.update(_ARRAY_DIMENSIONS=dimensions)
-            chunk_sizes = var_attrs.get('chunk_sizes',  [-1] * len(dimensions))
+            chunk_sizes = var_attrs.get('chunk_sizes', [-1] * len(dimensions))
             sizes = []
             self._time_indexes[variable_name] = -1
             for i, dimension_name in enumerate(dimensions):
@@ -431,25 +431,23 @@ class CciChunkStore(RemoteChunkStore):
         end_time = datetime.strptime(iso_end_time, _TIMESTAMP_FORMAT)
         return start_time, end_time, iso_start_time, iso_end_time
 
-
     def get_time_ranges(self, dataset_id: str, cube_params: Mapping[str, Any]) -> List[Tuple]:
         start_time, end_time, iso_start_time, iso_end_time = \
             self._extract_time_range_as_datetime(cube_params.get('time_range'))
         time_period = dataset_id.split('.')[2]
-        delta_ms = relativedelta(microseconds=1)
         if time_period == 'day':
             start_time = datetime(year=start_time.year, month=start_time.month, day=start_time.day)
             end_time = datetime(year=end_time.year, month=end_time.month, day=end_time.day)
-            delta = relativedelta(days=1, microseconds=-1)
+            delta = relativedelta(days=1)
         elif time_period == 'month' or time_period == 'mon':
             start_time = datetime(year=start_time.year, month=start_time.month, day=1)
             end_time = datetime(year=end_time.year, month=end_time.month, day=1)
-            delta = relativedelta(months=+1, microseconds=-1)
+            delta = relativedelta(months=+1)
             end_time += delta
         elif time_period == 'year' or time_period == 'yr':
             start_time = datetime(year=start_time.year, month=1, day=1)
             end_time = datetime(year=end_time.year, month=12, day=31)
-            delta = relativedelta(years=1, microseconds=-1)
+            delta = relativedelta(years=1)
         elif re.compile('[0-9]*-days').search(time_period):
             num_days = int(time_period.split('-')[0])
             temp_start_time = datetime(start_time.year, start_time.month, start_time.day)
@@ -468,8 +466,8 @@ class CciChunkStore(RemoteChunkStore):
             end_time_ordinal = start_time_ordinal + int(np.ceil((end_time_ordinal - start_time_ordinal) /
                                                                 float(num_days)) * num_days)
             end_time = datetime.fromordinal(end_time_ordinal)
-            end_time += relativedelta(days=1, microseconds=-1)
-            delta = relativedelta(days=num_days, microseconds=-1)
+            end_time += relativedelta(days=1)
+            delta = relativedelta(days=num_days)
         elif re.compile('[0-9]*-yrs').search(time_period):
             num_years = int(time_period.split('-')[0])
             temp_start_time = datetime(start_time.year, start_time.month, start_time.day)
@@ -488,10 +486,18 @@ class CciChunkStore(RemoteChunkStore):
             end_time_ordinal = start_time_ordinal + int(np.ceil((end_time_ordinal - start_time_ordinal) /
                                                                 float(num_years)) * num_years)
             end_time = datetime.fromordinal(end_time_ordinal)
-            end_time += relativedelta(years=1, microseconds=-1)
-            delta = relativedelta(years=num_years, microseconds=-1)
+            end_time += relativedelta(years=1)
+            delta = relativedelta(years=num_years)
+        elif time_period == 'satellite-orbit-frequency':
+            time_range = (cube_params.get('time_range')[0],
+                          cube_params.get('time_range')[1].replace(hour=23, minute=59, second=59))
+            start_time, end_time, iso_start_time, iso_end_time = \
+                self._extract_time_range_as_datetime(time_range)
+            request_time_ranges = self._cci_odp.get_time_ranges_satellite_orbit_frequency(dataset_id,
+                                                                                          iso_start_time,
+                                                                                          iso_end_time)
+            return request_time_ranges
         else:
-            # todo add support for satellite-orbit-frequency
             return []
         request_time_ranges = []
         this = start_time
@@ -500,8 +506,28 @@ class CciChunkStore(RemoteChunkStore):
             pd_this = pd.Timestamp(datetime.strftime(this, _TIMESTAMP_FORMAT))
             pd_next = pd.Timestamp(datetime.strftime(next, _TIMESTAMP_FORMAT))
             request_time_ranges.append((pd_this, pd_next))
-            this = next + delta_ms
+            this = next
         return request_time_ranges
+
+    def _get_time_range_for_num_days(self, num_days: int, start_time: datetime, end_time: datetime):
+        temp_start_time = datetime(start_time.year, start_time.month, start_time.day)
+        temp_start_time -= relativedelta(days=num_days - 1)
+        temp_start_time = self._cci_odp.get_earliest_start_date(self.cube_config.dataset_name,
+                                                                datetime.strftime(temp_start_time, _TIMESTAMP_FORMAT),
+                                                                datetime.strftime(end_time, _TIMESTAMP_FORMAT),
+                                                                f'{num_days} days')
+        if temp_start_time:
+            start_time = temp_start_time
+        else:
+            start_time = datetime(start_time.year, start_time.month, start_time.day)
+        start_time_ordinal = start_time.toordinal()
+        end_time_ordinal = end_time.toordinal()
+        end_time_ordinal = start_time_ordinal + int(np.ceil((end_time_ordinal - start_time_ordinal) /
+                                                            float(num_days)) * num_days)
+        end_time = datetime.fromordinal(end_time_ordinal)
+        end_time += relativedelta(days=1)
+        delta = relativedelta(days=num_days)
+        return start_time, end_time, delta
 
     def get_dimension_data(self, dataset_id: str):
         dimension_names = self._metadata['dimensions']
