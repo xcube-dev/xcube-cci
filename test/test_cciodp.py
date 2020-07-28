@@ -5,20 +5,9 @@ from datetime import datetime
 from unittest import skip
 from unittest import skipIf
 
-from xcube_cci.cciodp import _retrieve_attribute_info_from_das, find_datetime_format, get_opendap_dataset, CciOdp
+from xcube_cci.cciodp import find_datetime_format, CciOdp
 
 class CciOdpTest(unittest.TestCase):
-
-    def test_retrieve_attribute_info_from_das(self):
-        das_file = os.path.join(os.path.dirname(__file__),
-                                "resources/ESACCI-OZONE-L3-NP-MERGED-KNMI-199701-fv0002.nc.das")
-        das = open(das_file)
-        das_read = das.read()
-        attribute_info = _retrieve_attribute_info_from_das(das_read)
-        self.assertEqual(15, len(attribute_info))
-        self.assertTrue('surface_pressure' in attribute_info)
-        self.assertTrue('fill_value' in attribute_info['surface_pressure'])
-        self.assertEqual('NaN', attribute_info['surface_pressure']['fill_value'])
 
     @skipIf(os.environ.get('XCUBE_DISABLE_WEB_TESTS', None) == '1', 'XCUBE_DISABLE_WEB_TESTS = 1')
     def test_get_data(self):
@@ -143,7 +132,8 @@ class CciOdpTest(unittest.TestCase):
     def test_get_opendap_dataset(self):
         opendap_url = 'http://cci-odp-data2.ceda.ac.uk/thredds/dodsC/esacci/aerosol/data/AATSR_SU/L3/v4.21/DAILY/2002/' \
                       '07/20020724-ESACCI-L3C_AEROSOL-AER_PRODUCTS-AATSR_ENVISAT-SU_DAILY-v4.21.nc'
-        dataset = get_opendap_dataset(opendap_url)
+        cci_odp = CciOdp()
+        dataset = cci_odp.get_opendap_dataset(opendap_url)
         self.assertIsNotNone(dataset)
         self.assertEqual(53, len(list(dataset.keys())))
         self.assertTrue('AOD550_mean' in dataset.keys())

@@ -33,6 +33,8 @@ from xcube.core.store import DataStoreError
 from xcube.core.store import DatasetDescriptor
 from xcube.core.store import VariableDescriptor
 from xcube.util.jsonschema import JsonArraySchema
+from xcube.util.jsonschema import JsonBooleanSchema
+from xcube.util.jsonschema import JsonIntegerSchema
 from xcube.util.jsonschema import JsonNumberSchema
 from xcube.util.jsonschema import JsonObjectSchema
 from xcube.util.jsonschema import JsonStringSchema
@@ -40,8 +42,11 @@ from xcube_cci.cciodp import CciOdp
 from xcube_cci.chunkstore import CciChunkStore
 from xcube_cci.constants import CCI_ODD_URL
 from xcube_cci.constants import DATA_OPENER_ID
-from xcube_cci.constants import OPENSEARCH_CEDA_URL
 from xcube_cci.constants import DEFAULT_CRS
+from xcube_cci.constants import DEFAULT_NUM_RETRIES
+from xcube_cci.constants import DEFAULT_RETRY_BACKOFF_BASE
+from xcube_cci.constants import DEFAULT_RETRY_BACKOFF_MAX
+from xcube_cci.constants import OPENSEARCH_CEDA_URL
 from xcube_cci.normalize import normalize_cci_dataset
 from xcube_cci.normalize import normalize_dims_description
 from xcube_cci.normalize import normalize_variable_dims_description
@@ -205,7 +210,11 @@ class CciOdpDataStore(CciOdpDataOpener, DataStore):
         cci_schema.validate_instance(store_params)
         store_kwargs, store_params = cci_schema.process_kwargs_subset(store_params, (
             'opensearch_url',
-            'opensearch_description_url'
+            'opensearch_description_url',
+            'enable_warnings',
+            'num_retries',
+            'retry_backoff_max',
+            'retry_backoff_base',
         ))
         super().__init__(normalize_data, CciOdp(**store_kwargs))
 
@@ -225,7 +234,12 @@ class CciOdpDataStore(CciOdpDataOpener, DataStore):
     def get_data_store_params_schema(cls) -> JsonObjectSchema:
         cciodp_params = dict(
             opensearch_url=JsonStringSchema(default=OPENSEARCH_CEDA_URL),
-            opensearch_description_url=JsonStringSchema(default=CCI_ODD_URL)
+            opensearch_description_url=JsonStringSchema(default=CCI_ODD_URL),
+            enable_warnings = JsonBooleanSchema(default=False, title='Whether to output warnings'),
+            num_retries = JsonIntegerSchema(default=DEFAULT_NUM_RETRIES, minimum=0,
+                                            title='Number of retries when requesting data fails'),
+            retry_backoff_max = JsonIntegerSchema(default=DEFAULT_RETRY_BACKOFF_MAX, minimum=0),
+            retry_backoff_base = JsonNumberSchema(default=DEFAULT_RETRY_BACKOFF_BASE, exclusive_minimum=1.0)
         )
         return JsonObjectSchema(
             properties=dict(**cciodp_params),

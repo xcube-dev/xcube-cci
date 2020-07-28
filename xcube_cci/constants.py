@@ -26,6 +26,10 @@ DATA_ARRAY_NAME = 'var_data'
 OPENSEARCH_CEDA_URL = "http://opensearch-test.ceda.ac.uk/opensearch/request"
 CCI_ODD_URL = 'http://opensearch-test.ceda.ac.uk/opensearch/description.xml?parentIdentifier=cci'
 
+DEFAULT_RETRY_BACKOFF_MAX = 40  # milliseconds
+DEFAULT_RETRY_BACKOFF_BASE = 1.001
+DEFAULT_NUM_RETRIES = 200
+
 DATA_OPENER_ID = 'dataset:zarr:cciodp'
 WGS84_CRS = 'http://www.opengis.net/def/crs/EPSG/0/4326'
 DEFAULT_CRS = WGS84_CRS
