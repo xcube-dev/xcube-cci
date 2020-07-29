@@ -55,7 +55,7 @@ class CciOdpTest(unittest.TestCase):
     @skipIf(os.environ.get('XCUBE_DISABLE_WEB_TESTS', None) == '1', 'XCUBE_DISABLE_WEB_TESTS = 1')
     def test_var_names(self):
         cci_odp = CciOdp()
-        var_names = cci_odp.var_names('esacci.OC.mon.L3S.CHLOR_A.multi-sensor.multi-platform.MERGED.4-2.r1')
+        var_names = cci_odp.var_names('esacci.OC.mon.L3S.K_490.multi-sensor.multi-platform.MERGED.3-1.geographic')
         self.assertIsNotNone(var_names)
         self.assertEqual(['MERIS_nobs_sum', 'MODISA_nobs_sum', 'SeaWiFS_nobs_sum', 'VIIRS_nobs_sum', 'kd_490',
                           'kd_490_bias', 'kd_490_rmsd', 'total_nobs_sum'], var_names)
