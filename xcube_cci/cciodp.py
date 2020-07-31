@@ -27,6 +27,7 @@ import json
 import logging
 import lxml.etree as etree
 import numpy as np
+import os
 import random
 import re
 import time
@@ -428,7 +429,13 @@ class CciOdp:
     async def _fetch_dataset_names(self, session):
         meta_info_dict = await self._extract_metadata_from_odd_url(session, self._opensearch_description_url)
         if 'drs_ids' in meta_info_dict:
-            return meta_info_dict['drs_ids']
+            dataset_names = meta_info_dict['drs_ids']
+            blocklist_file = os.path.join(os.path.dirname(__file__), 'data/id-blocklist')
+            with open(blocklist_file, 'r') as blocklist:
+                for line in blocklist.readlines():
+                    if line.replace('\n', '') in dataset_names:
+                        dataset_names.remove(line.replace('\n', ''))
+            return dataset_names
         if not self._data_sources:
             self._data_sources = {}
             catalogue = await self._fetch_data_source_list_json(session, self._opensearch_url, dict(parentIdentifier='cci'))
