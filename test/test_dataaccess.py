@@ -18,6 +18,30 @@ class CciOdpDataOpenerTest(unittest.TestCase):
         self.opener = CciOdpDataOpener(cci_odp=CciOdp())
 
     @skipIf(os.environ.get('XCUBE_DISABLE_WEB_TESTS', None) == '1', 'XCUBE_DISABLE_WEB_TESTS = 1')
+    def test_describe_datasets(self):
+        descriptors = self.opener.describe_datasets(
+            ['esacci.OZONE.mon.L3.NP.multi-sensor.multi-platform.MERGED.fv0002.r1',
+             'esacci.FIRE.mon.L4.BA.MODIS.Terra.MODIS_TERRA.v5-1.grid'
+            ]
+        )
+        self.assertIsNotNone(descriptors)
+        self.assertEqual(2, len(descriptors))
+        descriptor = descriptors[0]
+        self.assertIsInstance(descriptor, DatasetDescriptor)
+        self.assertEqual('esacci.OZONE.mon.L3.NP.multi-sensor.multi-platform.MERGED.fv0002.r1', descriptor.data_id)
+        self.assertIsNone(descriptor.dims)
+        self.assertEqual(9, len(descriptor.data_vars))
+        self.assertEqual('surface_pressure', descriptor.data_vars[0].name)
+        self.assertEqual(0, descriptor.data_vars[0].ndim)
+        self.assertEqual((), descriptor.data_vars[0].dims)
+        self.assertEqual('unknown', descriptor.data_vars[0].dtype)
+        self.assertIsNone(descriptor.crs)
+        self.assertIsNone(descriptor.spatial_res)
+        self.assertEqual(('1997-01-01T00:00:00', '2008-12-31T00:00:00'), descriptor.time_range)
+        self.assertIsNone(descriptor.time_period)
+        self.assertEqual('esacci.FIRE.mon.L4.BA.MODIS.Terra.MODIS_TERRA.v5-1.grid', descriptors[1].data_id)
+
+    @skipIf(os.environ.get('XCUBE_DISABLE_WEB_TESTS', None) == '1', 'XCUBE_DISABLE_WEB_TESTS = 1')
     def test_describe_dataset(self):
         descriptor = self.opener.describe_data('esacci.OZONE.mon.L3.NP.multi-sensor.multi-platform.MERGED.fv0002.r1')
         self.assertIsNotNone(descriptor)
@@ -121,7 +145,7 @@ class CciOdpDataStoreTest(unittest.TestCase):
         dataset_ids_iter = self.store.get_data_ids()
         self.assertIsNotNone(dataset_ids_iter)
         dataset_ids = list(dataset_ids_iter)
-        self.assertEqual(274, len(dataset_ids))
+        self.assertEqual(266, len(dataset_ids))
 
     def test_create_human_readable_title_from_id(self):
         self.assertEqual('OZONE CCI: Monthly multi-sensor L3 MERGED NP, vfv0002',

@@ -99,8 +99,8 @@ class CciOdpDataOpener(DataOpener):
             self._normalize_var_dims_func = _return_input
             self._normalize_dataset_func = _return_input
 
-    def _describe_data(self, data_ids: List[str]) -> List[DataDescriptor]:
-        ds_metadata_list = self._cci_odp.get_dataset_metadata(data_ids)
+    def describe_datasets(self, data_ids: List[str]) -> List[DataDescriptor]:
+        ds_metadata_list = self._cci_odp.get_dataset_metadata(data_ids, read_all_data=False)
         data_descriptors = []
         for i, ds_metadata in enumerate(ds_metadata_list):
             data_descriptors.append(self._get_data_descriptor_from_metadata(data_ids[i], ds_metadata))
@@ -120,7 +120,9 @@ class CciOdpDataOpener(DataOpener):
         if re.match(TIME_PERIOD_PATTERN, temporal_resolution) is None:
             temporal_resolution = None
         dataset_info = self._cci_odp.get_dataset_info(data_id, ds_metadata)
-        spatial_resolution = dataset_info['lat_res']
+        spatial_resolution = dataset_info.get('lat_res', None)
+        if abs(spatial_resolution + 1) < 1e-8:
+            spatial_resolution = None
         bbox = dataset_info['bbox']
         temporal_coverage = (dataset_info['temporal_coverage_start'], dataset_info['temporal_coverage_end'])
         var_descriptors = []
@@ -134,10 +136,13 @@ class CciOdpDataOpener(DataOpener):
                 if var_dims:
                     var_descriptors.append(VariableDescriptor(var_name, var_dtype, var_dims, var_info))
             else:
-                var_descriptors.append(VariableDescriptor(var_name, '', ''))
-        ds_metadata.pop('dimensions')
-        ds_metadata.pop('variable_infos')
-        ds_metadata.pop('attributes')
+                var_descriptors.append(VariableDescriptor(var_name, 'unknown', []))
+        if 'variable_infos' in ds_metadata:
+            ds_metadata.pop('variable_infos')
+        if 'attributes' in ds_metadata:
+            ds_metadata.pop('attributes')
+        if 'dimensions' in ds_metadata:
+            ds_metadata.pop('dimensions')
         attrs.update(ds_metadata)
         descriptor = DatasetDescriptor(data_id=data_id, dims=dims, data_vars=var_descriptors, attrs=attrs, bbox=bbox,
                                        spatial_res=spatial_resolution, time_range=temporal_coverage,

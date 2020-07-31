@@ -344,7 +344,7 @@ class CciOdp:
         datasets = []
         for data_source in self._data_sources:
             metadata = self._data_sources[data_source]
-            var_names = self._get_data_var_names(metadata.get('variable_infos', {}))
+            var_names = self._get_data_var_names(metadata.get('variable_infos', {}), metadata.get('variables', []))
             variables = []
             for variable in var_names:
                 variable_dict = {}
@@ -395,7 +395,8 @@ class CciOdp:
                              float(dataset_metadata['bbox_maxx']), float(dataset_metadata['bbox_maxy']))
         data_info['temporal_coverage_start'] = dataset_metadata.get('temporal_coverage_start', '')
         data_info['temporal_coverage_end'] = dataset_metadata.get('temporal_coverage_end', '')
-        data_info['var_names'] = self.var_names(dataset_id)
+        data_info['var_names'] = self._get_data_var_names(dataset_metadata.get('variable_infos', {}),
+                                                          dataset_metadata.get('variables', []))
         return data_info
 
     def _get_res(self, nc_attrs: dict, dim: str) -> float:
@@ -419,8 +420,11 @@ class CciOdp:
                     continue
         return -1.0
 
-    def get_dataset_metadata(self, dataset_ids: List[str]) -> List[dict]:
-        _run_with_session(self._ensure_all_info_in_data_sources, dataset_ids)
+    def get_dataset_metadata(self, dataset_ids: List[str], read_all_data: bool = True) -> List[dict]:
+        if read_all_data:
+            _run_with_session(self._ensure_all_info_in_data_sources, dataset_ids)
+        else:
+            _run_with_session(self._ensure_in_data_sources, dataset_ids)
         metadata = []
         for dataset_id in dataset_ids:
             metadata.append(self._data_sources[dataset_id])
@@ -523,7 +527,8 @@ class CciOdp:
 
     def var_names(self, dataset_name: str) -> List:
         _run_with_session(self._ensure_all_info_in_data_sources, [dataset_name])
-        return self._get_data_var_names(self._data_sources[dataset_name]['variable_infos'])
+        return self._get_data_var_names(self._data_sources[dataset_name].get('variable_infos', {}),
+                                        self._data_sources[dataset_name].get('variables', []))
 
     async def _ensure_all_info_in_data_sources(self, session, dataset_names: List[str]):
         await self._ensure_in_data_sources(session, dataset_names)
@@ -540,7 +545,7 @@ class CciOdp:
         data_source['dimensions'], data_source['variable_infos'], data_source['attributes'] = \
             await self._fetch_variable_infos(self._opensearch_url, data_fid, session)
 
-    def _get_data_var_names(self, variable_infos) -> List:
+    def _get_data_var_names(self, variable_infos: dict = {}, variable_names: List[dict] = []) -> List:
         variables = []
         names_of_dims = ['period', 'hist1d_cla_vis006_bin_centre', 'lon_bnds', 'air_pressure', 'field_name_length',
                          'lon', 'view', 'hist2d_cot_bin_centre', 'hist1d_cer_bin_border', 'altitude',
@@ -550,15 +555,15 @@ class CciOdp:
                          'hist1d_ctt_bin_border', 'hist1d_ctp_bin_centre', 'fieldsp1', 'time', 'hist_phase',
                          'hist1d_cwp_bin_centre', 'hist2d_ctp_bin_border', 'lat', 'fields', 'hist2d_cot_bin_border',
                          'hist2d_ctp_bin_centre', 'hist1d_ctt_bin_centre', 'hist1d_cla_vis008_bin_border', 'crs']
-        for variable in variable_infos:
-            if variable in names_of_dims:
+        for variable in variable_names:
+            if variable['name'] in names_of_dims:
                 continue
-            if len(variable_infos[variable]['dimensions']) == 0:
+            if len(variable_infos.get(variable['name'], {}).get('dimensions', ['a_dim'])) == 0:
                 continue
-            if variable_infos[variable].get('data_type', '') not in ['uint8', 'uint16', 'uint32', 'int8', 'int16',
-                                                                     'int32', 'float32', 'float64']:
+            if variable_infos.get(variable['name'], {}).get('data_type', 'uint8') not in \
+                    ['uint8', 'uint16', 'uint32', 'int8', 'int16', 'int32', 'float32', 'float64']:
                 continue
-            variables.append(variable)
+            variables.append(variable['name'])
         return variables
 
     def search(self,

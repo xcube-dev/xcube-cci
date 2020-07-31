@@ -5,7 +5,8 @@ from datetime import datetime
 from unittest import skip
 from unittest import skipIf
 
-from xcube_cci.cciodp import find_datetime_format, CciOdp
+from xcube_cci.cciodp import find_datetime_format
+from xcube_cci.cciodp import CciOdp
 
 class CciOdpTest(unittest.TestCase):
 
@@ -48,7 +49,7 @@ class CciOdpTest(unittest.TestCase):
         dataset_names = cci_odp.dataset_names
         self.assertIsNotNone(dataset_names)
         list(dataset_names)
-        self.assertEqual(274, len(dataset_names))
+        self.assertEqual(266, len(dataset_names))
         self.assertTrue('esacci.AEROSOL.day.L3C.AER_PRODUCTS.ATSR-2.ERS-2.ORAC.03-02.r1' in dataset_names)
         self.assertTrue('esacci.OC.day.L3S.K_490.multi-sensor.multi-platform.MERGED.3-1.sinusoidal' in dataset_names)
 
@@ -59,6 +60,18 @@ class CciOdpTest(unittest.TestCase):
         self.assertIsNotNone(var_names)
         self.assertEqual(['MERIS_nobs_sum', 'MODISA_nobs_sum', 'SeaWiFS_nobs_sum', 'VIIRS_nobs_sum', 'kd_490',
                           'kd_490_bias', 'kd_490_rmsd', 'total_nobs_sum'], var_names)
+
+    @skipIf(os.environ.get('XCUBE_DISABLE_WEB_TESTS', None) == '1', 'XCUBE_DISABLE_WEB_TESTS = 1')
+    def test_get_data_var_names(self):
+        cci_odp = CciOdp()
+        var_names = cci_odp._get_data_var_names(variable_infos={},
+                                                variable_names=[dict(name='MERIS_nobs_sum'),
+                                                                dict(name='MODISA_nobs_sum'),
+                                                                dict(name='SeaWiFS_nobs_sum'),
+                                                                dict(name='lat'),
+                                                                dict(name='crs')])
+        self.assertIsNotNone(var_names)
+        self.assertEqual(['MERIS_nobs_sum', 'MODISA_nobs_sum', 'SeaWiFS_nobs_sum'], var_names)
 
     @skipIf(os.environ.get('XCUBE_DISABLE_WEB_TESTS', None) == '1', 'XCUBE_DISABLE_WEB_TESTS = 1')
     def test_get_dataset_info(self):
@@ -294,7 +307,7 @@ class CciOdpTest(unittest.TestCase):
             bbox=(-20, 30, 20, 50),
             processing_level='L2P'
         )
-        self.assertEqual(34, len(l2p_sources))
+        self.assertEqual(33, len(l2p_sources))
 
     @skipIf(os.environ.get('XCUBE_DISABLE_WEB_TESTS', None) == '1', 'XCUBE_DISABLE_WEB_TESTS = 1')
     def test_search_product_string(self):
