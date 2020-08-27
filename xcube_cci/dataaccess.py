@@ -70,7 +70,8 @@ _FREQUENCY_TO_ADJECTIVE = {
     '13-yrs': '13 year',
     '15-days': '15 day',
     '5-yrs': '5 year',
-    'yr': 'year'
+    'yr': 'year',
+    'unspecified': ''
 }
 
 
