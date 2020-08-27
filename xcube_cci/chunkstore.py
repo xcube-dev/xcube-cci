@@ -414,16 +414,20 @@ class CciChunkStore(RemoteChunkStore):
                          observer=observer,
                          trace_store_calls=trace_store_calls)
 
-    @staticmethod
-    def _extract_time_range_as_strings(time_range: Union[Tuple, List]) -> (str, str):
+    @classmethod
+    def _extract_time_as_string(cls, time: Union[pd.Timestamp, str]) -> str:
+        if isinstance(time, str):
+            time = pd.to_datetime(time, utc=True)
+        return time.tz_localize(None).isoformat()
+
+    @classmethod
+    def _extract_time_range_as_strings(cls, time_range: Union[Tuple, List]) -> (str, str):
         if isinstance(time_range, tuple):
             time_start, time_end = time_range
-            iso_start_time = time_start.tz_localize(None).isoformat()
-            iso_end_time = time_end.tz_localize(None).isoformat()
         else:
-            iso_start_time = pd.to_datetime(time_range[0], utc=True).tz_localize(None).isoformat()
-            iso_end_time = pd.to_datetime(time_range[1], utc=True).tz_localize(None).isoformat()
-        return iso_start_time, iso_end_time
+            time_start = time_range[0]
+            time_end = time_range[1]
+        return cls._extract_time_as_string(time_start), cls._extract_time_as_string(time_end)
 
     def _extract_time_range_as_datetime(self, time_range: Union[Tuple, List]) -> (datetime, datetime, str, str):
         iso_start_time, iso_end_time = self._extract_time_range_as_strings(time_range)
