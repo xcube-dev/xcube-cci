@@ -145,6 +145,8 @@ class RemoteChunkStore(MutableMapping, metaclass=ABCMeta):
                 raise DataStoreError(f'Could not determine dimensions of variable {variable_name}')
             var_attrs.update(_ARRAY_DIMENSIONS=dimensions)
             chunk_sizes = var_attrs.get('chunk_sizes', [-1] * len(dimensions))
+            if isinstance(chunk_sizes, int):
+                chunk_sizes = [chunk_sizes]
             sizes = []
             self._time_indexes[variable_name] = -1
             for i, dimension_name in enumerate(dimensions):
