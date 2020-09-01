@@ -48,7 +48,7 @@ class CciOdpTest(unittest.TestCase):
         dataset_names = cci_odp.dataset_names
         self.assertIsNotNone(dataset_names)
         list(dataset_names)
-        self.assertEqual(274, len(dataset_names))
+        self.assertEqual(322, len(dataset_names))
         self.assertTrue('esacci.AEROSOL.day.L3C.AER_PRODUCTS.ATSR-2.ERS-2.ORAC.03-02.r1' in dataset_names)
         self.assertTrue('esacci.OC.day.L3S.K_490.multi-sensor.multi-platform.MERGED.3-1.sinusoidal' in dataset_names)
 
@@ -272,7 +272,7 @@ class CciOdpTest(unittest.TestCase):
             bbox=(-20, 30, 20, 50),
             ecv='AEROSOL'
         )
-        self.assertEqual(25, len(aerosol_sources))
+        self.assertEqual(37, len(aerosol_sources))
 
     @skipIf(os.environ.get('XCUBE_DISABLE_WEB_TESTS', None) == '1', 'XCUBE_DISABLE_WEB_TESTS = 1')
     def test_search_frequency(self):
@@ -294,7 +294,7 @@ class CciOdpTest(unittest.TestCase):
             bbox=(-20, 30, 20, 50),
             processing_level='L2P'
         )
-        self.assertEqual(34, len(l2p_sources))
+        self.assertEqual(38, len(l2p_sources))
 
     @skipIf(os.environ.get('XCUBE_DISABLE_WEB_TESTS', None) == '1', 'XCUBE_DISABLE_WEB_TESTS = 1')
     def test_search_product_string(self):
@@ -305,7 +305,7 @@ class CciOdpTest(unittest.TestCase):
             bbox=(-20, 30, 20, 50),
             product_string='AVHRR19_G'
         )
-        self.assertEqual(5, len(avhrr19g_sources))
+        self.assertEqual(4, len(avhrr19g_sources))
 
     @skipIf(os.environ.get('XCUBE_DISABLE_WEB_TESTS', None) == '1', 'XCUBE_DISABLE_WEB_TESTS = 1')
     def test_search_product_version(self):
