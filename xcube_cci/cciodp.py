@@ -27,6 +27,7 @@ import json
 import logging
 import lxml.etree as etree
 import numpy as np
+import os
 import random
 import re
 import time
@@ -433,7 +434,14 @@ class CciOdp:
     async def _fetch_dataset_names(self, session):
         meta_info_dict = await self._extract_metadata_from_odd_url(session, self._opensearch_description_url)
         if 'drs_ids' in meta_info_dict:
-            return meta_info_dict['drs_ids']
+            drs_ids = meta_info_dict['drs_ids']
+            eds_file = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'data/excluded_data_sources')
+            with open(eds_file, 'r') as eds:
+                excluded_data_sources = eds.read().split('\n')
+                for excluded_data_source in excluded_data_sources:
+                    if excluded_data_source in drs_ids:
+                        drs_ids.remove(excluded_data_source)
+            return drs_ids
         if not self._data_sources:
             self._data_sources = {}
             catalogue = await self._fetch_data_source_list_json(session, self._opensearch_url, dict(parentIdentifier='cci'))
@@ -449,6 +457,12 @@ class CciOdp:
                                                 json_dict.get('odd_url', None),
                                                 json_dict.get('metadata_url', None))
         drs_ids = self._get_as_list(meta_info, 'drs_id', 'drs_ids')
+        eds_file = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'data/excluded_data_sources')
+        with open(eds_file, 'r') as eds:
+            excluded_data_sources = eds.read().split('\n')
+            for excluded_data_source in excluded_data_sources:
+                if excluded_data_source in drs_ids:
+                    drs_ids.remove(excluded_data_source)
         for drs_id in drs_ids:
             meta_info = meta_info.copy()
             meta_info.update(json_dict)
