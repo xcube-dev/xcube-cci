@@ -1,5 +1,5 @@
 ## Changes in 0.6.0.
-* Establish common data store conventions ([#330](https://github.com/dcs4cop/xcube/issues/330)
+* Establish common data store conventions ([#10](https://github.com/dcs4cop/xcube-cci/issues/10)
 * xcube-cci can now get the time ranges for satellite-orbit-frequency datasets available via opensearch 
 * Introduced new optional parameters to CciStore:
     - enable_warnings
