@@ -82,14 +82,8 @@ _RE_TO_DATETIME_FORMATS = patterns = [(re.compile(14 * '\\d'), '%Y%m%d%H%M%S', r
 def _convert_time_from_drs_id(time_value: str) -> str:
     if time_value == 'mon':
         return 'month'
-    if time_value == 'month':
-        return 'month'
     if time_value == 'yr':
         return 'year'
-    if time_value == 'day':
-        return 'day'
-    if time_value == 'satellite-orbit-frequency':
-        return 'satellite-orbit-frequency'
     if time_value == '5-days':
         return '5 days'
     if time_value == '8-days':
@@ -98,9 +92,7 @@ def _convert_time_from_drs_id(time_value: str) -> str:
         return '15 days'
     if time_value == '13-yrs':
         return '13 years'
-    if time_value == 'climatology':
-        return 'climatology'
-    raise ValueError('Unknown time frequency format')
+    return time_value
 
 
 def _run_with_session(function, *params):
@@ -476,34 +468,13 @@ class CciOdp:
     def _adjust_json_dict(self, json_dict: dict, drs_id: str):
         values = drs_id.split('.')
         self._adjust_json_dict_for_param(json_dict, 'time_frequency', 'time_frequencies',
-                                         self._convert_time_from_drs_id(values[2]))
+                                         _convert_time_from_drs_id(values[2]))
         self._adjust_json_dict_for_param(json_dict, 'processing_level', 'processing_levels', values[3])
         self._adjust_json_dict_for_param(json_dict, 'data_type', 'data_types', values[4])
         self._adjust_json_dict_for_param(json_dict, 'sensor_id', 'sensor_ids', values[5])
         self._adjust_json_dict_for_param(json_dict, 'platform_id', 'platform_ids', values[6])
         self._adjust_json_dict_for_param(json_dict, 'product_string', 'product_strings', values[7])
         self._adjust_json_dict_for_param(json_dict, 'product_version', 'product_versions', values[8])
-
-    def _convert_time_from_drs_id(self, time_value: str) -> str:
-        if time_value == 'mon' or time_value == 'month':
-            return 'month'
-        if time_value == 'yr' or time_value == 'year':
-            return 'year'
-        if time_value == 'day':
-            return 'day'
-        if time_value == 'satellite-orbit-frequency':
-            return 'satellite-orbit-frequency'
-        if time_value == '5-days':
-            return '5 days'
-        if time_value == '8-days':
-            return '8 days'
-        if time_value == '15-days':
-            return '15 days'
-        if time_value == '13-yrs':
-            return '13 years'
-        if time_value == 'climatology':
-            return 'climatology'
-        raise ValueError('Unknown time frequency format')
 
     def _adjust_json_dict_for_param(self, json_dict: dict, single_name: str, list_name: str, param_value: str):
         json_dict[single_name] = param_value
