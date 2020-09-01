@@ -23,6 +23,19 @@ class CciChunkStoreTest(unittest.TestCase):
         self._store = CciChunkStore(cci_odp, dataset_id, cube_params)
 
     @skipIf(os.environ.get('XCUBE_DISABLE_WEB_TESTS', None) == '1', 'XCUBE_DISABLE_WEB_TESTS = 1')
+    def test_unconstrained_chunk_store(self):
+        cci_odp = CciOdp()
+        dataset_id = 'esacci.OZONE.mon.L3.NP.multi-sensor.multi-platform.MERGED.fv0002.r1'
+        store = CciChunkStore(cci_odp, dataset_id, None)
+        self.assertIsNotNone(store)
+        time_ranges = store._time_ranges
+        self.assertEqual(144, len(time_ranges))
+        self.assertEqual(pd.Timestamp('1997-01-01T00:00:00'), time_ranges[0][0])
+        self.assertEqual(['surface_pressure', 'air_pressure', 'O3e_ndens', 'O3e_du', 'O3e_vmr', 'lat', 'lon', 'layers',
+                          'time', 'O3e_du_tot', 'O3_du_tot', 'O3_ndens', 'O3_du', 'O3_vmr'],
+                         store._variable_names)
+
+    @skipIf(os.environ.get('XCUBE_DISABLE_WEB_TESTS', None) == '1', 'XCUBE_DISABLE_WEB_TESTS = 1')
     def test_get_time_ranges(self):
         time_range = (pd.to_datetime('2010-02-10', utc=True), pd.to_datetime('2010-05-20', utc=True))
         cube_params = dict(time_range=time_range)
@@ -96,3 +109,22 @@ class CciChunkStoreTest(unittest.TestCase):
         self.assertEqual([1, 180, 360], attrs['chunk_sizes'])
         self.assertEqual('float32', attrs['data_type'])
         self.assertEqual(['time', 'lat', 'lon'], attrs['dimensions'])
+
+    @skipIf(os.environ.get('XCUBE_DISABLE_WEB_TESTS', None) == '1', 'XCUBE_DISABLE_WEB_TESTS = 1')
+    def test_s3(self):
+        import xarray as xr
+        odp = CciOdp()
+        original_store = CciChunkStore(odp,
+                                       "esacci.OZONE.mon.L3.NP.multi-sensor.multi-platform.MERGED.fv0002.r1",
+                                       dict(time_range=["2010-01-01", "2011-01-01"],
+                                            variable_names=[
+                                                "O3_du",
+                                                "O3_du_tot",
+                                                "air_pressure",
+                                                "surface_pressure",
+                                            ]))
+
+        dataset = xr.open_zarr(original_store)
+        dataset.to_zarr("esacci.OZONE.mon.L3.NP.multi-sensor.multi-platform.MERGED.fv0002.r1" + '.zarr')
+
+        print(dataset)

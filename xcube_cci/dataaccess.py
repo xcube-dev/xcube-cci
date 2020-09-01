@@ -172,8 +172,6 @@ class CciOdpDataOpener(DataOpener):
                             ),
             required=[
                 # cube_params
-                'variable_names',
-                'time_range',
             ],
             additional_properties=False
         )
