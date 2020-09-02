@@ -384,7 +384,7 @@ class CciOdp:
     def get_dataset_info(self, dataset_id: str, dataset_metadata: dict = None) -> dict:
         data_info = {}
         if not dataset_metadata:
-            dataset_metadata = self.get_dataset_metadata([dataset_id])[0]
+            dataset_metadata = self.get_dataset_metadata(dataset_id)
         nc_attrs = dataset_metadata.get('attributes', {}).get('NC_GLOBAL', {})
         data_info['lat_res'] = self._get_res(nc_attrs, 'lat')
         data_info['lon_res'] = self._get_res(nc_attrs, 'lon')
@@ -416,7 +416,11 @@ class CciOdp:
                     continue
         return -1.0
 
-    def get_dataset_metadata(self, dataset_ids: List[str]) -> List[dict]:
+    def get_dataset_metadata(self, dataset_id: str) -> dict:
+        return self.get_datasets_metadata([dataset_id])[0]
+
+    def get_datasets_metadata(self, dataset_ids: List[str]) -> List[dict]:
+        assert isinstance(dataset_ids, list)
         _run_with_session(self._ensure_all_info_in_data_sources, dataset_ids)
         metadata = []
         for dataset_id in dataset_ids:

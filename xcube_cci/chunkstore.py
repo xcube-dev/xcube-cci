@@ -412,7 +412,7 @@ class CciChunkStore(RemoteChunkStore):
         self._cci_odp = cci_odp
         if dataset_id not in self._cci_odp.dataset_names:
             raise ValueError(f'Data ID {dataset_id} not provided by ODP.')
-        self._metadata = self._cci_odp.get_dataset_metadata([dataset_id])[0]
+        self._metadata = self._cci_odp.get_dataset_metadata(dataset_id)
         super().__init__(dataset_id,
                          cube_params,
                          observer=observer,

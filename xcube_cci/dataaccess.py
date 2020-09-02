@@ -101,7 +101,7 @@ class CciOdpDataOpener(DataOpener):
             self._normalize_dataset_func = _return_input
 
     def _describe_data(self, data_ids: List[str]) -> List[DataDescriptor]:
-        ds_metadata_list = self._cci_odp.get_dataset_metadata(data_ids)
+        ds_metadata_list = self._cci_odp.get_datasets_metadata(data_ids)
         data_descriptors = []
         for i, ds_metadata in enumerate(ds_metadata_list):
             data_descriptors.append(self._get_data_descriptor_from_metadata(data_ids[i], ds_metadata))
@@ -109,7 +109,7 @@ class CciOdpDataOpener(DataOpener):
 
     def describe_data(self, data_id: str) -> DataDescriptor:
         try:
-            ds_metadata = self._cci_odp.get_dataset_metadata([data_id])[0]
+            ds_metadata = self._cci_odp.get_dataset_metadata(data_id)
             return self._get_data_descriptor_from_metadata(data_id, ds_metadata)
         except ValueError:
             raise DataStoreError(f'Cannot describe metadata. "{data_id}" does not seem to be a valid identifier.')
