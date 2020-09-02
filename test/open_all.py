@@ -18,9 +18,16 @@ DEFAULT_OUTPUT = 'odp-report'
 
 @click.command()
 @click.option('--output', '-o', 'output_dir',
-              default=DEFAULT_OUTPUT, help=f'Output directory. Defaults to "{DEFAULT_OUTPUT}"')
+              metavar='OUTPUT_DIR',
+              default=DEFAULT_OUTPUT,
+              help=f'Output directory. Defaults to "{DEFAULT_OUTPUT}".')
 @click.argument('dataset_id', nargs=-1, required=False)
 def gen_report(output_dir: str, dataset_id: List[str]):
+    """
+    Opens CCI ODP datasets and generates a report in OUTPUT_DIR.
+    If DATASET_ID are omitted, all ODP datasets are opened. Otherwise,
+    only the given datasets will be opened.
+    """
     logging.basicConfig(format='%(asctime)s %(levelname)s: %(message)s',
                         level=logging.DEBUG,
                         datefmt='%Y-%m-%d %H:%M:%S')
