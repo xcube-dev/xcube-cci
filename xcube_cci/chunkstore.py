@@ -19,17 +19,15 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-import bisect
 from datetime import datetime
 from dateutil.relativedelta import relativedelta
 import itertools
 import json
 import time
+import warnings
 from abc import abstractmethod, ABCMeta
 from collections import MutableMapping
 from typing import Iterator, Any, List, Dict, Tuple, Callable, Iterable, KeysView, Mapping, Union
-
-from xcube.core.store import DataStoreError
 
 import numpy as np
 import pandas as pd
@@ -67,7 +65,6 @@ class RemoteChunkStore(MutableMapping, metaclass=ABCMeta):
         if not cube_params:
             cube_params = {}
         self._variable_names = cube_params.get('variable_names', self.get_all_variable_names())
-        cube_params['variable_names'] = self._variable_names
         self._observers = [observer] if observer is not None else []
         self._trace_store_calls = trace_store_calls
 
@@ -83,28 +80,6 @@ class RemoteChunkStore(MutableMapping, metaclass=ABCMeta):
         time_coverage_end = self._time_ranges[-1][1]
         cube_params['time_range'] = (self._extract_time_range_as_strings(
             cube_params.get('time_range', self.get_default_time_range(data_id))))
-        global_attrs = dict(
-            Conventions='CF-1.7',
-            coordinates='time_bnds',
-            title=f'{data_id} Data Cube',
-            history=[
-                dict(
-                    program=f'{self._class_name}',
-                    cube_params=cube_params
-                )
-            ],
-            date_created=pd.Timestamp.now().isoformat(),
-            processing_level=self._dataset_name.split('.')[3],
-            time_coverage_start=time_coverage_start.isoformat(),
-            time_coverage_end=time_coverage_end.isoformat(),
-            time_coverage_duration=(time_coverage_end - time_coverage_start).isoformat(),
-        )
-
-        # setup Virtual File System (vfs)
-        self._vfs = {
-            '.zgroup': _dict_to_bytes(dict(zarr_format=2)),
-            '.zattrs': _dict_to_bytes(global_attrs)
-        }
 
         self._dimension_data = self.get_dimension_data(data_id)
         for dimension_name in self._dimension_data:
@@ -147,7 +122,10 @@ class RemoteChunkStore(MutableMapping, metaclass=ABCMeta):
             var_attrs = self.get_attrs(variable_name)
             dimensions = var_attrs.get('dimensions', None)
             if not dimensions:
-                raise DataStoreError(f'Could not determine dimensions of variable {variable_name}')
+                warnings.warn(f'Could not find dimensions of variable {variable_name}. '
+                              f'Will omit this one from the dataset.')
+                self._variable_names.remove(variable_name)
+                continue
             var_attrs.update(_ARRAY_DIMENSIONS=dimensions)
             chunk_sizes = var_attrs.get('chunk_sizes', [-1] * len(dimensions))
             if isinstance(chunk_sizes, int):
@@ -167,6 +145,28 @@ class RemoteChunkStore(MutableMapping, metaclass=ABCMeta):
                                    chunk_sizes,
                                    var_encoding,
                                    var_attrs)
+        cube_params['variable_names'] = self._variable_names
+        global_attrs = dict(
+            Conventions='CF-1.7',
+            coordinates='time_bnds',
+            title=f'{data_id} Data Cube',
+            history=[
+                dict(
+                    program=f'{self._class_name}',
+                    cube_params=cube_params
+                )
+            ],
+            date_created=pd.Timestamp.now().isoformat(),
+            processing_level=self._dataset_name.split('.')[3],
+            time_coverage_start=time_coverage_start.isoformat(),
+            time_coverage_end=time_coverage_end.isoformat(),
+            time_coverage_duration=(time_coverage_end - time_coverage_start).isoformat(),
+        )
+        # setup Virtual File System (vfs)
+        self._vfs = {
+            '.zgroup': _dict_to_bytes(dict(zarr_format=2)),
+            '.zattrs': _dict_to_bytes(global_attrs)
+        }
 
     @classmethod
     def _adjust_size(cls, size: int, tile_size: int) -> int:
