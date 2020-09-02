@@ -82,7 +82,7 @@ class RemoteChunkStore(MutableMapping, metaclass=ABCMeta):
         time_coverage_start = self._time_ranges[0][0]
         time_coverage_end = self._time_ranges[-1][1]
         cube_params['time_range'] = (self._extract_time_range_as_strings(
-            cube_params.get('time_range', self.get_default_time_range())))
+            cube_params.get('time_range', self.get_default_time_range(data_id))))
         global_attrs = dict(
             Conventions='CF-1.7',
             coordinates='time_bnds',
@@ -184,7 +184,7 @@ class RemoteChunkStore(MutableMapping, metaclass=ABCMeta):
         pass
 
     @abstractmethod
-    def get_default_time_range(self) -> Tuple[str, str]:
+    def get_default_time_range(self, ds_id: str) -> Tuple[str, str]:
         return '', ''
 
     @abstractmethod
@@ -454,7 +454,7 @@ class CciChunkStore(RemoteChunkStore):
 
     def get_time_ranges(self, dataset_id: str, cube_params: Mapping[str, Any]) -> List[Tuple]:
         start_time, end_time, iso_start_time, iso_end_time = \
-            self._extract_time_range_as_datetime(cube_params.get('time_range', self.get_default_time_range()))
+            self._extract_time_range_as_datetime(cube_params.get('time_range', self.get_default_time_range(dataset_id)))
         time_period = dataset_id.split('.')[2]
         if time_period == 'day':
             start_time = datetime(year=start_time.year, month=start_time.month, day=start_time.day)
@@ -530,8 +530,36 @@ class CciChunkStore(RemoteChunkStore):
             this = next
         return request_time_ranges
 
-    def get_default_time_range(self):
-        return (self._metadata['temporal_coverage_start'], self._metadata['temporal_coverage_end'])
+    def get_default_time_range(self, ds_id: str):
+        temporal_start = self._metadata.get('temporal_coverage_start', None)
+        if not temporal_start:
+            time_frequency = self._get_time_frequency(ds_id.split('.')[2])
+            temporal_start = self._cci_odp.get_earliest_start_date(ds_id, '1000-01-01', '3000-12-31', time_frequency)
+            if not temporal_start:
+                raise ValueError("Could not determine temporal start of dataset. Please use 'time_range' parameter.")
+            temporal_start = datetime.strftime(temporal_start, _TIMESTAMP_FORMAT)
+        temporal_end = self._metadata.get('temporal_coverage_end', None)
+        if not temporal_end:
+            time_frequency = self._get_time_frequency(ds_id.split('.')[2])
+            temporal_end = self._cci_odp.get_latest_end_date(ds_id, '1000-01-01', '3000-12-31', time_frequency)
+            if not temporal_end:
+                raise ValueError("Could not determine temporal end of dataset. Please use 'time_range' parameter.")
+            temporal_end = datetime.strftime(temporal_end, _TIMESTAMP_FORMAT)
+        return (temporal_start, temporal_end)
+
+    def _get_time_frequency(self, time_period: str):
+        if time_period == 'mon':
+            return 'month'
+        elif time_period == 'yr':
+            return 'year'
+        elif re.compile('[0-9]*-days').search(time_period):
+            num_days = int(time_period.split('-')[0])
+            return f'{num_days} days'
+        elif re.compile('[0-9]*-yrs').search(time_period):
+            num_years = int(time_period.split('-')[0])
+            return f'{num_years} years'
+        else:
+            return time_period
 
     def _get_time_range_for_num_days(self, num_days: int, start_time: datetime, end_time: datetime):
         temp_start_time = datetime(start_time.year, start_time.month, start_time.day)
