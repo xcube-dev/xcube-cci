@@ -1,3 +1,24 @@
+# The MIT License (MIT)
+# Copyright (c) 2020 by the ESA CCI Toolbox development team and contributors
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy of
+# this software and associated documentation files (the "Software"), to deal in
+# the Software without restriction, including without limitation the rights to
+# use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies
+# of the Software, and to permit persons to whom the Software is furnished to do
+# so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in all
+# copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+# SOFTWARE.
+
 import json
 import logging
 import os
@@ -5,10 +26,11 @@ import os.path
 import shutil
 import time
 import traceback
-from typing import List
+from typing import List, Optional
 
 import click
 import xarray as xr
+import zarr.storage
 
 from xcube_cci.cciodp import CciOdp
 from xcube_cci.chunkstore import CciChunkStore
@@ -17,12 +39,15 @@ DEFAULT_OUTPUT = 'odp-report'
 
 
 @click.command()
-@click.option('--output', '-o', 'output_dir',
+@click.option('--output', 'output_dir',
               metavar='OUTPUT_DIR',
               default=DEFAULT_OUTPUT,
               help=f'Output directory. Defaults to "{DEFAULT_OUTPUT}".')
+@click.option('--cache', 'cache_size',
+              metavar='CACHE_SIZE',
+              help=f'Cache size, e.g. "100M" or "2G". If given, an in-memory LRU cache will be used.')
 @click.argument('dataset_id', nargs=-1, required=False)
-def gen_report(output_dir: str, dataset_id: List[str]):
+def gen_report(output_dir: str, cache_size: Optional[str], dataset_id: List[str]):
     """
     Opens CCI ODP datasets and generates a report in OUTPUT_DIR.
     If DATASET_ID are omitted, all ODP datasets are opened. Otherwise,
@@ -35,6 +60,8 @@ def gen_report(output_dir: str, dataset_id: List[str]):
         shutil.rmtree(output_dir)
     if not os.path.isdir(output_dir):
         os.makedirs(output_dir)
+
+    cache_size = parse_cache_size(cache_size)
 
     odp = CciOdp()
 
@@ -50,6 +77,9 @@ def gen_report(output_dir: str, dataset_id: List[str]):
         except Exception as e:
             report_error(output_dir, ds_id, t0, 'CciChunkStore()', e)
             continue
+
+        if cache_size > 0:
+            store = zarr.storage.LRUStoreCache(store, max_size=cache_size)
 
         try:
             ds = xr.open_zarr(store)
@@ -112,6 +142,28 @@ def var_to_dict(name: str, var: xr.DataArray) -> dict:
                 dtype=str(var.dtype),
                 dims=list(var.dims),
                 attrs=dict(var.attrs))
+
+
+def parse_cache_size(cache_size: Optional[str]) -> int:
+    if not cache_size:
+        return 0
+    cache_size_lc = cache_size.lower()
+
+    def _parse_cache_size():
+        for suffix, factor in (
+                ('kib', 1024), ('mib', 1024 ** 2), ('gib', 1024 ** 3), ('tib', 1024 ** 4),
+                ('b', 1), ('k', 1000), ('m', 1000 ** 2), ('g', 1000 ** 3), ('t', 1000 ** 4)):
+            if cache_size_lc.endswith(suffix):
+                return int(cache_size[0:-len(suffix)]) * factor
+        return int(cache_size)
+
+    try:
+        size = _parse_cache_size()
+        if size < 0:
+            raise ValueError()
+        return size
+    except ValueError:
+        raise click.ClickException(f'Invalid cache size: "{cache_size}"')
 
 
 def format_millis(time: float) -> str:
