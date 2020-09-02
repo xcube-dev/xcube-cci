@@ -719,6 +719,31 @@ class CciOdp:
                     return start_time
         return None
 
+    def get_latest_end_date(self, dataset_name: str, start_time: str, end_time: str, frequency: str) -> \
+            Optional[datetime]:
+        return _run_with_session(self._get_latest_end_date, dataset_name, start_time, end_time, frequency)
+
+    async def _get_latest_end_date(self, session, dataset_name: str, start_time: str, end_time: str,
+                                       frequency: str) -> Optional[datetime]:
+        fid = await self._get_fid_for_dataset(session, dataset_name)
+        query_args = dict(parentIdentifier=fid,
+                          startDate=start_time,
+                          endDate=end_time,
+                          frequency=frequency,
+                          fileFormat='.nc')
+        opendap_url = await self._get_opendap_url(session, query_args, get_latest=True)
+        if opendap_url:
+            dataset = await self._get_opendap_dataset(session, opendap_url)
+            end_time_attributes = ['time_coverage_end', 'end_date', 'stop_date']
+            attributes = dataset.attributes.get('NC_GLOBAL', {})
+            for end_time_attribute in end_time_attributes:
+                end_time_string = attributes.get(end_time_attribute, '')
+                time_format, start, end, timedelta = find_datetime_format(end_time_string)
+                if time_format:
+                    end_time = datetime.strptime(end_time_string[start:end], time_format)
+                    return end_time
+        return None
+
     async def _get_feature_list(self, session, request):
         feature_list = await self._fetch_opensearch_feature_list(session, self._opensearch_url, request)
         if len(feature_list) == 0:
@@ -763,24 +788,30 @@ class CciOdp:
         fid, uuid = await self._fetch_fid_and_uuid(session, self._opensearch_url, dataset_name)
         return fid
 
-    async def _get_opendap_url(self, session, request: Dict, get_earliest: bool = False):
+    async def _get_opendap_url(self, session, request: Dict, get_earliest: bool = False, get_latest: bool = False):
+        if get_earliest and get_latest:
+            raise ValueError('Not both get_earliest and get_latest may be set to true')
         start_date = datetime.strptime(request['startDate'], _TIMESTAMP_FORMAT)
         end_date = datetime.strptime(request['endDate'], _TIMESTAMP_FORMAT)
         request['fileFormat'] = '.nc'
         feature_list = await self._get_feature_list(session, request)
         opendap_url = None
         earliest_date = datetime(2999, 12, 31)
+        latest_date = datetime(1000, 1, 1)
         for feature in feature_list:
             feature_info = _extract_feature_info(feature)
             feature_start_date = datetime.strptime(feature_info[1], _TIMESTAMP_FORMAT)
             feature_end_date = datetime.strptime(feature_info[2], _TIMESTAMP_FORMAT)
-            if feature_end_date < start_date or feature_start_date > end_date or feature_start_date > earliest_date:
+            if feature_end_date < start_date or feature_start_date > end_date or \
+                    (get_earliest and feature_start_date > earliest_date) or \
+                    (get_latest and feature_end_date < latest_date):
                 continue
             feature_opendap_url = feature_info[4].get('Opendap', None)
             if feature_opendap_url:
                 earliest_date = feature_start_date
+                latest_date = feature_end_date
                 opendap_url = feature_opendap_url
-                if not get_earliest:
+                if not get_earliest and not get_latest:
                     return opendap_url
         return opendap_url
 
