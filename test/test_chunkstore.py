@@ -26,7 +26,7 @@ class CciChunkStoreTest(unittest.TestCase):
     def test_unconstrained_chunk_store(self):
         cci_odp = CciOdp()
         dataset_id = 'esacci.OZONE.mon.L3.NP.multi-sensor.multi-platform.MERGED.fv0002.r1'
-        store = CciChunkStore(cci_odp, dataset_id, None)
+        store = CciChunkStore(cci_odp, dataset_id, cube_params=None)
         self.assertIsNotNone(store)
         time_ranges = store._time_ranges
         self.assertEqual(144, len(time_ranges))
