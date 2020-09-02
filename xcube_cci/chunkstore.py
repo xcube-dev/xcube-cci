@@ -81,6 +81,9 @@ class RemoteChunkStore(MutableMapping, metaclass=ABCMeta):
         cube_params['time_range'] = (self._extract_time_range_as_strings(
             cube_params.get('time_range', self.get_default_time_range(data_id))))
 
+        self._vfs = {
+        }
+
         self._dimension_data = self.get_dimension_data(data_id)
         for dimension_name in self._dimension_data:
             if dimension_name == 'time':
@@ -163,10 +166,8 @@ class RemoteChunkStore(MutableMapping, metaclass=ABCMeta):
             time_coverage_duration=(time_coverage_end - time_coverage_start).isoformat(),
         )
         # setup Virtual File System (vfs)
-        self._vfs = {
-            '.zgroup': _dict_to_bytes(dict(zarr_format=2)),
-            '.zattrs': _dict_to_bytes(global_attrs)
-        }
+        self._vfs['.zgroup'] = _dict_to_bytes(dict(zarr_format=2))
+        self._vfs['.zattrs'] = _dict_to_bytes(global_attrs)
 
     @classmethod
     def _adjust_size(cls, size: int, tile_size: int) -> int:
