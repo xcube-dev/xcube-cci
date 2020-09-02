@@ -126,7 +126,7 @@ class RemoteChunkStore(MutableMapping, metaclass=ABCMeta):
             dimensions = var_attrs.get('dimensions', None)
             if not dimensions:
                 warnings.warn(f'Could not find dimensions of variable {variable_name}. '
-                              f'Will omit this one from the dataset.')
+                              f'Will omit it from the dataset.')
                 self._variable_names.remove(variable_name)
                 continue
             var_attrs.update(_ARRAY_DIMENSIONS=dimensions)
@@ -511,10 +511,9 @@ class CciChunkStore(RemoteChunkStore):
             end_time += relativedelta(years=1)
             delta = relativedelta(years=num_years)
         elif time_period == 'satellite-orbit-frequency':
-            time_range = (cube_params.get('time_range')[0],
-                          cube_params.get('time_range')[1].replace(hour=23, minute=59, second=59))
-            start_time, end_time, iso_start_time, iso_end_time = \
-                self._extract_time_range_as_datetime(time_range)
+            end_time = end_time.replace(hour=23, minute=59, second=59)
+            end_time_str = datetime.strftime(end_time, _TIMESTAMP_FORMAT)
+            iso_end_time = self._extract_time_as_string(end_time_str)
             request_time_ranges = self._cci_odp.get_time_ranges_satellite_orbit_frequency(dataset_id,
                                                                                           iso_start_time,
                                                                                           iso_end_time)

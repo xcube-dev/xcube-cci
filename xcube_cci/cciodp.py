@@ -30,6 +30,7 @@ import numpy as np
 import os
 import random
 import re
+import pandas as pd
 import time
 import urllib.parse
 import warnings
@@ -773,9 +774,20 @@ class CciOdp:
 
         request_time_ranges = []
         for feature in feature_list:
-            date = datetime.strptime(feature['properties']['date'].split('/')[0], _TIMESTAMP_FORMAT)
-            if start_date <= date <= end_date:
-                request_time_ranges.append((date, date))
+            date = None
+            date_property = feature.get('properties', {}).get('date', None)
+            if date_property:
+                date = datetime.strptime(date_property.split('/')[0], _TIMESTAMP_FORMAT)
+            else:
+                title = feature.get('properties', {}).get('title', None)
+                if title:
+                    time_format, p1, p2, timedelta = find_datetime_format(title)
+                    if time_format:
+                        date = datetime.strptime(title[p1:p2], time_format)
+            if date:
+                if start_date <= date <= end_date:
+                    request_time_ranges.append((pd.Timestamp(datetime.strftime(date, _TIMESTAMP_FORMAT)),
+                                                pd.Timestamp(datetime.strftime(date, _TIMESTAMP_FORMAT))))
         return request_time_ranges
 
     def get_fid_for_dataset(self, dataset_name: str) -> str:
