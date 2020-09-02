@@ -3,38 +3,39 @@ import logging
 import os
 import os.path
 import shutil
-import sys
 import time
 import traceback
 from typing import List
 
+import click
 import xarray as xr
 
 from xcube_cci.cciodp import CciOdp
 from xcube_cci.chunkstore import CciChunkStore
 
+DEFAULT_OUTPUT = 'odp-report'
 
-def main(argv: List[str]):
+
+@click.command()
+@click.option('--output', '-o', 'output_dir',
+              default=DEFAULT_OUTPUT, help=f'Output directory. Defaults to "{DEFAULT_OUTPUT}"')
+@click.argument('dataset_id', nargs=-1, required=False)
+def gen_report(output_dir: str, dataset_id: List[str]):
     logging.basicConfig(format='%(asctime)s %(levelname)s: %(message)s',
+                        level=logging.DEBUG,
                         datefmt='%Y-%m-%d %H:%M:%S')
-    output_dir = argv[1] if len(argv) == 2 else 'odp-report'
-    if len(argv) > 2:
-        raise ValueError('Unexpected arguments: ', argv[2:])
     if os.path.isdir(output_dir):
         shutil.rmtree(output_dir)
     if not os.path.isdir(output_dir):
         os.makedirs(output_dir)
-    gen_report(output_dir)
 
-
-def gen_report(output_dir: str):
     odp = CciOdp()
 
-    dataset_names = odp.dataset_names
+    ds_ids = dataset_id or odp.dataset_names
 
-    logging.info(f'Running tests with {len(dataset_names)} datasets...')
+    logging.info(f'Running tests with {len(ds_ids)} datasets...')
 
-    for ds_id in dataset_names:
+    for ds_id in ds_ids:
         t0 = time.perf_counter()
 
         try:
@@ -58,7 +59,7 @@ def gen_report(output_dir: str):
 
 def report_success(output_dir: str, ds_id: str, t0: float, ds: xr.Dataset):
     obj = ds_to_dict(ds_id, time.perf_counter() - t0, ds)
-    path = os.path.join(output_dir, f'success_{ds_id}.json')
+    path = os.path.join(output_dir, f'SUCCESS@{ds_id}.json')
     try:
         with open(path, 'w') as fp:
             json.dump(obj, fp, indent=2)
@@ -71,8 +72,8 @@ def report_success(output_dir: str, ds_id: str, t0: float, ds: xr.Dataset):
 
 def report_error(output_dir: str, ds_id: str, t0: float, stage: str, e: Exception):
     obj = error_to_dict(ds_id, stage, time.perf_counter() - t0, e)
-    json_path = os.path.join(output_dir, f'error_{ds_id}.json')
-    text_path = os.path.join(output_dir, f'error_{ds_id}.txt')
+    json_path = os.path.join(output_dir, f'ERROR@{ds_id}.json')
+    text_path = os.path.join(output_dir, f'ERROR@{ds_id}.txt')
     with open(json_path, 'w') as fp:
         json.dump(obj, fp, indent=2)
     with open(text_path, 'w') as fp:
@@ -115,4 +116,4 @@ def format_millis(time: float) -> str:
 
 
 if __name__ == '__main__':
-    main(sys.argv)
+    gen_report()
