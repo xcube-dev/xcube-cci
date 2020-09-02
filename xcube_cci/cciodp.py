@@ -952,21 +952,31 @@ class CciOdp:
         start_page = 1
         maximum_records = 1000
         full_feature_list = []
-        while True:
-            paging_query_args = dict(query_args or {})
-            paging_query_args.update(startPage=start_page, maximumRecords=maximum_records,
-                                     httpAccept='application/geo+json')
-            url = base_url + '?' + urllib.parse.urlencode(paging_query_args)
-            resp = await self.get_response(session, url)
-            if resp:
-                json_text = await resp.read()
-                json_dict = json.loads(json_text.decode('utf-8'))
-                feature_list = json_dict.get("features", [])
-                full_feature_list.extend(feature_list)
-                if len(feature_list) < maximum_records:
-                    break
+        total_results = await self._fetch_opensearch_feature_part_list(session, base_url, query_args,
+                                                                       full_feature_list, start_page, maximum_records)
+        tasks = []
+        num_results = maximum_records
+        while num_results < total_results:
             start_page += 1
+            tasks.append(self._fetch_opensearch_feature_part_list(session, base_url, query_args, full_feature_list,
+                                                                  start_page, maximum_records))
+            num_results += maximum_records
+        await asyncio.gather(*tasks)
         return full_feature_list
+
+    async def _fetch_opensearch_feature_part_list(self, session, base_url, query_args, full_feature_list, start_page,
+                                                  maximum_records) -> int:
+        paging_query_args = dict(query_args or {})
+        paging_query_args.update(startPage=start_page, maximumRecords=maximum_records,
+                                 httpAccept='application/geo+json')
+        url = base_url + '?' + urllib.parse.urlencode(paging_query_args)
+        resp = await self.get_response(session, url)
+        if resp:
+            json_text = await resp.read()
+            json_dict = json.loads(json_text.decode('utf-8'))
+            feature_list = json_dict.get("features", [])
+            full_feature_list.extend(feature_list)
+            return json_dict['totalResults']
 
     async def _fetch_variable_infos(self, opensearch_url: str, dataset_id: str, session):
         attributes = {}
