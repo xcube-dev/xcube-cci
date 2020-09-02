@@ -39,10 +39,6 @@ def gen_report(output_dir: str, dataset_id: List[str]):
         t0 = time.perf_counter()
 
         try:
-            # md = odp.get_dataset_metadata(ds_id)
-            # time_range = md['temporal_coverage_start'], md['temporal_coverage_end']
-            # variable_names = odp.var_names(ds_id)
-            # store = CciChunkStore(odp, ds_id, dict(variable_names=variable_names, time_range=time_range))
             store = CciChunkStore(odp, ds_id)
         except Exception as e:
             report_error(output_dir, ds_id, t0, 'CciChunkStore()', e)
