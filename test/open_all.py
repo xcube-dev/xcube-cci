@@ -38,11 +38,11 @@ def gen_report(output_dir: str):
         t0 = time.perf_counter()
 
         try:
-            md = odp.get_dataset_metadata(ds_id)
-            time_range = md['temporal_coverage_start'], md['temporal_coverage_end']
-            variable_names = odp.var_names(ds_id)
-            store = CciChunkStore(odp, ds_id, dict(variable_names=variable_names, time_range=time_range))
-            # store = CciChunkStore(odp, ds_id)
+            # md = odp.get_dataset_metadata(ds_id)
+            # time_range = md['temporal_coverage_start'], md['temporal_coverage_end']
+            # variable_names = odp.var_names(ds_id)
+            # store = CciChunkStore(odp, ds_id, dict(variable_names=variable_names, time_range=time_range))
+            store = CciChunkStore(odp, ds_id)
         except Exception as e:
             report_error(output_dir, ds_id, t0, 'CciChunkStore()', e)
             continue
@@ -84,7 +84,7 @@ def ds_to_dict(ds_id: str, duration: float, ds: xr.Dataset) -> dict:
     return dict(ds_id=ds_id,
                 status='ok',
                 duration=duration,
-                dataset=dict(dims=list(ds.dims),
+                dataset=dict(sizes=dict(ds.sizes),
                              coord_vars=vars_to_list(ds.coords),
                              data_vars=vars_to_list(ds.data_vars),
                              attrs=dict(ds.attrs)))
@@ -106,7 +106,7 @@ def vars_to_list(vars) -> list:
 def var_to_dict(name: str, var: xr.DataArray) -> dict:
     return dict(name=name,
                 dtype=str(var.dtype),
-                dims=dict(var.dims),
+                dims=list(var.dims),
                 attrs=dict(var.attrs))
 
 
