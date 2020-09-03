@@ -323,6 +323,7 @@ class CciOdp:
         self._num_retries = num_retries
         self._retry_backoff_max = retry_backoff_max
         self._retry_backoff_base = retry_backoff_base
+        self._drs_ids = None
         self._data_sources = {}
 
     def close(self):
@@ -429,16 +430,18 @@ class CciOdp:
         return metadata
 
     async def _fetch_dataset_names(self, session):
+        if self._drs_ids:
+            return self._drs_ids
         meta_info_dict = await self._extract_metadata_from_odd_url(session, self._opensearch_description_url)
         if 'drs_ids' in meta_info_dict:
-            drs_ids = meta_info_dict['drs_ids']
+            self._drs_ids = meta_info_dict['drs_ids']
             eds_file = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'data/excluded_data_sources')
             with open(eds_file, 'r') as eds:
                 excluded_data_sources = eds.read().split('\n')
                 for excluded_data_source in excluded_data_sources:
-                    if excluded_data_source in drs_ids:
-                        drs_ids.remove(excluded_data_source)
-            return drs_ids
+                    if excluded_data_source in self._drs_ids:
+                        self._drs_ids.remove(excluded_data_source)
+            return self._drs_ids
         if not self._data_sources:
             self._data_sources = {}
             catalogue = await self._fetch_data_source_list_json(session, self._opensearch_url, dict(parentIdentifier='cci'))
