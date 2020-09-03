@@ -61,10 +61,12 @@ def gen_report(output_dir: str,
                dataset_id: List[str]):
     """
     Opens CCI ODP datasets and generates a report in OUTPUT_DIR from opening a dataset.
-    If DATASET_ID are omitted, all ODP datasets are opened. Otherwise, only the given
-    datasets will be opened.
 
-    For each dataset, the following reports are generated after opening it:
+    If DATASET_ID are omitted, all ODP datasets are opened. Otherwise, only the given
+    datasets will be opened. A DATASET_ID may be just a part of the actual dataset
+    identifier to be selected, e.g. "CLOUD" or "5-day".
+
+    For each selected dataset, the following reports are generated after opening it:
 
     \b
     * ${OUTPUT_DIR}/SUCCESS@${DATASET_ID}.json - on success only;
@@ -95,11 +97,11 @@ def gen_report(output_dir: str,
 
     odp = CciOdp()
 
-    ds_ids = dataset_id or odp.dataset_names
+    selected_ds_ids = get_selected_dataset_ids(odp, dataset_id)
 
-    logging.info(f'Running tests with {len(ds_ids)} datasets...')
+    logging.info(f'Running tests for {len(selected_ds_ids)} datasets...')
 
-    for ds_id in ds_ids:
+    for ds_id in selected_ds_ids:
         observer, obs_fp = new_observer(output_dir, ds_id) if observe else (None, None)
 
         t0 = time.perf_counter()
@@ -123,6 +125,21 @@ def gen_report(output_dir: str,
             obs_fp.close()
 
     logging.info(f'Tests completed.')
+
+
+def get_selected_dataset_ids(odp, ds_id_parts):
+    all_ds_ids = odp.dataset_names
+    if ds_id_parts:
+        ds_id_parts_lc = [ds_id_part.lower() for ds_id_part in ds_id_parts]
+        selected_ds_ids = set()
+        for ds_id in all_ds_ids:
+            ds_id_lc = ds_id.lower()
+            if any(map(lambda ds_id_part: ds_id_part in ds_id_lc, ds_id_parts_lc)):
+                selected_ds_ids.add(ds_id)
+    else:
+        selected_ds_ids = all_ds_ids
+    selected_ds_ids = sorted(selected_ds_ids)
+    return selected_ds_ids
 
 
 def new_observer(output_dir, ds_id):
