@@ -325,6 +325,7 @@ class CciOdp:
         self._retry_backoff_base = retry_backoff_base
         self._drs_ids = None
         self._data_sources = {}
+        self._features = {}
 
     def close(self):
         pass
@@ -675,7 +676,9 @@ class CciOdp:
         fid = await self._get_fid_for_dataset(session, dataset_name)
         request = dict(parentIdentifier=fid,
                        startDate='1900-01-01T00:00:00',
-                       endDate='3001-12-31T00:00:00')
+                       endDate='3001-12-31T00:00:00',
+                       drsId=dataset_name
+                       )
         opendap_url = await self._get_opendap_url(session, request)
         dim_data = {}
         if not opendap_url:
@@ -709,6 +712,7 @@ class CciOdp:
                           startDate=start_time,
                           endDate=end_time,
                           frequency=frequency,
+                          drsId=dataset_name,
                           fileFormat='.nc')
         opendap_url = await self._get_opendap_url(session, query_args, get_earliest=True)
         if opendap_url:
@@ -734,6 +738,7 @@ class CciOdp:
                           startDate=start_time,
                           endDate=end_time,
                           frequency=frequency,
+                          drsId=dataset_name,
                           fileFormat='.nc')
         opendap_url = await self._get_opendap_url(session, query_args, get_latest=True)
         if opendap_url:
@@ -749,13 +754,66 @@ class CciOdp:
         return None
 
     async def _get_feature_list(self, session, request):
-        feature_list = await self._fetch_opensearch_feature_list(session, self._opensearch_url, request)
-        if len(feature_list) == 0:
-            # try without dates. For some data sets, this works better
-            request.pop('startDate')
-            request.pop('endDate')
+        ds_id = request['drsId']
+        start_date_str = request['startDate']
+        start_date = datetime.strptime(start_date_str, _TIMESTAMP_FORMAT)
+        end_date_str = request['endDate']
+        end_date = datetime.strptime(end_date_str, _TIMESTAMP_FORMAT)
+        if ds_id not in self._features or len(self._features[ds_id]) == 0:
+            self._features[ds_id] = []
             feature_list = await self._fetch_opensearch_feature_list(session, self._opensearch_url, request)
-        return feature_list
+            if len(feature_list) == 0:
+                # try without dates. For some data sets, this works better
+                request.pop('startDate')
+                request.pop('endDate')
+                feature_list = await self._fetch_opensearch_feature_list(session, self._opensearch_url, request)
+            self._features[ds_id] = self._get_sorted_features(feature_list)
+            return self._features[ds_id]
+        else:
+            if start_date < self._features[ds_id][0][0]:
+                request['endDate'] = datetime.strftime(self._features[ds_id][0][0], _TIMESTAMP_FORMAT)
+                leading_features = await self._fetch_opensearch_feature_list(session, self._opensearch_url, request)
+                self._features[ds_id] = self._get_sorted_features(leading_features) + self._features[ds_id]
+            if end_date > self._features[ds_id][-1][1]:
+                request['startDate'] = datetime.strftime(self._features[ds_id][-1][1], _TIMESTAMP_FORMAT)
+                request['endDate'] = end_date_str
+                trailing_features = await self._fetch_opensearch_feature_list(session, self._opensearch_url, request)
+                self._features[ds_id] = self._features[ds_id] + self._get_sorted_features(trailing_features)
+        start = bisect.bisect_left([feature[0] for feature in self._features[ds_id]], start_date)
+        end = bisect.bisect_right([feature[1] for feature in self._features[ds_id]], end_date)
+        return self._features[ds_id][start:end]
+
+    def _get_sorted_features(self, new_features: List[dict]):
+        sorted_features = []
+        for feature in new_features:
+            start_time = None
+            end_time = None
+            properties = feature.get('properties', {})
+            opendap_url = None
+            links = properties.get('links', {}).get('related', {})
+            for link in links:
+                if link.get('title', '') == 'Opendap':
+                    opendap_url = link.get('href', None)
+            if not opendap_url:
+                continue
+            date_property = properties.get('date', None)
+            if date_property:
+                start_time = datetime.strptime(date_property.split('/')[0], _TIMESTAMP_FORMAT)
+                end_time = datetime.strptime(date_property.split('/')[1], _TIMESTAMP_FORMAT)
+            else:
+                title = properties.get('title', None)
+                if title:
+                    from .timeutil import get_timestrings_from_string
+                    start_time, end_time = get_timestrings_from_string(title)
+                    start_time = datetime.strptime(start_time, _TIMESTAMP_FORMAT)
+                    if end_time:
+                        end_time = datetime.strptime(end_time, _TIMESTAMP_FORMAT)
+                    else:
+                        end_time = start_time
+            if start_time:
+                sorted_features.append((start_time, end_time, opendap_url))
+        sorted_features.sort(key=lambda x: x[0])
+        return sorted_features
 
     def get_time_ranges_satellite_orbit_frequency(self, dataset_name: str, start_time: str, end_time: str) -> \
             List[Tuple[datetime, datetime]]:
@@ -769,6 +827,7 @@ class CciOdp:
         request = dict(parentIdentifier=fid,
                        startDate=start_time,
                        endDate=end_time,
+                       drsId=dataset_name,
                        fileFormat='.nc')
 
         start_date = datetime.strptime(request['startDate'], _TIMESTAMP_FORMAT)
@@ -777,20 +836,12 @@ class CciOdp:
 
         request_time_ranges = []
         for feature in feature_list:
-            date = None
-            date_property = feature.get('properties', {}).get('date', None)
-            if date_property:
-                date = datetime.strptime(date_property.split('/')[0], _TIMESTAMP_FORMAT)
-            else:
-                title = feature.get('properties', {}).get('title', None)
-                if title:
-                    time_format, p1, p2, timedelta = find_datetime_format(title)
-                    if time_format:
-                        date = datetime.strptime(title[p1:p2], time_format)
-            if date:
-                if start_date <= date <= end_date:
-                    request_time_ranges.append((pd.Timestamp(datetime.strftime(date, _TIMESTAMP_FORMAT)),
-                                                pd.Timestamp(datetime.strftime(date, _TIMESTAMP_FORMAT))))
+            feature_start_date = feature[0]
+            feature_end_date = feature[1]
+            if feature_end_date < start_date or feature_start_date > end_date:
+                continue
+            request_time_ranges.append((pd.Timestamp(datetime.strftime(feature_start_date, _TIMESTAMP_FORMAT)),
+                                        pd.Timestamp(datetime.strftime(feature_end_date, _TIMESTAMP_FORMAT))))
         return request_time_ranges
 
     def get_fid_for_dataset(self, dataset_name: str) -> str:
@@ -807,29 +858,13 @@ class CciOdp:
     async def _get_opendap_url(self, session, request: Dict, get_earliest: bool = False, get_latest: bool = False):
         if get_earliest and get_latest:
             raise ValueError('Not both get_earliest and get_latest may be set to true')
-        start_date = datetime.strptime(request['startDate'], _TIMESTAMP_FORMAT)
-        end_date = datetime.strptime(request['endDate'], _TIMESTAMP_FORMAT)
         request['fileFormat'] = '.nc'
         feature_list = await self._get_feature_list(session, request)
-        opendap_url = None
-        earliest_date = datetime(2999, 12, 31)
-        latest_date = datetime(1000, 1, 1)
-        for feature in feature_list:
-            feature_info = _extract_feature_info(feature)
-            feature_start_date = datetime.strptime(feature_info[1], _TIMESTAMP_FORMAT)
-            feature_end_date = datetime.strptime(feature_info[2], _TIMESTAMP_FORMAT)
-            if feature_end_date < start_date or feature_start_date > end_date or \
-                    (get_earliest and feature_start_date > earliest_date) or \
-                    (get_latest and feature_end_date < latest_date):
-                continue
-            feature_opendap_url = feature_info[4].get('Opendap', None)
-            if feature_opendap_url:
-                earliest_date = feature_start_date
-                latest_date = feature_end_date
-                opendap_url = feature_opendap_url
-                if not get_earliest and not get_latest:
-                    return opendap_url
-        return opendap_url
+        if len(feature_list) == 0:
+            return
+        if get_latest:
+            return feature_list[-1][2]
+        return feature_list[0][2]
 
     def get_data(self, request: Dict, bbox: Tuple[float, float, float, float], dim_indexes: dict, dim_flipped: dict) \
             -> Optional[bytes]:

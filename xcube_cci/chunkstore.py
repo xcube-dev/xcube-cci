@@ -125,8 +125,8 @@ class RemoteChunkStore(MutableMapping, metaclass=ABCMeta):
             var_attrs = self.get_attrs(variable_name)
             dimensions = var_attrs.get('dimensions', None)
             if not dimensions:
-                warnings.warn(f'Could not find dimensions of variable {variable_name}. '
-                              f'Will omit it from the dataset.')
+                warnings.warn(f"Could not find dimensions of variable '{variable_name}'. "
+                              f"Will omit it from the dataset.")
                 self._variable_names.remove(variable_name)
                 continue
             var_attrs.update(_ARRAY_DIMENSIONS=dimensions)
@@ -561,26 +561,6 @@ class CciChunkStore(RemoteChunkStore):
         else:
             return time_period
 
-    def _get_time_range_for_num_days(self, num_days: int, start_time: datetime, end_time: datetime):
-        temp_start_time = datetime(start_time.year, start_time.month, start_time.day)
-        temp_start_time -= relativedelta(days=num_days - 1)
-        temp_start_time = self._cci_odp.get_earliest_start_date(self.cube_config.dataset_name,
-                                                                datetime.strftime(temp_start_time, _TIMESTAMP_FORMAT),
-                                                                datetime.strftime(end_time, _TIMESTAMP_FORMAT),
-                                                                f'{num_days} days')
-        if temp_start_time:
-            start_time = temp_start_time
-        else:
-            start_time = datetime(start_time.year, start_time.month, start_time.day)
-        start_time_ordinal = start_time.toordinal()
-        end_time_ordinal = end_time.toordinal()
-        end_time_ordinal = start_time_ordinal + int(np.ceil((end_time_ordinal - start_time_ordinal) /
-                                                            float(num_days)) * num_days)
-        end_time = datetime.fromordinal(end_time_ordinal)
-        end_time += relativedelta(days=1)
-        delta = relativedelta(days=num_days)
-        return start_time, end_time, delta
-
     def get_all_variable_names(self) -> List[str]:
         return [variable['name'] for variable in self._metadata['variables']]
 
@@ -611,6 +591,7 @@ class CciChunkStore(RemoteChunkStore):
                        varNames=[var_name],
                        startDate=iso_start_date,
                        endDate=iso_end_date,
+                       drsId=self._dataset_name,
                        fileFormat='.nc'
                        )
         data = self._cci_odp.get_data_chunk(request, dim_indexes)

@@ -15,7 +15,8 @@ class CciOdpTest(unittest.TestCase):
         request = dict(parentIdentifier='4eb4e801424a47f7b77434291921f889',
                        startDate='1997-05-01T00:00:00',
                        endDate='1997-05-01T00:00:00',
-                       varNames=['surface_pressure', 'O3e_du_tot']
+                       varNames=['surface_pressure', 'O3e_du_tot'],
+                       drsId='esacci.OZONE.mon.L3.NP.multi-sensor.multi-platform.MERGED.fv0002.r1'
                        )
         bbox = (-10.0, 40.0, 10.0, 60.0)
         data = cci_odp.get_data(request, bbox, {}, {})
@@ -33,7 +34,8 @@ class CciOdpTest(unittest.TestCase):
         request = dict(parentIdentifier='4eb4e801424a47f7b77434291921f889',
                        startDate='1997-05-01T00:00:00',
                        endDate='1997-05-01T00:00:00',
-                       varNames=['surface_pressure']
+                       varNames=['surface_pressure'],
+                       drsId='esacci.OZONE.mon.L3.NP.multi-sensor.multi-platform.MERGED.fv0002.r1'
                        )
         dim_indexes = (slice(None, None), slice(0, 179), slice(0, 359))
         data = cci_odp.get_data_chunk(request, dim_indexes)
