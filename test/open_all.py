@@ -35,7 +35,7 @@ import zarr.storage
 from xcube_cci.cciodp import CciOdp
 from xcube_cci.chunkstore import CciChunkStore
 
-DEFAULT_OUTPUT = 'odp-report'
+DEFAULT_OUTPUT = 'open-report'
 
 
 @click.command()
@@ -43,21 +43,51 @@ DEFAULT_OUTPUT = 'odp-report'
               metavar='OUTPUT_DIR',
               default=DEFAULT_OUTPUT,
               help=f'Output directory. Defaults to "{DEFAULT_OUTPUT}".')
+@click.option('--force',
+              is_flag=True,
+              help=f'Force deletion of an existing OUTPUT_DIR.')
 @click.option('--cache', 'cache_size',
               metavar='CACHE_SIZE',
               help=f'Cache size, e.g. "100M" or "2G". If given, an in-memory LRU cache will be used.')
+@click.option('--observe',
+              is_flag=True,
+              help=f'Dump data requests. '
+                   f'Note, turning this flag on will slightly increase measured durations.')
 @click.argument('dataset_id', nargs=-1, required=False)
-def gen_report(output_dir: str, cache_size: Optional[str], dataset_id: List[str]):
+def gen_report(output_dir: str,
+               force: bool,
+               cache_size: Optional[str],
+               observe: bool,
+               dataset_id: List[str]):
     """
-    Opens CCI ODP datasets and generates a report in OUTPUT_DIR.
-    If DATASET_ID are omitted, all ODP datasets are opened. Otherwise,
-    only the given datasets will be opened.
+    Opens CCI ODP datasets and generates a report in OUTPUT_DIR from opening a dataset.
+    If DATASET_ID are omitted, all ODP datasets are opened. Otherwise, only the given
+    datasets will be opened.
+
+    For each dataset, the following reports are generated after opening it:
+
+    \b
+    * ${OUTPUT_DIR}/SUCCESS@${DATASET_ID}.json - on success only;
+    * ${OUTPUT_DIR}/ERROR@${DATASET_ID}.json - on error only;
+    * ${OUTPUT_DIR}/ERROR@${DATASET_ID}.txt - on error only, contains exception traceback.
+
+    If the "--observe" flag is used, an additional report is generated comprising each
+    individual data request made:
+
+    * ${OUTPUT_DIR}/OBSERVED@${DATASET_ID}.txt - in any case.
+
+    The program will exit with an error if OUTPUT_DIR exists. To force deletion of
+    an existing OUTPUT_DIR, use the "--force" flag.
+
     """
     logging.basicConfig(format='%(asctime)s %(levelname)s: %(message)s',
                         level=logging.DEBUG,
                         datefmt='%Y-%m-%d %H:%M:%S')
     if os.path.isdir(output_dir):
-        shutil.rmtree(output_dir)
+        if force:
+            shutil.rmtree(output_dir)
+        else:
+            raise click.ClickException(f'Output directory "{output_dir}" already exists.')
     if not os.path.isdir(output_dir):
         os.makedirs(output_dir)
 
@@ -70,10 +100,12 @@ def gen_report(output_dir: str, cache_size: Optional[str], dataset_id: List[str]
     logging.info(f'Running tests with {len(ds_ids)} datasets...')
 
     for ds_id in ds_ids:
+        observer = new_observer(output_dir, ds_id) if observe else None
+
         t0 = time.perf_counter()
 
         try:
-            store = CciChunkStore(odp, ds_id)
+            store = CciChunkStore(odp, ds_id, observer=observer)
         except Exception as e:
             report_error(output_dir, ds_id, t0, 'CciChunkStore()', e)
             continue
@@ -88,6 +120,20 @@ def gen_report(output_dir: str, cache_size: Optional[str], dataset_id: List[str]
             report_error(output_dir, ds_id, t0, 'xr.open_zarr()', e)
 
     logging.info(f'Tests completed.')
+
+
+def new_observer(output_dir, ds_id):
+    path = path = os.path.join(output_dir, f'OBSERVED@{ds_id}.txt')
+    fp = open(path, 'a')
+
+    def observer(var_name: str = None, chunk_index=None, time_range=None, duration=None, exception=None):
+        if exception:
+            fp.write(f'{var_name}\t{chunk_index}\t{time_range}\t{format_millis(duration)}\t{exception}\n')
+        else:
+            fp.write(f'{var_name}\t{chunk_index}\t{time_range}\t{format_millis(duration)}\tOK\n')
+        fp.flush()
+
+    return observer
 
 
 def report_success(output_dir: str, ds_id: str, t0: float, ds: xr.Dataset):
