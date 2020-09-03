@@ -121,6 +121,9 @@ class RemoteChunkStore(MutableMapping, metaclass=ABCMeta):
 
         self._time_indexes = {}
         for variable_name in self._variable_names:
+            if variable_name in self._dimension_data:
+                self._variable_names.remove(variable_name)
+                continue
             var_encoding = self.get_encoding(variable_name)
             var_attrs = self.get_attrs(variable_name)
             dimensions = var_attrs.get('dimensions', None)
