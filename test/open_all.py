@@ -130,10 +130,10 @@ def new_observer(output_dir, ds_id):
     fp = open(path, 'a')
 
     def observer(var_name: str = None, chunk_index=None, time_range=None, duration=None, exception=None):
-        if exception:
-            fp.write(f'{var_name}\t{chunk_index}\t{time_range}\t{format_millis(duration)}\t{exception}\n')
-        else:
-            fp.write(f'{var_name}\t{chunk_index}\t{time_range}\t{format_millis(duration)}\tOK\n')
+        tr = f'{time_range[0]}/{time_range[1]}'
+        data = f'{var_name};{chunk_index};{tr};{format_millis(duration)}'
+        status = f'{type(exception).__name__}({exception})' if exception else 'OK'
+        fp.write(f'{status};{data}\n')
         fp.flush()
 
     return observer, fp
