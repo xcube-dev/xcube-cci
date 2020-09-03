@@ -100,7 +100,7 @@ def gen_report(output_dir: str,
     logging.info(f'Running tests with {len(ds_ids)} datasets...')
 
     for ds_id in ds_ids:
-        observer = new_observer(output_dir, ds_id) if observe else None
+        observer, obs_fp = new_observer(output_dir, ds_id) if observe else (None, None)
 
         t0 = time.perf_counter()
 
@@ -119,11 +119,14 @@ def gen_report(output_dir: str,
         except Exception as e:
             report_error(output_dir, ds_id, t0, 'xr.open_zarr()', e)
 
+        if obs_fp is not None:
+            obs_fp.close()
+
     logging.info(f'Tests completed.')
 
 
 def new_observer(output_dir, ds_id):
-    path = path = os.path.join(output_dir, f'OBSERVED@{ds_id}.txt')
+    path = os.path.join(output_dir, f'OBSERVED@{ds_id}.txt')
     fp = open(path, 'a')
 
     def observer(var_name: str = None, chunk_index=None, time_range=None, duration=None, exception=None):
@@ -133,7 +136,7 @@ def new_observer(output_dir, ds_id):
             fp.write(f'{var_name}\t{chunk_index}\t{time_range}\t{format_millis(duration)}\tOK\n')
         fp.flush()
 
-    return observer
+    return observer, fp
 
 
 def report_success(output_dir: str, ds_id: str, t0: float, ds: xr.Dataset):
