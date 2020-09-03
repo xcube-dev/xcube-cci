@@ -302,7 +302,7 @@ class RemoteChunkStore(MutableMapping, metaclass=ABCMeta):
         duration = time.perf_counter() - t0
 
         for observer in self._observers:
-            observer(band_name=var_name,
+            observer(var_name=var_name,
                      chunk_index=chunk_index,
                      # bbox=request_bbox,
                      time_range=request_time_range,
