@@ -24,6 +24,8 @@ import re
 from typing import Optional
 from typing import Tuple
 
+_TIMESTAMP_FORMAT = "%Y-%m-%dT%H:%M:%S"
+
 _RE_TO_DATETIME_FORMATS = patterns = [(re.compile(14 * '\\d'), '%Y%m%d%H%M%S'),
                                       (re.compile(12 * '\\d'), '%Y%m%d%H%M'),
                                       (re.compile(8 * '\\d'), '%Y%m%d'),
@@ -60,4 +62,12 @@ def get_timestamps_from_string(string: str) -> (pd.Timestamp, pd.Timestamp):
             second_time = pd.to_datetime(string_rest[p1:p2], format=time_format)
     except ValueError:
         pass
+    return first_time, second_time
+
+def get_timestrings_from_string(string: str) -> (str, str):
+    first_time, second_time = get_timestamps_from_string(string)
+    if first_time:
+        first_time = first_time.strftime(_TIMESTAMP_FORMAT)
+    if second_time:
+        second_time = second_time.strftime(_TIMESTAMP_FORMAT)
     return first_time, second_time
