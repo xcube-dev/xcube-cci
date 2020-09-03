@@ -801,6 +801,7 @@ class CciOdp:
         if 'fid' in self._data_sources[dataset_name]:
             return self._data_sources[dataset_name]['fid']
         fid, uuid = await self._fetch_fid_and_uuid(session, self._opensearch_url, dataset_name)
+        self._data_sources[dataset_name]['fid'] = fid
         return fid
 
     async def _get_opendap_url(self, session, request: Dict, get_earliest: bool = False, get_latest: bool = False):
