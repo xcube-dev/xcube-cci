@@ -125,6 +125,11 @@ class RemoteChunkStore(MutableMapping, metaclass=ABCMeta):
                 self._variable_names.remove(variable_name)
                 continue
             var_encoding = self.get_encoding(variable_name)
+            if var_encoding.get('dtype', '') == 'bytes1024':
+                warnings.warn(f"Variable '{variable_name}' is encoded as string. "
+                              f"Will omit it from the dataset.")
+                self._variable_names.remove(variable_name)
+                continue
             var_attrs = self.get_attrs(variable_name)
             dimensions = var_attrs.get('dimensions', None)
             if not dimensions:
