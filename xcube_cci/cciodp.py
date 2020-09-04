@@ -43,6 +43,7 @@ from xcube_cci.constants import DEFAULT_NUM_RETRIES
 from xcube_cci.constants import DEFAULT_RETRY_BACKOFF_MAX
 from xcube_cci.constants import DEFAULT_RETRY_BACKOFF_BASE
 from xcube_cci.constants import OPENSEARCH_CEDA_URL
+from xcube_cci.timeutil import get_timestrings_from_string
 
 from pydap.client import Functions
 from pydap.handlers.dap import BaseProxy
@@ -798,12 +799,11 @@ class CciOdp:
                 continue
             date_property = properties.get('date', None)
             if date_property:
-                start_time = datetime.strptime(date_property.split('/')[0], _TIMESTAMP_FORMAT)
-                end_time = datetime.strptime(date_property.split('/')[1], _TIMESTAMP_FORMAT)
+                start_time = datetime.strptime(date_property.split('/')[0].split('.')[0], _TIMESTAMP_FORMAT)
+                end_time = datetime.strptime(date_property.split('/')[1].split('.')[0], _TIMESTAMP_FORMAT)
             else:
                 title = properties.get('title', None)
                 if title:
-                    from .timeutil import get_timestrings_from_string
                     start_time, end_time = get_timestrings_from_string(title)
                     start_time = datetime.strptime(start_time, _TIMESTAMP_FORMAT)
                     if end_time:
