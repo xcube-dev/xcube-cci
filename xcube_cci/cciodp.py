@@ -805,7 +805,8 @@ class CciOdp:
                 title = properties.get('title', None)
                 if title:
                     start_time, end_time = get_timestrings_from_string(title)
-                    start_time = datetime.strptime(start_time, _TIMESTAMP_FORMAT)
+                    if start_time:
+                        start_time = datetime.strptime(start_time, _TIMESTAMP_FORMAT)
                     if end_time:
                         end_time = datetime.strptime(end_time, _TIMESTAMP_FORMAT)
                     else:
@@ -815,11 +816,11 @@ class CciOdp:
         sorted_features.sort(key=lambda x: x[0])
         return sorted_features
 
-    def get_time_ranges_satellite_orbit_frequency(self, dataset_name: str, start_time: str, end_time: str) -> \
+    def get_time_ranges_from_data(self, dataset_name: str, start_time: str, end_time: str) -> \
             List[Tuple[datetime, datetime]]:
-        return _run_with_session(self._get_time_ranges_satellite_orbit_frequency, dataset_name, start_time, end_time)
+        return _run_with_session(self._get_time_ranges_from_data, dataset_name, start_time, end_time)
 
-    async def _get_time_ranges_satellite_orbit_frequency(self, session,
+    async def _get_time_ranges_from_data(self, session,
                                                          dataset_name: str,
                                                          start_time: str,
                                                          end_time: str) -> List[Tuple[datetime, datetime]]:
@@ -1128,6 +1129,8 @@ class CciOdp:
             _LOG.warning('Could not open opendap url. dds file is empty.')
             return
         dataset = build_dataset(res_dict['dds'])
+        res_dict['das'] = res_dict['das'].replace('        Float32 valid_min -Infinity;\n', '')
+        res_dict['das'] = res_dict['das'].replace('        Float32 valid_max Infinity;\n', '')
         add_attributes(dataset, parse_das(res_dict['das']))
 
         # remove any projection from the url, leaving selections
