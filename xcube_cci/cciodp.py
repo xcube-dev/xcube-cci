@@ -799,8 +799,8 @@ class CciOdp:
                 continue
             date_property = properties.get('date', None)
             if date_property:
-                start_time = datetime.strptime(date_property.split('/')[0].split('.')[0], _TIMESTAMP_FORMAT)
-                end_time = datetime.strptime(date_property.split('/')[1].split('.')[0], _TIMESTAMP_FORMAT)
+                start_time = datetime.strptime(date_property.split('/')[0].split('.')[0].split('+')[0], _TIMESTAMP_FORMAT)
+                end_time = datetime.strptime(date_property.split('/')[1].split('.')[0].split('+')[0], _TIMESTAMP_FORMAT)
             else:
                 title = properties.get('title', None)
                 if title:
