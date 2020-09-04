@@ -518,16 +518,12 @@ class CciChunkStore(RemoteChunkStore):
             end_time = datetime.fromordinal(end_time_ordinal)
             end_time += relativedelta(years=1)
             delta = relativedelta(years=num_years)
-        elif time_period == 'satellite-orbit-frequency':
+        else:
             end_time = end_time.replace(hour=23, minute=59, second=59)
             end_time_str = datetime.strftime(end_time, _TIMESTAMP_FORMAT)
             iso_end_time = self._extract_time_as_string(end_time_str)
-            request_time_ranges = self._cci_odp.get_time_ranges_satellite_orbit_frequency(dataset_id,
-                                                                                          iso_start_time,
-                                                                                          iso_end_time)
+            request_time_ranges = self._cci_odp.get_time_ranges_from_data(dataset_id, iso_start_time, iso_end_time)
             return request_time_ranges
-        else:
-            return []
         request_time_ranges = []
         this = start_time
         while this < end_time:
