@@ -31,9 +31,9 @@ class CciChunkStoreTest(unittest.TestCase):
         time_ranges = store._time_ranges
         self.assertEqual(144, len(time_ranges))
         self.assertEqual(pd.Timestamp('1997-01-01T00:00:00'), time_ranges[0][0])
-        self.assertEqual(['surface_pressure', 'air_pressure', 'O3e_ndens', 'O3e_du', 'O3e_vmr', 'lat', 'lon', 'layers',
+        self.assertEqual(['surface_pressure', 'O3e_ndens', 'O3e_du', 'O3e_vmr',
                           'time', 'O3e_du_tot', 'O3_du_tot', 'O3_ndens', 'O3_du', 'O3_vmr'],
-                         store._variable_names)
+                        store._variable_names)
 
     @skipIf(os.environ.get('XCUBE_DISABLE_WEB_TESTS', None) == '1', 'XCUBE_DISABLE_WEB_TESTS = 1')
     def test_get_time_ranges(self):
@@ -57,20 +57,7 @@ class CciChunkStoreTest(unittest.TestCase):
                           ('2002-07-24T17:35:09', '2002-07-24T17:35:09'),
                           ('2002-07-24T19:15:45', '2002-07-24T19:15:45'),
                           ('2002-07-24T20:56:21', '2002-07-24T20:56:21'),
-                          ('2002-07-24T22:36:57', '2002-07-24T22:36:57'),
-                          ('2002-07-24T01:17:39', '2002-07-24T01:17:39'),
-                          ('2002-07-24T02:58:15', '2002-07-24T02:58:15'),
-                          ('2002-07-24T04:38:51', '2002-07-24T04:38:51'),
-                          ('2002-07-24T06:19:27', '2002-07-24T06:19:27'),
-                          ('2002-07-24T08:00:03', '2002-07-24T08:00:03'),
-                          ('2002-07-24T09:40:39', '2002-07-24T09:40:39'),
-                          ('2002-07-24T11:21:15', '2002-07-24T11:21:15'),
-                          ('2002-07-24T13:01:51', '2002-07-24T13:01:51'),
-                          ('2002-07-24T14:42:27', '2002-07-24T14:42:27'),
-                          ('2002-07-24T16:23:03', '2002-07-24T16:23:03'),
-                          ('2002-07-24T18:03:39', '2002-07-24T18:03:39'),
-                          ('2002-07-24T19:44:15', '2002-07-24T19:44:15'),
-                          ('2002-07-24T21:24:51', '2002-07-24T21:24:51')],
+                          ('2002-07-24T22:36:57', '2002-07-24T22:36:57')],
                          [(tr[0].isoformat(), tr[1].isoformat()) for tr in time_ranges])
 
     @skipIf(os.environ.get('XCUBE_DISABLE_WEB_TESTS', None) == '1', 'XCUBE_DISABLE_WEB_TESTS = 1')
@@ -109,22 +96,3 @@ class CciChunkStoreTest(unittest.TestCase):
         self.assertEqual([1, 180, 360], attrs['chunk_sizes'])
         self.assertEqual('float32', attrs['data_type'])
         self.assertEqual(['time', 'lat', 'lon'], attrs['dimensions'])
-
-    @skipIf(os.environ.get('XCUBE_DISABLE_WEB_TESTS', None) == '1', 'XCUBE_DISABLE_WEB_TESTS = 1')
-    def test_s3(self):
-        import xarray as xr
-        odp = CciOdp()
-        original_store = CciChunkStore(odp,
-                                       "esacci.OZONE.mon.L3.NP.multi-sensor.multi-platform.MERGED.fv0002.r1",
-                                       dict(time_range=["2010-01-01", "2011-01-01"],
-                                            variable_names=[
-                                                "O3_du",
-                                                "O3_du_tot",
-                                                "air_pressure",
-                                                "surface_pressure",
-                                            ]))
-
-        dataset = xr.open_zarr(original_store)
-        dataset.to_zarr("esacci.OZONE.mon.L3.NP.multi-sensor.multi-platform.MERGED.fv0002.r1" + '.zarr')
-
-        print(dataset)
