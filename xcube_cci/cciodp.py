@@ -989,22 +989,17 @@ class CciOdp:
         Return JSON value read from Opensearch web service.
         :return:
         """
-        single_result = []
-        total_results = await self._fetch_opensearch_feature_part_list(session, base_url, query_args,
-                                                                       single_result, 1, 1)
-        if total_results == 1:
-            return single_result
-        full_feature_list = []
-        task_records = int(np.ceil(total_results / 8))
-        tasks = []
         start_page = 1
-        num_results = 0
+        maximum_records = 10000
+        full_feature_list = []
+        total_results = await self._fetch_opensearch_feature_part_list(session, base_url, query_args,
+                                                                       full_feature_list, start_page, maximum_records)
+        num_results = maximum_records
         while num_results < total_results:
-            tasks.append(self._fetch_opensearch_feature_part_list(session, base_url, query_args, full_feature_list,
-                                                                  start_page, task_records))
             start_page += 1
-            num_results += task_records
-        await asyncio.gather(*tasks)
+            await self._fetch_opensearch_feature_part_list(session, base_url, query_args, full_feature_list,
+                                                           start_page, maximum_records)
+            num_results += maximum_records
         return full_feature_list
 
     async def _fetch_opensearch_feature_part_list(self, session, base_url, query_args, full_feature_list, start_page,
