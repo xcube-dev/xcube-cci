@@ -23,6 +23,7 @@ from datetime import datetime
 from dateutil.relativedelta import relativedelta
 import itertools
 import json
+import logging
 import time
 import warnings
 from abc import abstractmethod, ABCMeta
@@ -35,6 +36,7 @@ import re
 
 from .cciodp import CciOdp
 
+_LOG = logging.getLogger()
 _TIMESTAMP_FORMAT = "%Y-%m-%dT%H:%M:%S"
 
 
@@ -120,22 +122,23 @@ class RemoteChunkStore(MutableMapping, metaclass=ABCMeta):
         self._add_static_array('time_bnds', t_bnds_array, time_bnds_attrs)
 
         self._time_indexes = {}
+        remove = []
         for variable_name in self._variable_names:
             if variable_name in self._dimension_data:
-                self._variable_names.remove(variable_name)
+                remove.append(variable_name)
                 continue
             var_encoding = self.get_encoding(variable_name)
             if var_encoding.get('dtype', '') == 'bytes1024':
                 warnings.warn(f"Variable '{variable_name}' is encoded as string. "
                               f"Will omit it from the dataset.")
-                self._variable_names.remove(variable_name)
+                remove.append(variable_name)
                 continue
             var_attrs = self.get_attrs(variable_name)
             dimensions = var_attrs.get('dimensions', None)
             if not dimensions:
                 warnings.warn(f"Could not find dimensions of variable '{variable_name}'. "
                               f"Will omit it from the dataset.")
-                self._variable_names.remove(variable_name)
+                remove.append(variable_name)
                 continue
             var_attrs.update(_ARRAY_DIMENSIONS=dimensions)
             chunk_sizes = var_attrs.get('chunk_sizes', [-1] * len(dimensions))
@@ -143,19 +146,25 @@ class RemoteChunkStore(MutableMapping, metaclass=ABCMeta):
                 chunk_sizes = [chunk_sizes]
             sizes = []
             self._time_indexes[variable_name] = -1
+            time_dimension = -1
             for i, dimension_name in enumerate(dimensions):
                 sizes.append(self._dimension_data[dimension_name]['size'])
                 if dimension_name == 'time':
                     chunk_sizes[i] = 1
                     self._time_indexes[variable_name] = i
+                    time_dimension = i
                 if chunk_sizes[i] == -1:
                     chunk_sizes[i] = sizes[i]
+            self._adjust_chunk_sizes(chunk_sizes, sizes, time_dimension)
             var_attrs['chunk_sizes'] = chunk_sizes
             self._add_remote_array(variable_name,
                                    sizes,
                                    chunk_sizes,
                                    var_encoding,
                                    var_attrs)
+            logging.debug(f"Added variable '{variable_name}', total num of variables is {len(self._variable_names)}")
+        for r in remove:
+            self._variable_names.remove(r)
         cube_params['variable_names'] = self._variable_names
         global_attrs = dict(
             Conventions='CF-1.7',
@@ -176,6 +185,20 @@ class RemoteChunkStore(MutableMapping, metaclass=ABCMeta):
         # setup Virtual File System (vfs)
         self._vfs['.zgroup'] = _dict_to_bytes(dict(zarr_format=2))
         self._vfs['.zattrs'] = _dict_to_bytes(global_attrs)
+
+    @classmethod
+    def _adjust_chunk_sizes(cls, chunks, sizes, time_dimension):
+        while np.product(chunks) < 1000000:
+            min = 1000000
+            argmin = -1
+            for i, chunk in enumerate(chunks):
+                if i != time_dimension and chunk != sizes[i] and min > chunk:
+                    min = chunk
+                    argmin = i
+            if argmin == -1:
+                # chunks are as big as they can be
+                break
+            chunks[argmin] = int(np.min([min * 2, sizes[argmin]]))
 
     @classmethod
     def _adjust_size(cls, size: int, tile_size: int) -> int:

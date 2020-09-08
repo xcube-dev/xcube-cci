@@ -32,8 +32,8 @@ class CciChunkStoreTest(unittest.TestCase):
         self.assertEqual(144, len(time_ranges))
         self.assertEqual(pd.Timestamp('1997-01-01T00:00:00'), time_ranges[0][0])
         self.assertEqual(['surface_pressure', 'O3e_ndens', 'O3e_du', 'O3e_vmr',
-                          'time', 'O3e_du_tot', 'O3_du_tot', 'O3_ndens', 'O3_du', 'O3_vmr'],
-                        store._variable_names)
+                          'O3e_du_tot', 'O3_du_tot', 'O3_ndens', 'O3_du', 'O3_vmr'],
+                         store._variable_names)
 
     @skipIf(os.environ.get('XCUBE_DISABLE_WEB_TESTS', None) == '1', 'XCUBE_DISABLE_WEB_TESTS = 1')
     def test_get_time_ranges(self):
@@ -65,9 +65,9 @@ class CciChunkStoreTest(unittest.TestCase):
         dim_indexes = self._store._get_dimension_indexes_for_chunk('O3_vmr', (5, 0, 0, 0))
         self.assertIsNotNone(dim_indexes)
         self.assertEqual(slice(None, None, None), dim_indexes[0])
-        self.assertEqual(slice(0, 9), dim_indexes[1])
-        self.assertEqual(slice(0, 90), dim_indexes[2])
-        self.assertEqual(slice(0, 180), dim_indexes[3])
+        self.assertEqual(slice(0, 17), dim_indexes[1])
+        self.assertEqual(slice(0, 180), dim_indexes[2])
+        self.assertEqual(slice(0, 360), dim_indexes[3])
 
     @skipIf(os.environ.get('XCUBE_DISABLE_WEB_TESTS', None) == '1', 'XCUBE_DISABLE_WEB_TESTS = 1')
     def test_get_encoding(self):
@@ -96,3 +96,20 @@ class CciChunkStoreTest(unittest.TestCase):
         self.assertEqual([1, 180, 360], attrs['chunk_sizes'])
         self.assertEqual('float32', attrs['data_type'])
         self.assertEqual(['time', 'lat', 'lon'], attrs['dimensions'])
+
+    def test_adjust_chunk_sizes(self):
+        chunk_sizes = [1, 128, 128]
+        self._store._adjust_chunk_sizes(chunk_sizes, [2024, 2048, 2048], 0)
+        self.assertEqual([1, 1024, 1024], chunk_sizes)
+
+        chunk_sizes = [128, 128, 1]
+        self._store._adjust_chunk_sizes(chunk_sizes, [2048, 2048, 2048], 2)
+        self.assertEqual([1024, 1024, 1], chunk_sizes)
+
+        chunk_sizes = [1, 128, 128]
+        self._store._adjust_chunk_sizes(chunk_sizes, [2024, 128, 2048], 0)
+        self.assertEqual([1, 128, 2048], chunk_sizes)
+
+        chunk_sizes = [1, 64, 128, 32]
+        self._store._adjust_chunk_sizes(chunk_sizes, [2048, 1024, 2048, 1024], 0)
+        self.assertEqual([1, 128, 128, 64], chunk_sizes)
