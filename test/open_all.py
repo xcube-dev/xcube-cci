@@ -101,8 +101,10 @@ def gen_report(output_dir: str,
 
     logging.info(f'Running tests for {len(selected_ds_ids)} datasets...')
 
-    for ds_id in selected_ds_ids:
+    for i, ds_id in enumerate(selected_ds_ids):
         observer, obs_fp = new_observer(output_dir, ds_id) if observe else (None, None)
+
+        logging.info(f'Attempting to open #{i+1} of {len(selected_ds_ids)}: {ds_id}')
 
         t0 = time.perf_counter()
 
@@ -116,6 +118,7 @@ def gen_report(output_dir: str,
             store = zarr.storage.LRUStoreCache(store, max_size=cache_size)
 
         try:
+            logging.info('Attempting to open zarr ...')
             ds = xr.open_zarr(store)
             report_success(output_dir, ds_id, t0, ds)
         except Exception as e:
