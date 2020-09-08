@@ -989,18 +989,21 @@ class CciOdp:
         Return JSON value read from Opensearch web service.
         :return:
         """
-        start_page = 1
-        maximum_records = 1000
-        full_feature_list = []
+        single_result = []
         total_results = await self._fetch_opensearch_feature_part_list(session, base_url, query_args,
-                                                                       full_feature_list, start_page, maximum_records)
+                                                                       single_result, 1, 1)
+        if total_results == 1:
+            return single_result
+        full_feature_list = []
+        task_records = int(np.ceil(total_results / 8))
         tasks = []
-        num_results = maximum_records
+        start_page = 1
+        num_results = 0
         while num_results < total_results:
-            start_page += 1
             tasks.append(self._fetch_opensearch_feature_part_list(session, base_url, query_args, full_feature_list,
-                                                                  start_page, maximum_records))
-            num_results += maximum_records
+                                                                  start_page, task_records))
+            start_page += 1
+            num_results += task_records
         await asyncio.gather(*tasks)
         return full_feature_list
 
@@ -1013,10 +1016,12 @@ class CciOdp:
         resp = await self.get_response(session, url)
         if resp:
             json_text = await resp.read()
+            _LOG.debug(f'Read page {start_page}')
             json_dict = json.loads(json_text.decode('utf-8'))
             feature_list = json_dict.get("features", [])
             full_feature_list.extend(feature_list)
             return json_dict['totalResults']
+        _LOG.debug(f'Did not read page {start_page}')
 
     async def _fetch_variable_infos(self, opensearch_url: str, dataset_id: str, session):
         attributes = {}
