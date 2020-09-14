@@ -22,6 +22,7 @@
 from xcube.constants import EXTENSION_POINT_CLI_COMMANDS
 from xcube.constants import EXTENSION_POINT_DATA_OPENERS
 from xcube.constants import EXTENSION_POINT_DATA_STORES
+from xcube_cci.constants import DATA_STORE_ID
 from xcube_cci.constants import DATA_OPENER_ID
 from xcube.util import extension
 
@@ -33,7 +34,7 @@ def init_plugin(ext_registry: extension.ExtensionRegistry):
                                name='cci_cli')
     ext_registry.add_extension(loader=extension.import_component('xcube_cci.dataaccess:CciOdpDataStore'),
                                point=EXTENSION_POINT_DATA_STORES,
-                               name='cciodp',
+                               name=DATA_STORE_ID,
                                description='ESA CCI Open Data Portal')
     ext_registry.add_extension(loader=extension.import_component('xcube_cci.dataaccess:CciOdpDataOpener'),
                                point=EXTENSION_POINT_DATA_OPENERS,
