@@ -159,7 +159,6 @@ class CciOdpDataOpener(DataOpener):
                                               JsonStringSchema(format='date-time')))
         )
         subsetting_params = dict(
-            crs=JsonStringSchema(const=DEFAULT_CRS),
             bbox=JsonArraySchema(items=(
                 JsonNumberSchema(minimum=-180, maximum=180),
                 JsonNumberSchema(minimum=-90, maximum=90),
@@ -177,7 +176,26 @@ class CciOdpDataOpener(DataOpener):
         )
         return cci_schema
 
-    def open_data(self, data_id: str, opener_id: str = None, **open_params) -> Any:
+    def open_data(self, data_id: str, **open_params) -> Any:
+        """
+        Opens the dataset with given *data_id* and *open_params*.
+
+        Possible values for *data_id* can be retrieved from :meth:CciOdpDataStore::get_data_ids.
+        Possible keyword-arguments in *open_params* are:
+
+        * ``variable_names: Sequence[str]`` - optional list of variable names.
+            If not given, all variables are included.
+        * ``bbox: Tuple[float, float, float, float]`` - spatial coverage given as (minx, miny, maxx, maxy)
+            in units of the WGS84 CRS. If not given, the data is retrieved at its full spatial extent,
+            which for most datasets is global.
+        * ``time_range: Tuple[Optional[str], Optional[str]]`` - tuple (start-time, end-time).
+            Both start-time and end-time, if given, should use ISO 8601 format.
+            Required parameter.
+
+        :param data_id: The data identifier.
+        :param open_params: Open parameters.
+        :return: An xarray.Dataset instance
+        """
         cci_schema = self.get_open_data_params_schema(data_id)
         cci_schema.validate_instance(open_params)
         cube_kwargs, open_params = cci_schema.process_kwargs_subset(open_params, (
@@ -192,7 +210,6 @@ class CciOdpDataOpener(DataOpener):
         ds = xr.open_zarr(chunk_store)
         subsetting_kwargs, open_params = cci_schema.process_kwargs_subset(open_params, (
             'bbox',
-            'crs',
         ))
         ds = self._normalize_dataset_func(ds)
         if 'bbox' in subsetting_kwargs:
