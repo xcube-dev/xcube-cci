@@ -30,6 +30,7 @@ DEFAULT_RETRY_BACKOFF_MAX = 40  # milliseconds
 DEFAULT_RETRY_BACKOFF_BASE = 1.001
 DEFAULT_NUM_RETRIES = 200
 
-DATA_OPENER_ID = 'dataset:zarr:cciodp'
+RAW_DATA_OPENER_ID = 'dataset:zarr:cciodp'
+CUBE_OPENER_ID = 'cube:zarr:cciodp'
 WGS84_CRS = 'http://www.opengis.net/def/crs/EPSG/0/4326'
 DEFAULT_CRS = WGS84_CRS

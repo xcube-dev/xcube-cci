@@ -327,6 +327,9 @@ class CciOdp:
         self._drs_ids = None
         self._data_sources = {}
         self._features = {}
+        ncrds_file = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'data/cube_ready_data_sources')
+        with open(ncrds_file, 'r') as ncrds:
+            self.cube_ready_data_sources = ncrds.read().split('\n')
 
     def close(self):
         pass
@@ -628,6 +631,9 @@ class CciOdp:
                     continue
             results.append(candidate_name)
         return results
+
+    def can_be_forced_to_cube(self, drs_id: str):
+        return drs_id in self.cube_ready_data_sources
 
     async def _read_all_data_sources(self, session):
         catalogue = await self._fetch_data_source_list_json(session,
