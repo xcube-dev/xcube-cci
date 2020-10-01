@@ -232,7 +232,7 @@ class CciOdpDataStore(CciOdpDataOpener, DataStore):
             'retry_backoff_max',
             'retry_backoff_base',
         ))
-        super().__init__(normalize_data, CciOdp(**store_kwargs))
+        super().__init__(normalize_data, CciOdp(**store_kwargs, only_consider_cube_ready=normalize_data))
 
     @property
     def description(self) -> dict:

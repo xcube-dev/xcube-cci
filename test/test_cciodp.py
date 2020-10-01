@@ -51,8 +51,21 @@ class CciOdpTest(unittest.TestCase):
         self.assertIsNotNone(dataset_names)
         list(dataset_names)
         self.assertTrue(len(dataset_names) > 250)
-        self.assertTrue('esacci.AEROSOL.day.L3C.AER_PRODUCTS.ATSR-2.ERS-2.ORAC.03-02.r1' in dataset_names)
+        self.assertTrue('esacci.AEROSOL.day.L3C.AER_PRODUCTS.AATSR.Envisat.ORAC.04-01-.r1' in dataset_names)
         self.assertTrue('esacci.OC.day.L3S.K_490.multi-sensor.multi-platform.MERGED.3-1.sinusoidal' in dataset_names)
+        self.assertTrue('esacci.SST.satellite-orbit-frequency.L3U.SSTskin.AVHRR-3.NOAA-19.AVHRR19_G.2-1.r1' in dataset_names)
+
+    @skipIf(os.environ.get('XCUBE_DISABLE_WEB_TESTS', None) == '1', 'XCUBE_DISABLE_WEB_TESTS = 1')
+    def test_cube_ready_dataset_names(self):
+        cci_odp = CciOdp(only_consider_cube_ready=True)
+        dataset_names = cci_odp.dataset_names
+        self.assertIsNotNone(dataset_names)
+        list(dataset_names)
+        self.assertTrue(len(dataset_names) > 120)
+        self.assertTrue(len(dataset_names) < 250)
+        self.assertTrue('esacci.AEROSOL.day.L3C.AER_PRODUCTS.AATSR.Envisat.ORAC.04-01-.r1' in dataset_names)
+        self.assertFalse('esacci.OC.day.L3S.K_490.multi-sensor.multi-platform.MERGED.3-1.sinusoidal' in dataset_names)
+        self.assertTrue('esacci.SST.satellite-orbit-frequency.L3U.SSTskin.AVHRR-3.NOAA-19.AVHRR19_G.2-1.r1' in dataset_names)
 
     @skipIf(os.environ.get('XCUBE_DISABLE_WEB_TESTS', None) == '1', 'XCUBE_DISABLE_WEB_TESTS = 1')
     def test_var_names(self):
@@ -235,7 +248,7 @@ class CciOdpTest(unittest.TestCase):
     @skipIf(os.environ.get('XCUBE_DISABLE_WEB_TESTS', None) == '1', 'XCUBE_DISABLE_WEB_TESTS = 1')
     def test_get_dimension_data(self):
         cci_odp = CciOdp()
-        dimension_data = cci_odp.get_dimension_data('esacci.AEROSOL.day.L3C.AER_PRODUCTS.ATSR-2.ERS-2.ORAC.03-02.r1',
+        dimension_data = cci_odp.get_dimension_data('esacci.AEROSOL.day.L3C.AER_PRODUCTS.AATSR.Envisat.ORAC.04-01-.r1',
                                           ['latitude', 'longitude', 'view', 'aerosol_type'])
         self.assertIsNotNone(dimension_data)
         self.assertEqual(dimension_data['latitude']['size'], 180)
@@ -274,7 +287,7 @@ class CciOdpTest(unittest.TestCase):
             bbox=(-20, 30, 20, 50),
             ecv='AEROSOL'
         )
-        self.assertTrue(len(aerosol_sources) > 35)
+        self.assertTrue(len(aerosol_sources) > 15)
 
     @skipIf(os.environ.get('XCUBE_DISABLE_WEB_TESTS', None) == '1', 'XCUBE_DISABLE_WEB_TESTS = 1')
     def test_search_frequency(self):
@@ -285,7 +298,7 @@ class CciOdpTest(unittest.TestCase):
             bbox=(-20, 30, 20, 50),
             frequency='5 days'
         )
-        self.assertTrue(len(five_day_sources) > 20)
+        self.assertTrue(len(five_day_sources) > 18)
 
     @skipIf(os.environ.get('XCUBE_DISABLE_WEB_TESTS', None) == '1', 'XCUBE_DISABLE_WEB_TESTS = 1')
     def test_search_processing_level(self):
@@ -296,7 +309,7 @@ class CciOdpTest(unittest.TestCase):
             bbox=(-20, 30, 20, 50),
             processing_level='L2P'
         )
-        self.assertTrue(len(l2p_sources) > 35)
+        self.assertTrue(len(l2p_sources) > 30)
 
     @skipIf(os.environ.get('XCUBE_DISABLE_WEB_TESTS', None) == '1', 'XCUBE_DISABLE_WEB_TESTS = 1')
     def test_search_product_string(self):

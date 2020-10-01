@@ -317,6 +317,7 @@ class CciOdp:
                  num_retries: int = DEFAULT_NUM_RETRIES,
                  retry_backoff_max: int = DEFAULT_RETRY_BACKOFF_MAX,
                  retry_backoff_base: float = DEFAULT_RETRY_BACKOFF_BASE,
+                 only_consider_cube_ready = False
                  ):
         self._opensearch_url = opensearch_url
         self._opensearch_description_url = opensearch_description_url
@@ -327,6 +328,14 @@ class CciOdp:
         self._drs_ids = None
         self._data_sources = {}
         self._features = {}
+        eds_file = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'data/excluded_data_sources')
+        with open(eds_file, 'r') as eds:
+            self._excluded_data_sources = eds.read().split('\n')
+        if only_consider_cube_ready:
+            ncds_file = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'data/non_cube_data_sources')
+            with open(ncds_file, 'r') as ncds:
+                non_cube_ready_data_sources = ncds.read().split('\n')
+                self._excluded_data_sources += non_cube_ready_data_sources
 
     def close(self):
         pass
@@ -437,18 +446,9 @@ class CciOdp:
         meta_info_dict = await self._extract_metadata_from_odd_url(session, self._opensearch_description_url)
         if 'drs_ids' in meta_info_dict:
             self._drs_ids = meta_info_dict['drs_ids']
-            ncds_file = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'data/non_cube_data_sources')
-            with open(ncds_file, 'r') as ncds:
-                excluded_data_sources = ncds.read().split('\n')
-                for excluded_data_source in excluded_data_sources:
-                    if excluded_data_source in self._drs_ids:
-                        self._drs_ids.remove(excluded_data_source)
-            eds_file = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'data/excluded_data_sources')
-            with open(eds_file, 'r') as eds:
-                excluded_data_sources = eds.read().split('\n')
-                for excluded_data_source in excluded_data_sources:
-                    if excluded_data_source in self._drs_ids:
-                        self._drs_ids.remove(excluded_data_source)
+            for excluded_data_source in self._excluded_data_sources:
+                if excluded_data_source in self._drs_ids:
+                    self._drs_ids.remove(excluded_data_source)
             return self._drs_ids
         if not self._data_sources:
             self._data_sources = {}
@@ -465,17 +465,8 @@ class CciOdp:
                                                 json_dict.get('odd_url', None),
                                                 json_dict.get('metadata_url', None))
         drs_ids = self._get_as_list(meta_info, 'drs_id', 'drs_ids')
-        eds_file = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'data/excluded_data_sources')
-        with open(eds_file, 'r') as eds:
-            ncds_file = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'data/non_cube_data_sources')
-            with open(ncds_file, 'r') as ncds:
-                excluded_data_sources = ncds.read().split('\n')
-                for excluded_data_source in excluded_data_sources:
-                    if excluded_data_source in drs_ids:
-                        drs_ids.remove(excluded_data_source)
-            excluded_data_sources = eds.read().split('\n')
-            for excluded_data_source in excluded_data_sources:
-                if excluded_data_source in drs_ids:
+        for excluded_data_source in self._excluded_data_sources:
+            if excluded_data_source in drs_ids:
                     drs_ids.remove(excluded_data_source)
         for drs_id in drs_ids:
             meta_info = meta_info.copy()

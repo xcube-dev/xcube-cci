@@ -121,7 +121,7 @@ class CciOdpDataStoreTest(unittest.TestCase):
         dataset_ids_iter = self.store.get_data_ids()
         self.assertIsNotNone(dataset_ids_iter)
         dataset_ids = list(dataset_ids_iter)
-        self.assertTrue(len(dataset_ids) > 250)
+        self.assertTrue(len(dataset_ids) > 120)
 
     def test_create_human_readable_title_from_id(self):
         self.assertEqual('OZONE CCI: Monthly multi-sensor L3 MERGED NP, vfv0002',
