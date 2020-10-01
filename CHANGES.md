@@ -11,7 +11,8 @@
 dimensions will be normalized to `lat`, `lon`, `time` and possibly additional dimensions. 
 Variables that cannot be normalized to use these dimensions will not be shown.
 If `normalize_data` is False, dimensions will not be changed and all data variables will be shown 
-(i.e., all variables that are not dimensionsn, that are numeric and that have more than one dimension).   
+(i.e., all variables that are not dimensionns, that are numeric and that have more than one dimension).
+* Updated setup.py [#16]()https://github.com/dcs4cop/xcube-cci/issues/16)
 
 ## Changes in 0.5.0.
  

@@ -43,6 +43,9 @@ setup(
     author='xcube Development Team',
     packages=packages,
     include_package_data=True,
-    data_files=[('xcube_cci.data', ['non_cube_data_sources', 'excluded_data_sources'])],
+    data_files=[('xcube_cci', [
+        'xcube_cci/data/non_cube_data_sources',
+        'xcube_cci/data/excluded_data_sources']
+                 )],
     install_requires=requirements,
 )
