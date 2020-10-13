@@ -672,11 +672,11 @@ class CciOdp:
         time_format, start, end, timedelta = find_datetime_format(time_as_string)
         return datetime.strptime(time_as_string[start:end], time_format)
 
-    def get_dimension_data(self, dataset_name: str, dimension_names: List[str]):
-        dimension_data = _run_with_session(self._get_dim_data, dataset_name, dimension_names)
+    def get_variable_data(self, dataset_name: str, dimension_names: Dict[str, int]):
+        dimension_data = _run_with_session(self._get_var_data, dataset_name, dimension_names)
         return dimension_data
 
-    async def _get_dim_data(self, session, dataset_name: str, dimension_names: List[str]):
+    async def _get_var_data(self, session, dataset_name: str, variable_names: Dict[str, int]):
         fid = await self._get_fid_for_dataset(session, dataset_name)
         request = dict(parentIdentifier=fid,
                        startDate='1900-01-01T00:00:00',
@@ -684,26 +684,28 @@ class CciOdp:
                        drsId=dataset_name
                        )
         opendap_url = await self._get_opendap_url(session, request)
-        dim_data = {}
+        var_data = {}
         if not opendap_url:
-            return dim_data
+            return var_data
         dataset = await self._get_opendap_dataset(session, opendap_url)
         if not dataset:
-            return dim_data
-        for dim in dimension_names:
-            if dim in dataset:
-                dim_data[dim] = dict(size=dataset[dim].size, chunkSize=dataset[dim].attributes.get('_ChunkSizes'))
-                if dataset[dim].size < 512 * 512:
-                    dim_data[dim]['data'] = \
-                        await self._get_data_from_opendap_dataset(dataset, session, dim, (slice(None, None, None),))
+            return var_data
+        for var_name in variable_names:
+            if var_name in dataset:
+                var_data[var_name] = dict(size=dataset[var_name].size,
+                                          chunkSize=dataset[var_name].attributes.get('_ChunkSizes'))
+                if dataset[var_name].size < 512 * 512:
+                    var_data[var_name]['data'] = \
+                        await self._get_data_from_opendap_dataset(dataset, session, var_name,
+                                                                  (slice(None, None, None),))
                 else:
-                    dim_data[dim]['data'] = []
+                    var_data[var_name]['data'] = []
             else:
-                dim_data[dim] = dict(size=dimension_names[dim],
-                                     chunkSize=dimension_names[dim],
-                                     data=list(range(dimension_names[dim]))
+                var_data[var_name] = dict(size=variable_names[var_name],
+                                     chunkSize=variable_names[var_name],
+                                     data=list(range(variable_names[var_name]))
                                      )
-        return dim_data
+        return var_data
 
     def get_earliest_start_date(self, dataset_name: str, start_time: str, end_time: str, frequency: str) -> \
             Optional[datetime]:

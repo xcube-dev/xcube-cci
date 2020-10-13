@@ -246,10 +246,10 @@ class CciOdpTest(unittest.TestCase):
         self.assertEqual(25100, converted_time_data[2])
 
     @skipIf(os.environ.get('XCUBE_DISABLE_WEB_TESTS', None) == '1', 'XCUBE_DISABLE_WEB_TESTS = 1')
-    def test_get_dimension_data(self):
+    def test_get_variable_data(self):
         cci_odp = CciOdp()
-        dimension_data = cci_odp.get_dimension_data('esacci.AEROSOL.day.L3C.AER_PRODUCTS.AATSR.Envisat.ORAC.04-01-.r1',
-                                          ['latitude', 'longitude', 'view', 'aerosol_type'])
+        dimension_data = cci_odp.get_variable_data('esacci.AEROSOL.day.L3C.AER_PRODUCTS.AATSR.Envisat.ORAC.04-01-.r1',
+                                                   {'latitude': 180, 'longitude': 360, 'view': 2, 'aerosol_type': 10})
         self.assertIsNotNone(dimension_data)
         self.assertEqual(dimension_data['latitude']['size'], 180)
         self.assertEqual(dimension_data['latitude']['chunkSize'], 180)
@@ -268,8 +268,9 @@ class CciOdpTest(unittest.TestCase):
         self.assertEqual(dimension_data['aerosol_type']['data'][0], 0)
         self.assertEqual(dimension_data['aerosol_type']['data'][-1], 9)
 
-        dimension_data = cci_odp.get_dimension_data(
-            'esacci.OC.day.L3S.K_490.multi-sensor.multi-platform.MERGED.3-1.sinusoidal', ['lat', 'lon'])
+        dimension_data = cci_odp.get_variable_data(
+            'esacci.OC.day.L3S.K_490.multi-sensor.multi-platform.MERGED.3-1.sinusoidal',
+            {'lat': 23761676, 'lon': 23761676})
         self.assertIsNotNone(dimension_data)
         self.assertEqual(dimension_data['lat']['size'], 23761676)
         self.assertEqual(dimension_data['lat']['chunkSize'], 1048576)

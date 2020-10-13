@@ -121,6 +121,23 @@ class RemoteChunkStore(MutableMapping, metaclass=ABCMeta):
         self._add_static_array('time', t_array, time_attrs)
         self._add_static_array('time_bnds', t_bnds_array, time_bnds_attrs)
 
+        global_attrs = dict(
+            Conventions='CF-1.7',
+            coordinates='time_bnds',
+            title=f'{data_id} Data Cube',
+            history=[
+                dict(
+                    program=f'{self._class_name}',
+                    cube_params=cube_params
+                )
+            ],
+            date_created=pd.Timestamp.now().isoformat(),
+            processing_level=self._dataset_name.split('.')[3],
+            time_coverage_start=time_coverage_start.isoformat(),
+            time_coverage_end=time_coverage_end.isoformat(),
+            time_coverage_duration=(time_coverage_end - time_coverage_start).isoformat(),
+        )
+
         self._time_indexes = {}
         remove = []
         for variable_name in self._variable_names:
@@ -128,11 +145,6 @@ class RemoteChunkStore(MutableMapping, metaclass=ABCMeta):
                 remove.append(variable_name)
                 continue
             var_encoding = self.get_encoding(variable_name)
-            if var_encoding.get('dtype', '') == 'bytes1024':
-                warnings.warn(f"Variable '{variable_name}' is encoded as string. "
-                              f"Will omit it from the dataset.")
-                remove.append(variable_name)
-                continue
             var_attrs = self.get_attrs(variable_name)
             dimensions = var_attrs.get('dimensions', None)
             if not dimensions:
@@ -155,6 +167,18 @@ class RemoteChunkStore(MutableMapping, metaclass=ABCMeta):
                     time_dimension = i
                 if chunk_sizes[i] == -1:
                     chunk_sizes[i] = sizes[i]
+            if var_encoding.get('dtype', '') == 'bytes1024':
+                if len(dimensions) == 1 and sizes[0] < 512 * 512:
+                    _LOG.info(f"Variable '{variable_name}' is encoded as string. "
+                              f"Will convert it to metadata.")
+                    variable = {variable_name: sizes[0]}
+                    var_data = self.get_variable_data(data_id, variable)
+                    global_attrs[variable_name] = [var.decode('utf-8') for var in var_data[variable_name]['data']]
+                else:
+                    warnings.warn(f"Variable '{variable_name}' is encoded as string. "
+                                  f"Will omit it from the dataset.")
+                remove.append(variable_name)
+                continue
             self._adjust_chunk_sizes(chunk_sizes, sizes, time_dimension)
             var_attrs['chunk_sizes'] = chunk_sizes
             self._add_remote_array(variable_name,
@@ -166,21 +190,9 @@ class RemoteChunkStore(MutableMapping, metaclass=ABCMeta):
         for r in remove:
             self._variable_names.remove(r)
         cube_params['variable_names'] = self._variable_names
-        global_attrs = dict(
-            Conventions='CF-1.7',
-            coordinates='time_bnds',
-            title=f'{data_id} Data Cube',
-            history=[
-                dict(
-                    program=f'{self._class_name}',
-                    cube_params=cube_params
-                )
-            ],
-            date_created=pd.Timestamp.now().isoformat(),
-            processing_level=self._dataset_name.split('.')[3],
-            time_coverage_start=time_coverage_start.isoformat(),
-            time_coverage_end=time_coverage_end.isoformat(),
-            time_coverage_duration=(time_coverage_end - time_coverage_start).isoformat(),
+        global_attrs['history'] = dict(
+            program=f'{self._class_name}',
+            cube_params=cube_params
         )
         # setup Virtual File System (vfs)
         self._vfs['.zgroup'] = _dict_to_bytes(dict(zarr_format=2))
@@ -231,6 +243,10 @@ class RemoteChunkStore(MutableMapping, metaclass=ABCMeta):
 
     @abstractmethod
     def get_dimension_data(self, dataset_id: str) -> dict:
+        pass
+
+    @abstractmethod
+    def get_variable_data(self, dataset_id: str, variable_names: Dict[str, int]):
         pass
 
     def add_observer(self, observer: Callable):
@@ -592,8 +608,11 @@ class CciChunkStore(RemoteChunkStore):
         return [variable['name'] for variable in self._metadata['variables']]
 
     def get_dimension_data(self, dataset_id: str):
-        dimension_names = self._metadata['dimensions']
-        return self._cci_odp.get_dimension_data(dataset_id, dimension_names)
+        dimensions = self._metadata['dimensions']
+        return self.get_variable_data(dataset_id, dimensions)
+
+    def get_variable_data(self, dataset_id: str, variables: Dict[str, int]):
+        return self._cci_odp.get_variable_data(dataset_id, variables)
 
     def get_encoding(self, var_name: str) -> Dict[str, Any]:
         encoding_dict = {}
