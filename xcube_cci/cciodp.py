@@ -446,6 +446,8 @@ class CciOdp:
         meta_info_dict = await self._extract_metadata_from_odd_url(session, self._opensearch_description_url)
         if 'drs_ids' in meta_info_dict:
             self._drs_ids = meta_info_dict['drs_ids']
+            if '_all' in self._drs_ids:
+                self._drs_ids.remove('_all')
             for excluded_data_source in self._excluded_data_sources:
                 if excluded_data_source in self._drs_ids:
                     self._drs_ids.remove(excluded_data_source)
@@ -462,21 +464,24 @@ class CciOdp:
 
     async def _create_data_source(self, session, json_dict: dict, datasource_id: str):
         meta_info = await self._fetch_meta_info(session,
+                                                datasource_id,
                                                 json_dict.get('odd_url', None),
                                                 json_dict.get('metadata_url', None))
         drs_ids = self._get_as_list(meta_info, 'drs_id', 'drs_ids')
-        for excluded_data_source in self._excluded_data_sources:
-            if excluded_data_source in drs_ids:
-                    drs_ids.remove(excluded_data_source)
         for drs_id in drs_ids:
-            meta_info = meta_info.copy()
-            meta_info.update(json_dict)
-            self._adjust_json_dict(meta_info, drs_id)
-            for variable in meta_info.get('variables', []):
+            if drs_id in self._excluded_data_sources:
+                continue
+            drs_meta_info = meta_info.copy()
+            drs_variables = drs_meta_info.get('variables', {}).get(drs_id, None)
+            drs_meta_info.update(json_dict)
+            if drs_variables:
+                drs_meta_info['variables'] = drs_variables
+            self._adjust_json_dict(drs_meta_info, drs_id)
+            for variable in drs_meta_info.get('variables', []):
                 variable['name'] = variable['name'].replace('.', '_')
-            meta_info['cci_project'] = meta_info['ecv']
-            meta_info['fid'] = datasource_id
-            self._data_sources[drs_id] = meta_info
+                drs_meta_info['cci_project'] = drs_meta_info['ecv']
+                drs_meta_info['fid'] = datasource_id
+            self._data_sources[drs_id] = drs_meta_info
 
     def _adjust_json_dict(self, json_dict: dict, drs_id: str):
         values = drs_id.split('.')
@@ -978,7 +983,7 @@ class CciOdp:
         uuid = feature_list[0].get("id", "uuid=").split("uuid=")[-1]
         return fid, uuid
 
-    async def _fetch_data_source_list_json(self, session, base_url, query_args) -> Sequence:
+    async def _fetch_data_source_list_json(self, session, base_url, query_args) -> Dict:
         feature_collection_list = await self._fetch_opensearch_feature_list(session, base_url, query_args)
         catalogue = {}
         for fc in feature_collection_list:
@@ -1022,6 +1027,7 @@ class CciOdp:
             full_feature_list.extend(feature_list)
             return json_dict['totalResults']
         _LOG.debug(f'Did not read page {start_page}')
+        return 0
 
     async def _fetch_variable_infos(self, opensearch_url: str, dataset_id: str, session):
         attributes = {}
@@ -1059,7 +1065,7 @@ class CciOdp:
                 return feature_list[0]
         return None
 
-    async def _fetch_meta_info(self, session, odd_url: str, metadata_url: str) -> Dict:
+    async def _fetch_meta_info(self, session, datasource_id: str, odd_url: str, metadata_url: str) -> Dict:
         meta_info_dict = {}
         if odd_url:
             meta_info_dict = await self._extract_metadata_from_odd_url(session, odd_url)
@@ -1068,12 +1074,24 @@ class CciOdp:
             for item in desc_metadata:
                 if not item in meta_info_dict:
                     meta_info_dict[item] = desc_metadata[item]
+        meta_info_dict['variables'] = await self._get_variables_for_fid(session, datasource_id)
         _harmonize_info_field_names(meta_info_dict, 'file_format', 'file_formats')
         _harmonize_info_field_names(meta_info_dict, 'platform_id', 'platform_ids')
         _harmonize_info_field_names(meta_info_dict, 'sensor_id', 'sensor_ids')
         _harmonize_info_field_names(meta_info_dict, 'processing_level', 'processing_levels')
         _harmonize_info_field_names(meta_info_dict, 'time_frequency', 'time_frequencies')
         return meta_info_dict
+
+    async def _get_variables_for_fid(self, session, datasource_id) -> Dict[str, Any]:
+        variable_dict = {}
+        data_source_list = await self._fetch_data_source_list_json(session, OPENSEARCH_CEDA_URL,
+                                                             {'parentIdentifier': datasource_id})
+        for data_source_key, data_source_value in data_source_list.items():
+            drs_id = data_source_value.get('title', 'All Files')
+            variables = data_source_value.get('variables', None)
+            if drs_id != 'All Files' and variables:
+                variable_dict[drs_id] = variables
+        return variable_dict
 
     async def _extract_metadata_from_descxml_url(self, session, descxml_url: str = None) -> dict:
         if not descxml_url:

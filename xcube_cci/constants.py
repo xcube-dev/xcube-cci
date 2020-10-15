@@ -23,8 +23,10 @@ DATA_STORE_ID = 'cciodp'
 DATA_OPENER_ID = f'dataset:zarr:{DATA_STORE_ID}'
 DATA_ARRAY_NAME = 'var_data'
 
-OPENSEARCH_CEDA_URL = "https://archive.opensearch.ceda.ac.uk/opensearch/request"
-CCI_ODD_URL = 'https://archive.opensearch.ceda.ac.uk/opensearch/description.xml?parentIdentifier=cci'
+# OPENSEARCH_CEDA_URL = "https://archive.opensearch.ceda.ac.uk/opensearch/request"
+OPENSEARCH_CEDA_URL = "http://opensearch-test.ceda.ac.uk/nested/opensearch/request"
+# CCI_ODD_URL = 'https://archive.opensearch.ceda.ac.uk/opensearch/description.xml?parentIdentifier=cci'
+CCI_ODD_URL = 'http://opensearch-test.ceda.ac.uk/nested/opensearch/description.xml?parentIdentifier=cci'
 
 DEFAULT_CRS = 'http://www.opengis.net/def/crs/EPSG/0/4326'
 DEFAULT_TILE_SIZE = 1000
