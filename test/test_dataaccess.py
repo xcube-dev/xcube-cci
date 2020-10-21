@@ -6,11 +6,35 @@ from unittest import skip
 from unittest import skipIf
 
 from xcube_cci.cciodp import CciOdp
+from xcube_cci.dataaccess import _get_temporal_resolution_from_id
 from xcube_cci.dataaccess import CciOdpDataOpener
 from xcube_cci.dataaccess import CciOdpDataStore
 from xcube.core.normalize import normalize_dataset
 from xcube.core.store.descriptor import DatasetDescriptor
 from xcube.core.verify import assert_cube
+
+
+class DataAccessTest(unittest.TestCase):
+
+    def test_get_temporal_resolution_from_id(self):
+        self.assertEqual('1D',
+                         _get_temporal_resolution_from_id('esacci.OZONE.day.L3.NP.sensor.platform.MERGED.fv0002.r1'))
+        self.assertEqual('5D',
+                         _get_temporal_resolution_from_id('esacci.OZONE.5-days.L3.NP.sensor.platform.MERGED.fv0002.r1'))
+        self.assertEqual('1M',
+                         _get_temporal_resolution_from_id('esacci.OZONE.mon.L3.NP.sensor.platform.MERGED.fv0002.r1'))
+        self.assertEqual('1M',
+                         _get_temporal_resolution_from_id('esacci.OZONE.month.L3.NP.sensor.platform.MERGED.fv0002.r1'))
+        self.assertEqual('3M',
+                         _get_temporal_resolution_from_id('esacci.OZONE.3-months.L3.NP.sensor.platform.MERGED.fv0002.r1'))
+        self.assertEqual('1Y',
+                         _get_temporal_resolution_from_id('esacci.OZONE.yr.L3.NP.sensor.platform.MERGED.fv0002.r1'))
+        self.assertEqual('1Y',
+                         _get_temporal_resolution_from_id('esacci.OZONE.year.L3.NP.sensor.platform.MERGED.fv0002.r1'))
+        self.assertEqual('13Y',
+                         _get_temporal_resolution_from_id('esacci.OZONE.13-yrs.L3.NP.sensor.platform.MERGED.fv0002.r1'))
+        self.assertIsNone(
+            _get_temporal_resolution_from_id('esacci.OZONE.climatology.L3.NP.sensor.platform.MERGED.fv0002.r1'))
 
 class CciOdpDataOpenerTest(unittest.TestCase):
 

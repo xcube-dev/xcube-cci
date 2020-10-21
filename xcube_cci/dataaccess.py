@@ -42,7 +42,6 @@ from xcube_cci.cciodp import CciOdp
 from xcube_cci.chunkstore import CciChunkStore
 from xcube_cci.constants import CCI_ODD_URL
 from xcube_cci.constants import DATA_OPENER_ID
-from xcube_cci.constants import DEFAULT_CRS
 from xcube_cci.constants import DEFAULT_NUM_RETRIES
 from xcube_cci.constants import DEFAULT_RETRY_BACKOFF_BASE
 from xcube_cci.constants import DEFAULT_RETRY_BACKOFF_MAX
@@ -85,6 +84,19 @@ def _return_input(anything: Any) -> Any:
     return anything
 
 
+def _get_temporal_resolution_from_id(data_id: str) -> str:
+    data_time_res = data_id.split('.')[2]
+    time_res_items = dict(D=['days', 'day'],
+                          M=['months', 'mon'],
+                          Y=['yrs', 'yr', 'year'])
+    for time_res_pandas_id, time_res_ids_list in time_res_items.items():
+        for i, time_res_id in enumerate(time_res_ids_list):
+            if time_res_id in data_time_res:
+                if i == 0:
+                    return f'{data_time_res.split("-")[0]}{time_res_pandas_id}'
+                return f'1{time_res_pandas_id}'
+
+
 class CciOdpDataOpener(DataOpener):
 
     def __init__(self,
@@ -119,7 +131,7 @@ class CciOdpDataOpener(DataOpener):
         attrs = ds_metadata.get('attributes', {}).get('NC_GLOBAL', {})
         temporal_resolution = attrs.get('time_coverage_resolution', 'P')[1:]
         if re.match(TIME_PERIOD_PATTERN, temporal_resolution) is None:
-            temporal_resolution = None
+            temporal_resolution = _get_temporal_resolution_from_id(data_id)
         dataset_info = self._cci_odp.get_dataset_info(data_id, ds_metadata)
         spatial_resolution = dataset_info['lat_res']
         bbox = dataset_info['bbox']
@@ -151,26 +163,39 @@ class CciOdpDataOpener(DataOpener):
         dsd = self.describe_data(data_id) if data_id else None
         return self._get_open_data_params_schema(dsd)
 
-    def _get_open_data_params_schema(self, dsd: DataDescriptor):
+    @staticmethod
+    def _get_open_data_params_schema(dsd: DataDescriptor):
+        # noinspection PyUnresolvedReferences
         cube_params = dict(
             variable_names=JsonArraySchema(items=JsonStringSchema(
                 enum=[v.name for v in dsd.data_vars] if dsd and dsd.data_vars else None)),
             time_range=JsonArraySchema(items=(JsonStringSchema(format='date-time'),
                                               JsonStringSchema(format='date-time')))
         )
+        min_lon = dsd.bbox[0] if dsd and dsd.bbox else -180
+        min_lat = dsd.bbox[1] if dsd and dsd.bbox else -90
+        max_lon = dsd.bbox[2] if dsd and dsd.bbox else 180
+        max_lat = dsd.bbox[3] if dsd and dsd.bbox else 90
         subsetting_params = dict(
             bbox=JsonArraySchema(items=(
-                JsonNumberSchema(minimum=-180, maximum=180),
-                JsonNumberSchema(minimum=-90, maximum=90),
-                JsonNumberSchema(minimum=-180, maximum=180),
-                JsonNumberSchema(minimum=-90, maximum=90))),
+                JsonNumberSchema(minimum=min_lon, maximum=max_lon),
+                JsonNumberSchema(minimum=min_lat, maximum=max_lat),
+                JsonNumberSchema(minimum=min_lon, maximum=max_lon),
+                JsonNumberSchema(minimum=min_lat, maximum=max_lat))),
+        )
+        # constant params is a listing of parameters that may not be changed, but are included here for information
+        constant_params = dict(
+            spatial_res=JsonNumberSchema(const=dsd.spatial_res if dsd and dsd.spatial_res else 0.0),
+            time_period=JsonStringSchema(const=dsd.time_period if dsd and dsd.time_period else ''),
+            crs=JsonStringSchema(const=dsd.crs if dsd and dsd.crs else '')
+
         )
         cci_schema = JsonObjectSchema(
             properties=dict(**cube_params,
-                            **subsetting_params
+                            **subsetting_params,
+                            **constant_params
                             ),
             required=[
-                # cube_params
             ],
             additional_properties=False
         )
@@ -273,7 +298,8 @@ class CciOdpDataStore(CciOdpDataOpener, DataStore):
         tuples = ((data_id, self._create_human_readable_title_from_id(data_id)) for data_id in data_ids)
         return iter(tuples)
 
-    def _create_human_readable_title_from_id(self, id: str) -> str:
+    @staticmethod
+    def _create_human_readable_title_from_id(id: str) -> str:
         split_id = id.split('.')
         version = split_id[-2]
         if not version.startswith('v'):
