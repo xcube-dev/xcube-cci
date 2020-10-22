@@ -27,7 +27,7 @@ import logging
 import time
 import warnings
 from abc import abstractmethod, ABCMeta
-from collections import MutableMapping
+from collections.abc import MutableMapping
 from typing import Iterator, Any, List, Dict, Tuple, Callable, Iterable, KeysView, Mapping, Union
 
 import numpy as np
