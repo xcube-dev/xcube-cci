@@ -125,12 +125,6 @@ class RemoteChunkStore(MutableMapping, metaclass=ABCMeta):
             Conventions='CF-1.7',
             coordinates='time_bnds',
             title=f'{data_id} Data Cube',
-            history=[
-                dict(
-                    program=f'{self._class_name}',
-                    cube_params=cube_params
-                )
-            ],
             date_created=pd.Timestamp.now().isoformat(),
             processing_level=self._dataset_name.split('.')[3],
             time_coverage_start=time_coverage_start.isoformat(),
@@ -190,10 +184,10 @@ class RemoteChunkStore(MutableMapping, metaclass=ABCMeta):
         for r in remove:
             self._variable_names.remove(r)
         cube_params['variable_names'] = self._variable_names
-        global_attrs['history'] = dict(
+        global_attrs['history'] = [dict(
             program=f'{self._class_name}',
             cube_params=cube_params
-        )
+        )]
         # setup Virtual File System (vfs)
         self._vfs['.zgroup'] = _dict_to_bytes(dict(zarr_format=2))
         self._vfs['.zattrs'] = _dict_to_bytes(global_attrs)
