@@ -173,7 +173,7 @@ class RemoteChunkStore(MutableMapping, metaclass=ABCMeta):
                                   f"Will omit it from the dataset.")
                 remove.append(variable_name)
                 continue
-            self._adjust_chunk_sizes(chunk_sizes, sizes, time_dimension)
+            chunk_sizes = self._adjust_chunk_sizes(chunk_sizes, sizes, time_dimension)
             var_attrs['chunk_sizes'] = chunk_sizes
             self._add_remote_array(variable_name,
                                    sizes,
@@ -194,17 +194,67 @@ class RemoteChunkStore(MutableMapping, metaclass=ABCMeta):
 
     @classmethod
     def _adjust_chunk_sizes(cls, chunks, sizes, time_dimension):
-        while np.product(chunks) < 1000000:
-            min = 1000000
-            argmin = -1
-            for i, chunk in enumerate(chunks):
-                if i != time_dimension and chunk != sizes[i] and min > chunk:
-                    min = chunk
-                    argmin = i
-            if argmin == -1:
-                # chunks are as big as they can be
-                break
-            chunks[argmin] = int(np.min([min * 2, sizes[argmin]]))
+        # check if we can actually read in everything as one big chunk
+        sum_sizes = np.product(sizes)
+        if time_dimension >= 0:
+            sum_sizes = sum_sizes / sizes[time_dimension] * chunks[time_dimension]
+            if sum_sizes < 1000000:
+                best_chunks = sizes.copy()
+                best_chunks[time_dimension] = chunks[time_dimension]
+                return best_chunks
+        if sum_sizes < 1000000:
+            return sizes
+        # determine valid values for a chunk size. A value is valid if the size can be divided by it without remainder
+        valid_chunk_sizes = []
+        for i, chunk, size in zip(range(len(chunks)), chunks, sizes):
+            # do not rechunk time dimension
+            if i == time_dimension:
+                valid_chunk_sizes.append([chunk])
+                continue
+            #handle case that the size cannot be divided evenly by the chunk
+            if size % chunk > 0:
+                if np.product(chunks) / chunk * size < 1000000:
+                    # if the size is small enough to be ingested in single chunk, take it
+                    valid_chunk_sizes.append([size])
+                else:
+                    # otherwise, give in to that we cannot chunk the data evenly
+                    valid_chunk_sizes.append(list(range(chunk, size + 1, chunk)))
+                continue
+            valid_dim_chunk_sizes = []
+            for r in range(chunk, size + 1, chunk):
+                if size % r == 0:
+                    valid_dim_chunk_sizes.append(r)
+            valid_chunk_sizes.append(valid_dim_chunk_sizes)
+        # recursively determine the chunking with the biggest size smaller than 1000000
+        chunks, chunk_size = cls._get_best_chunks(chunks, valid_chunk_sizes, chunks.copy(), 0, 0, time_dimension)
+        return chunks
+
+    @classmethod
+    def _get_best_chunks(cls, chunks, valid_sizes, best_chunks, best_chunk_size, index, time_dimension):
+        for valid_size in valid_sizes[index]:
+            test_chunks = chunks.copy()
+            test_chunks[index] = valid_size
+            if index < len(chunks) - 1:
+                test_chunks, test_chunk_size = \
+                    cls._get_best_chunks(test_chunks, valid_sizes, best_chunks, best_chunk_size, index + 1,
+                                         time_dimension)
+            else:
+                test_chunk_size = np.product(test_chunks)
+                if test_chunk_size > 1000000:
+                    break
+            if test_chunk_size > best_chunk_size:
+                best_chunk_size = test_chunk_size
+                best_chunks = test_chunks.copy()
+            elif test_chunk_size == best_chunk_size:
+                # in case two chunkings have the same size, choose the one where values are more similar
+                where = np.full(len(test_chunks), fill_value=True)
+                where[time_dimension] = False
+                test_min_chunk = np.max(test_chunks, initial=0, where=where)
+                best_min_chunk = np.max(best_chunks, initial=0, where=where)
+                if best_min_chunk > test_min_chunk:
+                    best_chunk_size = test_chunk_size
+                    best_chunks = test_chunks.copy()
+        return best_chunks, best_chunk_size
 
     @classmethod
     def _adjust_size(cls, size: int, tile_size: int) -> int:
