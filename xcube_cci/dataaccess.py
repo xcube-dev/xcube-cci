@@ -148,6 +148,7 @@ class CciOdpDataOpener(DataOpener):
                     var_descriptors.append(VariableDescriptor(var_name, var_dtype, var_dims, var_info))
             else:
                 var_descriptors.append(VariableDescriptor(var_name, '', ''))
+        ds_metadata.pop('variables')
         ds_metadata.pop('dimensions')
         ds_metadata.pop('variable_infos')
         ds_metadata.pop('attributes')
