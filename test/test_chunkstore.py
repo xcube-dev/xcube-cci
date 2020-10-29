@@ -77,7 +77,7 @@ class CciChunkStoreTest(unittest.TestCase):
         self.assertFalse('compressor' in encoding_dict)
         self.assertFalse('order' in encoding_dict)
         self.assertTrue(numpy.isnan(encoding_dict['fill_value']))
-        self.assertEqual('float32', encoding_dict['dtype'])
+        self.assertEqual('>f4', encoding_dict['dtype'])
 
     @skipIf(os.environ.get('XCUBE_DISABLE_WEB_TESTS', None) == '1', 'XCUBE_DISABLE_WEB_TESTS = 1')
     def test_get_attrs(self):

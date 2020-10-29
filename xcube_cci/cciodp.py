@@ -26,6 +26,7 @@ import copy
 import json
 import logging
 import lxml.etree as etree
+import nest_asyncio
 import numpy as np
 import os
 import random
@@ -695,9 +696,9 @@ class CciOdp:
                 var_data[var_name] = dict(size=dataset[var_name].size,
                                           chunkSize=dataset[var_name].attributes.get('_ChunkSizes'))
                 if dataset[var_name].size < 512 * 512:
-                    var_data[var_name]['data'] = \
-                        await self._get_data_from_opendap_dataset(dataset, session, var_name,
-                                                                  (slice(None, None, None),))
+                    data_in_bytes = await self._get_data_from_opendap_dataset(dataset, session, var_name,
+                                                                              (slice(None, None, None),))
+                    var_data[var_name]['data'] = np.fromstring(data_in_bytes, dtype=dataset[var_name].dtype)
                 else:
                     var_data[var_name]['data'] = []
             else:
@@ -916,10 +917,7 @@ class CciOdp:
         dataset = await self._get_opendap_dataset(session, opendap_url)
         if not dataset:
             return None
-        data = await self._get_data_from_opendap_dataset(dataset, session, var_name, dim_indexes)
-        variable_data = np.array(data, dtype=dataset[var_name].dtype.type)
-        result = variable_data.flatten().tobytes()
-        return result
+        return await self._get_data_from_opendap_dataset(dataset, session, var_name, dim_indexes)
 
     def _get_indexing(self, dataset, dimension: str, bbox: (float, float, float, float),
                       start_date: datetime, end_date: datetime):
@@ -1114,6 +1112,7 @@ class CciOdp:
                 variable_infos[fixed_key]['chunk_sizes'] = variable_infos[fixed_key]['_ChunkSizes']
                 variable_infos[fixed_key].pop('_ChunkSizes')
             variable_infos[fixed_key]['data_type'] = dataset[key].dtype.name
+            variable_infos[fixed_key]['dtype'] = str(dataset[key].dtype)
             variable_infos[fixed_key]['dimensions'] = list(dataset[key].dimensions)
             variable_infos[fixed_key]['size'] = dataset[key].size
         return variable_infos, dataset.attributes
@@ -1182,7 +1181,7 @@ class CciOdp:
             res_dict[part] = await resp.read()
             res_dict[part] = str(res_dict[part], 'utf-8')
 
-    async def _get_data_from_opendap_dataset(self, dataset, session, variable_name, slices):
+    async def _get_data_from_opendap_dataset(self, dataset, session, variable_name, slices) -> Optional[bytes]:
         proxy = dataset[variable_name].data
         if type(proxy) == list:
             proxy = proxy[0]
@@ -1198,12 +1197,8 @@ class CciOdp:
         if not resp:
             return None
         content = await resp.read()
-        dds, data = content.split(b'\nData:\n', 1)
-        dds = str(dds, 'utf-8')
-        # Parse received dataset:
-        dataset = build_dataset(dds)
-        dataset.data = unpack_data(BytesReader(data), dataset)
-        return dataset[proxy.id].data
+        size = int(np.prod([slice.stop - slice.start for slice in index if slice.stop])) * proxy.dtype.itemsize
+        return content[len(content) - size:]
 
     async def get_response(self, session: aiohttp.ClientSession, url: str) -> Optional[aiohttp.ClientResponse]:
         num_retries = self._num_retries

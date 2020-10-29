@@ -40,7 +40,7 @@ class CciOdpTest(unittest.TestCase):
         dim_indexes = (slice(None, None), slice(0, 179), slice(0, 359))
         data = cci_odp.get_data_chunk(request, dim_indexes)
         self.assertIsNotNone(data)
-        data_array = np.frombuffer(data, dtype=np.float32)
+        data_array = np.frombuffer(data, dtype='>f4')
         self.assertEqual(64261, len(data_array))
         self.assertAlmostEqual(1024.4185, data_array[-1], 4)
 
