@@ -698,14 +698,16 @@ class CciOdp:
                 if dataset[var_name].size < 512 * 512:
                     data_in_bytes = await self._get_data_from_opendap_dataset(dataset, session, var_name,
                                                                               (slice(None, None, None),))
-                    var_data[var_name]['data'] = np.fromstring(data_in_bytes, dtype=dataset[var_name].dtype)
+                    if data_in_bytes:
+                        var_data[var_name]['data'] = np.frombuffer(data_in_bytes, dtype=dataset[var_name].dtype)
+                    else:
+                        var_data[var_name]['data'] = []
                 else:
                     var_data[var_name]['data'] = []
             else:
                 var_data[var_name] = dict(size=variable_names[var_name],
-                                     chunkSize=variable_names[var_name],
-                                     data=list(range(variable_names[var_name]))
-                                     )
+                                          chunkSize=variable_names[var_name],
+                                          data=list(range(variable_names[var_name])))
         return var_data
 
     def get_earliest_start_date(self, dataset_name: str, start_time: str, end_time: str, frequency: str) -> \
