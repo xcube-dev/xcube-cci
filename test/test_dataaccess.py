@@ -7,7 +7,8 @@ from unittest import skipIf
 
 from xcube_cci.cciodp import CciOdp
 from xcube_cci.dataaccess import _get_temporal_resolution_from_id
-from xcube_cci.dataaccess import CciOdpDataOpener
+from xcube_cci.dataaccess import CciOdpCubeOpener
+from xcube_cci.dataaccess import CciOdpDatasetOpener
 from xcube_cci.dataaccess import CciOdpDataStore
 from xcube.core.normalize import normalize_dataset
 from xcube.core.store.descriptor import DatasetDescriptor
@@ -132,7 +133,7 @@ class CciOdpDataStoreTest(unittest.TestCase):
         self.assertEqual('esacci.FIRE.mon.L4.BA.MODIS.Terra.MODIS_TERRA.v5-1.grid', search_result[0].data_id)
         self.assertEqual('31D', search_result[0].time_period)
         self.assertEqual(0.25, search_result[0].spatial_res)
-        self.assertEqual('dataset', search_result[0].type_id)
+        self.assertEqual('dataset', search_result[0].type_specifier)
         self.assertEqual(('2001-01-01T00:00:00', '2019-12-31T23:59:59'), search_result[0].time_range)
 
     @skipIf(os.environ.get('XCUBE_DISABLE_WEB_TESTS', None) == '1', 'XCUBE_DISABLE_WEB_TESTS = 1')

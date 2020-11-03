@@ -20,12 +20,15 @@
 # SOFTWARE.
 
 import re
-from typing import Any, Iterator, List, Tuple
+from abc import abstractmethod
+from typing import Any, Iterator, List, Tuple, Optional
 
 import xarray as xr
 import zarr
 
 from xcube.core.normalize import normalize_dataset
+from xcube.core.store import TYPE_SPECIFIER_CUBE
+from xcube.core.store import TYPE_SPECIFIER_DATASET
 from xcube.core.store import DataDescriptor
 from xcube.core.store import DataOpener
 from xcube.core.store import DataStore
@@ -41,7 +44,8 @@ from xcube.util.jsonschema import JsonStringSchema
 from xcube_cci.cciodp import CciOdp
 from xcube_cci.chunkstore import CciChunkStore
 from xcube_cci.constants import CCI_ODD_URL
-from xcube_cci.constants import DATA_OPENER_ID
+from xcube_cci.constants import CUBE_OPENER_ID
+from xcube_cci.constants import DATASET_OPENER_ID
 from xcube_cci.constants import DEFAULT_NUM_RETRIES
 from xcube_cci.constants import DEFAULT_RETRY_BACKOFF_BASE
 from xcube_cci.constants import DEFAULT_RETRY_BACKOFF_MAX
@@ -50,8 +54,6 @@ from xcube_cci.normalize import normalize_cci_dataset
 from xcube_cci.normalize import normalize_dims_description
 from xcube_cci.normalize import normalize_variable_dims_description
 from xcube_cci.subsetting import subset_spatial
-
-DATASET_DATA_TYPE = 'dataset'
 
 CCI_ID_PATTERN = 'esacci\..+\..+\..+\..+\..+\..+\..+\..+\..+'
 CRS_PATTERN = 'http://www.opengis.net/def/crs/EPSG/0/[0-9]{4,5}'
@@ -80,10 +82,6 @@ def _normalize_dataset(ds: xr.Dataset) -> xr.Dataset:
     return ds
 
 
-def _return_input(anything: Any) -> Any:
-    return anything
-
-
 def _get_temporal_resolution_from_id(data_id: str) -> str:
     data_time_res = data_id.split('.')[2]
     time_res_items = dict(D=['days', 'day'],
@@ -100,17 +98,8 @@ def _get_temporal_resolution_from_id(data_id: str) -> str:
 class CciOdpDataOpener(DataOpener):
 
     def __init__(self,
-                 normalize_data: bool = True,
                  cci_odp: CciOdp = None):
         self._cci_odp = cci_odp
-        if normalize_data:
-            self._normalize_dims_func = normalize_dims_description
-            self._normalize_var_dims_func = normalize_variable_dims_description
-            self._normalize_dataset_func = _normalize_dataset
-        else:
-            self._normalize_dims_func = _return_input
-            self._normalize_var_dims_func = _return_input
-            self._normalize_dataset_func = _return_input
 
     def _describe_data(self, data_ids: List[str]) -> List[DataDescriptor]:
         ds_metadata_list = self._cci_odp.get_datasets_metadata(data_ids)
@@ -126,8 +115,9 @@ class CciOdpDataOpener(DataOpener):
         except ValueError:
             raise DataStoreError(f'Cannot describe metadata. "{data_id}" does not seem to be a valid identifier.')
 
+    # noinspection PyArgumentList
     def _get_data_descriptor_from_metadata(self, data_id: str, ds_metadata: dict) -> DatasetDescriptor:
-        dims = self._normalize_dims_func(ds_metadata.get('dimensions', {}))
+        dims = self._normalize_dims(ds_metadata.get('dimensions', {}))
         attrs = ds_metadata.get('attributes', {}).get('NC_GLOBAL', {})
         temporal_resolution = attrs.get('time_coverage_resolution', 'P')[1:]
         if re.match(TIME_PERIOD_PATTERN, temporal_resolution) is None:
@@ -143,7 +133,7 @@ class CciOdpDataOpener(DataOpener):
             if var_name in var_infos:
                 var_info = var_infos[var_name]
                 var_dtype = var_info['data_type']
-                var_dims = self._normalize_var_dims_func(var_info['dimensions'])
+                var_dims = self._normalize_var_dims(var_info['dimensions'])
                 if var_dims:
                     var_descriptors.append(VariableDescriptor(var_name, var_dtype, var_dims, var_info))
             else:
@@ -190,7 +180,6 @@ class CciOdpDataOpener(DataOpener):
             spatial_res=JsonNumberSchema(const=dsd.spatial_res if dsd and dsd.spatial_res else 0.0),
             time_period=JsonStringSchema(const=dsd.time_period if dsd and dsd.time_period else ''),
             crs=JsonStringSchema(const=dsd.crs if dsd and dsd.crs else '')
-
         )
         cci_schema = JsonObjectSchema(
             properties=dict(**cube_params,
@@ -238,16 +227,54 @@ class CciOdpDataOpener(DataOpener):
         subsetting_kwargs, open_params = cci_schema.process_kwargs_subset(open_params, (
             'bbox',
         ))
-        ds = self._normalize_dataset_func(ds)
+        ds = self._normalize_dataset(ds)
         if 'bbox' in subsetting_kwargs:
             ds = subset_spatial(ds, **subsetting_kwargs)
         return ds
 
+    @abstractmethod
+    def _normalize_dataset(self, ds: xr.Dataset) -> xr.Dataset:
+        pass
 
-class CciOdpDataStore(CciOdpDataOpener, DataStore):
+    @abstractmethod
+    def _normalize_dims(dims: dict) -> dict:
+        pass
+
+    @abstractmethod
+    def _normalize_var_dims(var_dims: tuple) -> Optional[tuple]:
+        pass
+
+
+class CciOdpDatasetOpener(CciOdpDataOpener):
+
+    def _normalize_dataset(self, ds: xr.Dataset) -> xr.Dataset:
+        return ds
+
+    def _normalize_dims(dims: dict) -> dict:
+        return dims
+
+    def _normalize_var_dims(var_dims: tuple) -> Optional[tuple]:
+        return var_dims
+
+
+class CciOdpCubeOpener(CciOdpDataOpener):
+
+    def _normalize_dataset(self, ds: xr.Dataset) -> xr.Dataset:
+        ds = normalize_cci_dataset(ds)
+        ds = normalize_dataset(ds)
+        return ds
+
+    def _normalize_dims(dims: dict) -> dict:
+        return normalize_dims_description(dims)
+
+    def _normalize_var_dims(var_dims: tuple) -> Optional[tuple]:
+        return normalize_variable_dims_description(var_dims)
+
+
+class CciOdpDataStore(DataStore):
 
     def __init__(self,
-                 normalize_data: bool = True,
+                 # normalize_data: bool = True,
                  **store_params):
         cci_schema = self.get_data_store_params_schema()
         cci_schema.validate_instance(store_params)
@@ -259,7 +286,12 @@ class CciOdpDataStore(CciOdpDataOpener, DataStore):
             'retry_backoff_max',
             'retry_backoff_base',
         ))
-        super().__init__(normalize_data, CciOdp(**store_kwargs, only_consider_cube_ready=normalize_data))
+        self._dataset_odp = CciOdp(**store_kwargs, only_consider_cube_ready=False)
+        self._dataset_opener = CciOdpDatasetOpener(self._dataset_odp)
+        self._cube_odp = CciOdp(**store_kwargs, only_consider_cube_ready=True)
+        self._cube_opener = CciOdpCubeOpener(self._cube_odp)
+        self._typeid_to_openerid = dict(TYPE_ID_DATASET=DATASET_OPENER_ID,
+                                        TYPE_ID_CUBE=CUBE_OPENER_ID)
 
     @property
     def description(self) -> dict:
@@ -272,6 +304,9 @@ class CciOdpDataStore(CciOdpDataOpener, DataStore):
                            datasets=datasets
                            )
         return description
+
+    def describe_data(self, data_id: str) -> DataDescriptor:
+        return self._dataset_opener.describe_data(data_id)
 
     @classmethod
     def get_data_store_params_schema(cls) -> JsonObjectSchema:
@@ -291,12 +326,23 @@ class CciOdpDataStore(CciOdpDataOpener, DataStore):
         )
 
     @classmethod
-    def get_type_ids(cls) -> Tuple[str, ...]:
-        return DATASET_DATA_TYPE,
+    def get_type_specifiers(cls) -> Tuple[str, ...]:
+        return TYPE_SPECIFIER_DATASET, TYPE_SPECIFIER_CUBE
 
-    def get_data_ids(self, type_id: str = None) -> Iterator[Tuple[str, str]]:
+    def _get_odp(self, type_id: str = None):
         self._assert_valid_type_id(type_id)
-        data_ids = self._cci_odp.dataset_names
+        if type_id == TYPE_SPECIFIER_CUBE:
+            return self._cube_odp
+        return self._dataset_odp
+
+    def _get_opener(self, opener_id: str = None):
+        self._assert_valid_opener_id(opener_id)
+        if opener_id == CUBE_OPENER_ID:
+            return self._cube_opener
+        return self._dataset_opener
+
+    def get_data_ids(self, type_specifier: str = None) -> Iterator[Tuple[str, str]]:
+        data_ids = self._get_odp(type_specifier).dataset_names
         tuples = ((data_id, self._create_human_readable_title_from_id(data_id)) for data_id in data_ids)
         return iter(tuples)
 
@@ -312,7 +358,7 @@ class CciOdpDataStore(CciOdpDataOpener, DataStore):
 
 
     def has_data(self, data_id: str) -> bool:
-        return data_id in self._cci_odp.dataset_names
+        return data_id in self._dataset_odp.dataset_names
 
     @classmethod
     def get_search_params_schema(cls) -> JsonObjectSchema:
@@ -374,35 +420,55 @@ class CciOdpDataStore(CciOdpDataOpener, DataStore):
             additional_properties=False)
         return search_schema
 
-    def search_data(self, type_id: str = None, **search_params) -> Iterator[DatasetDescriptor]:
-        self._assert_valid_type_id(type_id)
+    def search_data(self, type_specifier: str = None, **search_params) -> Iterator[DatasetDescriptor]:
+        odp = self._get_odp(type_specifier)
+        # self._assert_valid_type_id(type_id)
         search_schema = self.get_search_params_schema()
         search_schema.validate_instance(search_params)
-        search_result = self._cci_odp.search(**search_params)
+
+        # if type_id == TYPE_ID_CUBE:
+        #     search_result = self._cube_odp.search(**search_params)
+        # else:
+        search_result = odp.search(**search_params)
         data_descriptors = []
         for data_id in search_result:
             data_descriptors.append(self.describe_data(data_id))
         return iter(data_descriptors)
 
-    def get_data_opener_ids(self, data_id: str = None, type_id: str = None, ) -> Tuple[str, ...]:
-        self._assert_valid_type_id(type_id)
-        return DATA_OPENER_ID,
+    def get_data_opener_ids(self, data_id: str = None, type_specifier: str = None, ) -> Tuple[str, ...]:
+        self._assert_valid_type_id(type_specifier)
+        if type_specifier in self._typeid_to_openerid:
+            return self._typeid_to_openerid[type_specifier],
+        # if type_id == TYPE_ID_CUBE:
+        #     return CUBE_OPENER_ID,
+        # elif type_id == TYPE_ID_DATASET:
+        #     return DATASET_OPENER_ID,
+        return tuple(self._typeid_to_openerid.values())
 
     def get_open_data_params_schema(self, data_id: str = None, opener_id: str = None) -> JsonObjectSchema:
-        self._assert_valid_opener_id(opener_id)
-        return super().get_open_data_params_schema(data_id)
+        return self._get_opener(opener_id).get_open_data_params_schema(data_id)
+        # self._assert_valid_opener_id(opener_id)
+        # if opener_id == CUBE_OPENER_ID:
+        #     return self._cube_opener.get_open_data_params_schema(data_id)
+        # return self._dataset_opener.get_open_data_params_schema(data_id)
 
     def open_data(self, data_id: str, opener_id: str = None, **open_params) -> xr.Dataset:
-        self._assert_valid_opener_id(opener_id)
-        return super().open_data(data_id, **open_params)
+        return self._get_opener(opener_id).open_data(data_id)
+        # self._assert_valid_opener_id(opener_id)
+        # if opener_id == CUBE_OPENER_ID:
+        #     return self._cube_opener.open_data(data_id, **open_params)
+        # return self._dataset_opener.open_data(data_id, **open_params)
 
     #############################################################################
     # Implementation helpers
 
     def _assert_valid_type_id(self, type_id):
-        if type_id is not None and type_id != DATASET_DATA_TYPE:
-            raise DataStoreError(f'Data type identifier must be "{DATASET_DATA_TYPE}", but got "{type_id}"')
+        if type_id is not None and type_id != TYPE_SPECIFIER_DATASET and type_id != TYPE_SPECIFIER_CUBE:
+            raise DataStoreError(
+                f'Data type identifier must be "{TYPE_SPECIFIER_DATASET}" or "{TYPE_SPECIFIER_CUBE}", '
+                f'but got "{type_id}"')
 
     def _assert_valid_opener_id(self, opener_id):
-        if opener_id is not None and opener_id != DATA_OPENER_ID:
-            raise DataStoreError(f'Data opener identifier must be "{DATA_OPENER_ID}", but got "{opener_id}"')
+        if opener_id is not None and opener_id != DATASET_OPENER_ID and opener_id != CUBE_OPENER_ID:
+            raise DataStoreError(f'Data opener identifier must be "{DATASET_OPENER_ID}" or "{CUBE_OPENER_ID}",'
+                                 f'but got "{opener_id}"')
