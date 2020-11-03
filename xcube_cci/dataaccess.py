@@ -34,6 +34,7 @@ from xcube.core.store import DatasetDescriptor
 from xcube.core.store import VariableDescriptor
 from xcube.util.jsonschema import JsonArraySchema
 from xcube.util.jsonschema import JsonBooleanSchema
+from xcube.util.jsonschema import JsonDateSchema
 from xcube.util.jsonschema import JsonIntegerSchema
 from xcube.util.jsonschema import JsonNumberSchema
 from xcube.util.jsonschema import JsonObjectSchema
@@ -171,8 +172,7 @@ class CciOdpDataOpener(DataOpener):
         cube_params = dict(
             variable_names=JsonArraySchema(items=JsonStringSchema(
                 enum=[v.name for v in dsd.data_vars] if dsd and dsd.data_vars else None)),
-            time_range=JsonArraySchema(items=(JsonStringSchema(format='date-time'),
-                                              JsonStringSchema(format='date-time')))
+            time_range=JsonDateSchema.new_range()
         )
         min_lon = dsd.bbox[0] if dsd and dsd.bbox else -180
         min_lat = dsd.bbox[1] if dsd and dsd.bbox else -90
@@ -278,11 +278,11 @@ class CciOdpDataStore(CciOdpDataOpener, DataStore):
         cciodp_params = dict(
             opensearch_url=JsonStringSchema(default=OPENSEARCH_CEDA_URL),
             opensearch_description_url=JsonStringSchema(default=CCI_ODD_URL),
-            enable_warnings = JsonBooleanSchema(default=False, title='Whether to output warnings'),
-            num_retries = JsonIntegerSchema(default=DEFAULT_NUM_RETRIES, minimum=0,
-                                            title='Number of retries when requesting data fails'),
-            retry_backoff_max = JsonIntegerSchema(default=DEFAULT_RETRY_BACKOFF_MAX, minimum=0),
-            retry_backoff_base = JsonNumberSchema(default=DEFAULT_RETRY_BACKOFF_BASE, exclusive_minimum=1.0)
+            enable_warnings=JsonBooleanSchema(default=False, title='Whether to output warnings'),
+            num_retries=JsonIntegerSchema(default=DEFAULT_NUM_RETRIES, minimum=0,
+                                          title='Number of retries when requesting data fails'),
+            retry_backoff_max=JsonIntegerSchema(default=DEFAULT_RETRY_BACKOFF_MAX, minimum=0),
+            retry_backoff_base=JsonNumberSchema(default=DEFAULT_RETRY_BACKOFF_BASE, exclusive_minimum=1.0)
         )
         return JsonObjectSchema(
             properties=dict(**cciodp_params),
@@ -309,7 +309,6 @@ class CciOdpDataStore(CciOdpDataOpener, DataStore):
         version = version.replace('-', '.')
         return f'{split_id[1]} CCI: {_FREQUENCY_TO_ADJECTIVE[split_id[2]]} {split_id[5]} {split_id[3]} ' \
                f'{split_id[7]} {split_id[4]}, {version}'
-
 
     def has_data(self, data_id: str) -> bool:
         return data_id in self._cci_odp.dataset_names
