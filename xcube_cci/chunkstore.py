@@ -88,7 +88,8 @@ class RemoteChunkStore(MutableMapping, metaclass=ABCMeta):
         if not self._time_ranges:
             raise ValueError('Could not determine any valid time stamps')
 
-        t_array = np.array([s + 0.5 * (e - s) for s, e in self._time_ranges]).astype('datetime64[s]').astype(np.int64)
+        t_array = [s.to_pydatetime() + 0.5 * (e.to_pydatetime() - s.to_pydatetime()) for s, e in self._time_ranges]
+        t_array = np.array(t_array).astype('datetime64[s]').astype(np.int64)
         t_bnds_array = np.array(self._time_ranges).astype('datetime64[s]').astype(np.int64)
         time_coverage_start = self._time_ranges[0][0]
         time_coverage_end = self._time_ranges[-1][1]
