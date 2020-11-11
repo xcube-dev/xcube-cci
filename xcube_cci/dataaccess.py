@@ -69,6 +69,7 @@ _FREQUENCY_TO_ADJECTIVE = {
     'satellite-orbit-frequency': '',
     '5-days': '5 day',
     '8-days': '8 day',
+    '10-days': '10 day',
     'climatology': '',
     '13-yrs': '13 year',
     '15-days': '15 day',
