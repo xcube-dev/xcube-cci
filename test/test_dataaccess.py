@@ -44,7 +44,7 @@ class CciOdpDatasetOpenerTest(unittest.TestCase):
 
     @skipIf(os.environ.get('XCUBE_DISABLE_WEB_TESTS', None) == '1', 'XCUBE_DISABLE_WEB_TESTS = 1')
     def test_dataset_names(self):
-        self.assertTrue(len(self.opener.dataset_names) > 300)
+        self.assertTrue(len(self.opener.dataset_names) > 275)
 
     @skipIf(os.environ.get('XCUBE_DISABLE_WEB_TESTS', None) == '1', 'XCUBE_DISABLE_WEB_TESTS = 1')
     def test_describe_data(self):
@@ -112,30 +112,28 @@ class CciOdpDatasetOpenerTest(unittest.TestCase):
         self.assertFalse(schema['additionalProperties'])
 
     @skipIf(os.environ.get('XCUBE_DISABLE_WEB_TESTS', None) == '1', 'XCUBE_DISABLE_WEB_TESTS = 1')
-    @skip('Test takes long')
     def test_open_data(self):
-        dataset = self.opener.open_data('esacci.OZONE.mon.L3.NP.multi-sensor.multi-platform.MERGED.fv0002.r1',
-                                        variable_names=['surface_pressure', 'O3_du', 'O3e_du'],
+        dataset = self.opener.open_data('esacci.OZONE.mon.L3.LP.SCIAMACHY.Envisat.SCIAMACHY_ENVISAT.v0001.r1',
+                                        variable_names=['approximate_altitude', 'ozone_mixing_ratio',
+                                                        'sample_standard_deviation'],
                                         time_range=['2009-05-02', '2009-08-31'],
                                         bbox=[-10.0, 40.0, 10.0, 60.0]
                                         )
         self.assertIsNotNone(dataset)
         self.assertTrue(3, len(dataset.variables))
-        self.assertTrue('surface_pressure' in dataset.variables)
-        self.assertTrue('O3_du' in dataset.variables)
-        self.assertTrue('O3e_du' in dataset.variables)
+        self.assertTrue('approximate_altitude' in dataset.variables)
+        self.assertTrue('ozone_mixing_ratio' in dataset.variables)
+        self.assertTrue('sample_standard_deviation' in dataset.variables)
 
-        dataset = self.opener.open_data('esacci.AEROSOL.day.L3.AAI.multi-sensor.multi-platform.MSAAI.1-7.r1',
-                                        variable_names=['absorbing_aerosol_index', 'solar_zenith_angle',
-                                                        'number_of_positive_observations'],
-                                        time_range=['2009-07-02', '2009-07-05'],
-                                        bbox=[-10.0, 40.0, 10.0, 60.0]
-                                        )
+        dataset = self.opener.open_data(
+            'esacci.AEROSOL.day.L3C.AER_PRODUCTS.AATSR.Envisat.ATSR2-ENVISAT-ENS_DAILY.v2-6.r1',
+            variable_names=['AOD550', 'NMEAS'],
+            time_range=['2009-07-02', '2009-07-05'],
+            bbox=[-10.0, 40.0, 10.0, 60.0])
         self.assertIsNotNone(dataset)
-        self.assertTrue(3, len(dataset.variables))
-        self.assertTrue('absorbing_aerosol_index' in dataset.variables)
-        self.assertTrue('solar_zenith_angle' in dataset.variables)
-        self.assertTrue('number_of_positive_observations' in dataset.variables)
+        self.assertTrue(2, len(dataset.variables))
+        self.assertTrue('AOD550' in dataset.variables)
+        self.assertTrue('NMEAS' in dataset.variables)
 
 
 class CciOdpCubeOpenerTest(unittest.TestCase):
@@ -194,28 +192,27 @@ class CciOdpCubeOpenerTest(unittest.TestCase):
         self.assertFalse(schema['additionalProperties'])
 
     @skipIf(os.environ.get('XCUBE_DISABLE_WEB_TESTS', None) == '1', 'XCUBE_DISABLE_WEB_TESTS = 1')
-    @skip('Test takes long')
     def test_open_data(self):
         with self.assertRaises(DataStoreError) as dse:
-            self.opener.open_data('esacci.OZONE.mon.L3.NP.multi-sensor.multi-platform.MERGED.fv0002.r1',
-                                  variable_names=['surface_pressure', 'O3_du', 'O3e_du'],
-                                  time_range=['2009-05-02', '2009-08-31'],
+            self.opener.open_data('esacci.AEROSOL.day.L3C.AER_PRODUCTS.AATSR.Envisat.ATSR2-ENVISAT-ENS_DAILY.v2-6.r1',
+                                  variable_names=['AOD550', 'NMEAS'],
+                                  time_range=['2009-07-02', '2009-07-05'],
                                   bbox=[-10.0, 40.0, 10.0, 60.0])
         self.assertEqual('Cannot describe metadata of data resource '
-                         '"esacci.OZONE.mon.L3.NP.multi-sensor.multi-platform.MERGED.fv0002.r1", '
+                         '"esacci.AEROSOL.day.L3C.AER_PRODUCTS.AATSR.Envisat.ATSR2-ENVISAT-ENS_DAILY.v2-6.r1", '
                          'as it cannot be accessed by data accessor "dataset[cube]:zarr:cciodp".', f'{dse.exception}')
 
-        dataset = self.opener.open_data('esacci.AEROSOL.day.L3.AAI.multi-sensor.multi-platform.MSAAI.1-7.r1',
-                                        variable_names=['absorbing_aerosol_index', 'solar_zenith_angle',
-                                                        'number_of_positive_observations'],
-                                        time_range=['2009-07-02', '2009-07-05'],
+        dataset = self.opener.open_data('esacci.OZONE.mon.L3.LP.SCIAMACHY.Envisat.SCIAMACHY_ENVISAT.v0001.r1',
+                                        variable_names=['standard_error_of_the_mean', 'ozone_mixing_ratio',
+                                                        'sample_standard_deviation'],
+                                        time_range=['2009-05-02', '2009-08-31'],
                                         bbox=[-10.0, 40.0, 10.0, 60.0]
                                         )
         self.assertIsNotNone(dataset)
         self.assertTrue(3, len(dataset.variables))
-        self.assertTrue('absorbing_aerosol_index' in dataset.variables)
-        self.assertTrue('solar_zenith_angle' in dataset.variables)
-        self.assertTrue('number_of_positive_observations' in dataset.variables)
+        self.assertTrue('standard_error_of_the_mean' in dataset.variables)
+        self.assertTrue('ozone_mixing_ratio' in dataset.variables)
+        self.assertTrue('sample_standard_deviation' in dataset.variables)
 
 class CciOdpDataStoreTest(unittest.TestCase):
 
@@ -272,25 +269,24 @@ class CciOdpDataStoreTest(unittest.TestCase):
         self.assertTrue('platform' in search_schema['properties'])
 
     @skipIf(os.environ.get('XCUBE_DISABLE_WEB_TESTS', None) == '1', 'XCUBE_DISABLE_WEB_TESTS = 1')
-    @skip('Test takes long')
     def test_search(self):
-        search_result = list(self.store.search_data(ecv='FIRE', processing_level='L4', product_string='MODIS_TERRA'))
-        self.assertIsNotNone(search_result)
-        self.assertEqual(1, len(search_result))
-        self.assertIsInstance(search_result[0], DatasetDescriptor)
-        self.assertEqual(5, len(search_result[0].dims))
-        self.assertEqual(6, len(search_result[0].data_vars))
-        self.assertEqual('esacci.FIRE.mon.L4.BA.MODIS.Terra.MODIS_TERRA.v5-1.grid', search_result[0].data_id)
-        self.assertEqual('31D', search_result[0].time_period)
-        self.assertEqual(0.25, search_result[0].spatial_res)
-        self.assertEqual('dataset', search_result[0].type_specifier)
-        self.assertEqual(('2001-01-01', '2019-12-31'), search_result[0].time_range)
+        cube_search_result = list(self.store.search_data('dataset[cube]', ecv='FIRE', product_string='MODIS_TERRA'))
+        self.assertIsNotNone(cube_search_result)
+        self.assertEqual(1, len(cube_search_result))
+        self.assertIsInstance(cube_search_result[0], DatasetDescriptor)
+        self.assertEqual(5, len(cube_search_result[0].dims))
+        self.assertEqual(6, len(cube_search_result[0].data_vars))
+        self.assertEqual('esacci.FIRE.mon.L4.BA.MODIS.Terra.MODIS_TERRA.v5-1.grid', cube_search_result[0].data_id)
+        self.assertEqual('31D', cube_search_result[0].time_period)
+        self.assertEqual(0.25, cube_search_result[0].spatial_res)
+        self.assertEqual('dataset[cube]', cube_search_result[0].type_specifier)
+        self.assertEqual(('2001-01-01', '2019-12-31'), cube_search_result[0].time_range)
 
-        dataset_search_result = list(self.store.search_data('dataset', ecv='AEROSOL', frequency='month',
-                                                            processing_level='L3C'))
-        cube_search_result = list(self.store.search_data('dataset[cube]', ecv='AEROSOL', frequency='month',
-                                                         processing_level='L3C'))
-        self.assertTrue(len(cube_search_result) < len(dataset_search_result))
+        dataset_search_result = list(self.store.search_data('dataset', ecv='FIRE', product_string='MODIS_TERRA'))
+        self.assertIsNotNone(dataset_search_result)
+        self.assertEqual(2, len(dataset_search_result))
+        self.assertEqual('dataset', dataset_search_result[0].type_specifier)
+        self.assertEqual('dataset', dataset_search_result[1].type_specifier)
 
     @skipIf(os.environ.get('XCUBE_DISABLE_WEB_TESTS', None) == '1', 'XCUBE_DISABLE_WEB_TESTS = 1')
     def test_has_data(self):
@@ -475,50 +471,53 @@ class CciOdpDataStoreTest(unittest.TestCase):
         self.assertEqual('Data Resource "nonsense" is not available.', f'{dse.exception}')
 
     @skipIf(os.environ.get('XCUBE_DISABLE_WEB_TESTS', None) == '1', 'XCUBE_DISABLE_WEB_TESTS = 1')
-    @skip('Test takes long')
     def test_open_data(self):
-        dataset = self.store.open_data('esacci.OZONE.mon.L3.NP.multi-sensor.multi-platform.MERGED.fv0002.r1',
-                                       variable_names=['surface_pressure', 'O3_du', 'O3e_du'],
-                                       time_range=['2009-05-02', '2009-08-31'],
-                                       bbox=[-10.0, 40.0, 10.0, 60.0])
+        dataset = self.store.open_data('esacci.OZONE.mon.L3.LP.SCIAMACHY.Envisat.SCIAMACHY_ENVISAT.v0001.r1',
+                                       'dataset:zarr:cciodp',
+                                        variable_names=['approximate_altitude', 'ozone_mixing_ratio',
+                                                        'sample_standard_deviation'],
+                                        time_range=['2009-05-02', '2009-08-31'],
+                                        bbox=[-10.0, 40.0, 10.0, 60.0]
+                                        )
         self.assertIsNotNone(dataset)
         self.assertTrue(3, len(dataset.variables))
-        self.assertTrue('surface_pressure' in dataset.variables)
-        self.assertTrue('O3_du' in dataset.variables)
-        self.assertTrue('O3e_du' in dataset.variables)
+        self.assertTrue('approximate_altitude' in dataset.variables)
+        self.assertTrue('ozone_mixing_ratio' in dataset.variables)
+        self.assertTrue('sample_standard_deviation' in dataset.variables)
 
-        dataset = self.store.open_data('esacci.AEROSOL.day.L3.AAI.multi-sensor.multi-platform.MSAAI.1-7.r1',
-                                        variable_names=['absorbing_aerosol_index', 'solar_zenith_angle',
-                                                        'number_of_positive_observations'],
-                                        time_range=['2009-07-02', '2009-07-05'],
-                                        bbox=[-10.0, 40.0, 10.0, 60.0])
+        dataset = self.store.open_data(
+            'esacci.AEROSOL.day.L3C.AER_PRODUCTS.AATSR.Envisat.ATSR2-ENVISAT-ENS_DAILY.v2-6.r1',
+            'dataset:zarr:cciodp',
+            variable_names=['AOD550', 'NMEAS'],
+            time_range=['2009-07-02', '2009-07-05'],
+            bbox=[-10.0, 40.0, 10.0, 60.0])
         self.assertIsNotNone(dataset)
-        self.assertTrue(3, len(dataset.variables))
-        self.assertTrue('absorbing_aerosol_index' in dataset.variables)
-        self.assertTrue('solar_zenith_angle' in dataset.variables)
-        self.assertTrue('number_of_positive_observations' in dataset.variables)
+        self.assertTrue(2, len(dataset.variables))
+        self.assertTrue('AOD550' in dataset.variables)
+        self.assertTrue('NMEAS' in dataset.variables)
 
         with self.assertRaises(DataStoreError) as dse:
-            self.store.open_data('esacci.OZONE.mon.L3.NP.multi-sensor.multi-platform.MERGED.fv0002.r1',
-                                 opener_id='dataset[cube]:zarr:cciodp',
-                                 variable_names=['surface_pressure', 'O3_du', 'O3e_du'],
-                                 time_range=['2009-05-02', '2009-08-31'],
-                                 bbox=[-10.0, 40.0, 10.0, 60.0])
+            self.store.open_data('esacci.AEROSOL.day.L3C.AER_PRODUCTS.AATSR.Envisat.ATSR2-ENVISAT-ENS_DAILY.v2-6.r1',
+                                 'dataset[cube]:zarr:cciodp',
+                                  variable_names=['AOD550', 'NMEAS'],
+                                  time_range=['2009-07-02', '2009-07-05'],
+                                  bbox=[-10.0, 40.0, 10.0, 60.0])
         self.assertEqual('Cannot describe metadata of data resource '
-                         '"esacci.OZONE.mon.L3.NP.multi-sensor.multi-platform.MERGED.fv0002.r1", '
+                         '"esacci.AEROSOL.day.L3C.AER_PRODUCTS.AATSR.Envisat.ATSR2-ENVISAT-ENS_DAILY.v2-6.r1", '
                          'as it cannot be accessed by data accessor "dataset[cube]:zarr:cciodp".', f'{dse.exception}')
 
-        dataset = self.store.open_data('esacci.AEROSOL.day.L3.AAI.multi-sensor.multi-platform.MSAAI.1-7.r1',
-                                       opener_id='dataset[cube]:zarr:cciodp',
-                                       variable_names=['absorbing_aerosol_index', 'solar_zenith_angle',
-                                                       'number_of_positive_observations'],
-                                       time_range=['2009-07-02', '2009-07-05'],
-                                       bbox=[-10.0, 40.0, 10.0, 60.0])
+        dataset = self.store.open_data('esacci.OZONE.mon.L3.LP.SCIAMACHY.Envisat.SCIAMACHY_ENVISAT.v0001.r1',
+                                       'dataset[cube]:zarr:cciodp',
+                                        variable_names=['standard_error_of_the_mean', 'ozone_mixing_ratio',
+                                                        'sample_standard_deviation'],
+                                        time_range=['2009-05-02', '2009-08-31'],
+                                        bbox=[-10.0, 40.0, 10.0, 60.0]
+                                        )
         self.assertIsNotNone(dataset)
         self.assertTrue(3, len(dataset.variables))
-        self.assertTrue('absorbing_aerosol_index' in dataset.variables)
-        self.assertTrue('solar_zenith_angle' in dataset.variables)
-        self.assertTrue('number_of_positive_observations' in dataset.variables)
+        self.assertTrue('standard_error_of_the_mean' in dataset.variables)
+        self.assertTrue('ozone_mixing_ratio' in dataset.variables)
+        self.assertTrue('sample_standard_deviation' in dataset.variables)
 
 class CciDataNormalizationTest(unittest.TestCase):
 
