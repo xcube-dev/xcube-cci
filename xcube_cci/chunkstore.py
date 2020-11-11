@@ -88,7 +88,8 @@ class RemoteChunkStore(MutableMapping, metaclass=ABCMeta):
         if not self._time_ranges:
             raise ValueError('Could not determine any valid time stamps')
 
-        t_array = np.array([s + 0.5 * (e - s) for s, e in self._time_ranges]).astype('datetime64[s]').astype(np.int64)
+        t_array = [s.to_pydatetime() + 0.5 * (e.to_pydatetime() - s.to_pydatetime()) for s, e in self._time_ranges]
+        t_array = np.array(t_array).astype('datetime64[s]').astype(np.int64)
         t_bnds_array = np.array(self._time_ranges).astype('datetime64[s]').astype(np.int64)
         time_coverage_start = self._time_ranges[0][0]
         time_coverage_end = self._time_ranges[-1][1]
@@ -573,46 +574,6 @@ class CciChunkStore(RemoteChunkStore):
             start_time = datetime(year=start_time.year, month=1, day=1)
             end_time = datetime(year=end_time.year, month=12, day=31)
             delta = relativedelta(years=1)
-        elif re.compile('[0-9]*-days').search(time_period):
-            num_days = int(time_period.split('-')[0])
-            temp_start_time = datetime(start_time.year, start_time.month, start_time.day)
-            temp_start_time -= relativedelta(days=num_days - 1)
-            temp_start_time = self._cci_odp.get_earliest_start_date(dataset_id,
-                                                                    datetime.strftime(temp_start_time,
-                                                                                      _TIMESTAMP_FORMAT),
-                                                                    iso_end_time,
-                                                                    f'{num_days} days')
-            if temp_start_time:
-                start_time = temp_start_time
-            else:
-                start_time = datetime(start_time.year, start_time.month, start_time.day)
-            start_time_ordinal = start_time.toordinal()
-            end_time_ordinal = end_time.toordinal()
-            end_time_ordinal = start_time_ordinal + int(np.ceil((end_time_ordinal - start_time_ordinal) /
-                                                                float(num_days)) * num_days)
-            end_time = datetime.fromordinal(end_time_ordinal)
-            end_time += relativedelta(days=1)
-            delta = relativedelta(days=num_days)
-        elif re.compile('[0-9]*-yrs').search(time_period):
-            num_years = int(time_period.split('-')[0])
-            temp_start_time = datetime(start_time.year, start_time.month, start_time.day)
-            temp_start_time -= relativedelta(years=num_years - 1)
-            temp_start_time = self._cci_odp.get_earliest_start_date(dataset_id,
-                                                                    datetime.strftime(temp_start_time,
-                                                                                      _TIMESTAMP_FORMAT),
-                                                                    iso_end_time,
-                                                                    f'{num_years} years')
-            if temp_start_time:
-                start_time = temp_start_time
-            else:
-                start_time = datetime(start_time.year, start_time.month, start_time.day)
-            start_time_ordinal = start_time.toordinal()
-            end_time_ordinal = end_time.toordinal()
-            end_time_ordinal = start_time_ordinal + int(np.ceil((end_time_ordinal - start_time_ordinal) /
-                                                                float(num_years)) * num_years)
-            end_time = datetime.fromordinal(end_time_ordinal)
-            end_time += relativedelta(years=1)
-            delta = relativedelta(years=num_years)
         else:
             end_time = end_time.replace(hour=23, minute=59, second=59)
             end_time_str = datetime.strftime(end_time, _TIMESTAMP_FORMAT)
@@ -631,19 +592,19 @@ class CciChunkStore(RemoteChunkStore):
 
     def get_default_time_range(self, ds_id: str):
         temporal_start = self._metadata.get('temporal_coverage_start', None)
-        if not temporal_start:
-            time_frequency = self._get_time_frequency(ds_id.split('.')[2])
-            temporal_start = self._cci_odp.get_earliest_start_date(ds_id, '1000-01-01', '3000-12-31', time_frequency)
-            if not temporal_start:
-                raise ValueError("Could not determine temporal start of dataset. Please use 'time_range' parameter.")
-            temporal_start = datetime.strftime(temporal_start, _TIMESTAMP_FORMAT)
         temporal_end = self._metadata.get('temporal_coverage_end', None)
-        if not temporal_end:
-            time_frequency = self._get_time_frequency(ds_id.split('.')[2])
-            temporal_end = self._cci_odp.get_latest_end_date(ds_id, '1000-01-01', '3000-12-31', time_frequency)
+        if not temporal_start or not temporal_end:
+            time_ranges = self._cci_odp.get_time_ranges_from_data(ds_id, '1000-01-01', '3000-12-31')
+            if not temporal_start:
+                if len(time_ranges) == 0:
+                    raise ValueError(
+                        "Could not determine temporal start of dataset. Please use 'time_range' parameter.")
+                temporal_start = time_ranges[0][0]
             if not temporal_end:
-                raise ValueError("Could not determine temporal end of dataset. Please use 'time_range' parameter.")
-            temporal_end = datetime.strftime(temporal_end, _TIMESTAMP_FORMAT)
+                if len(time_ranges) == 0:
+                    raise ValueError(
+                        "Could not determine temporal end of dataset. Please use 'time_range' parameter.")
+                temporal_end = time_ranges[-1][1]
         return (temporal_start, temporal_end)
 
     def _get_time_frequency(self, time_period: str):
@@ -668,7 +629,10 @@ class CciChunkStore(RemoteChunkStore):
         return self.get_variable_data(dataset_id, dimensions)
 
     def get_variable_data(self, dataset_id: str, variables: Dict[str, int]):
-        return self._cci_odp.get_variable_data(dataset_id, variables)
+        return self._cci_odp.get_variable_data(dataset_id,
+                                               variables,
+                                               self._time_ranges[0][0].strftime(_TIMESTAMP_FORMAT),
+                                               self._time_ranges[0][1].strftime(_TIMESTAMP_FORMAT))
 
     def get_encoding(self, var_name: str) -> Dict[str, Any]:
         encoding_dict = {}

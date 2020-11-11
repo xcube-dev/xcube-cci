@@ -673,15 +673,19 @@ class CciOdp:
         time_format, start, end, timedelta = find_datetime_format(time_as_string)
         return datetime.strptime(time_as_string[start:end], time_format)
 
-    def get_variable_data(self, dataset_name: str, dimension_names: Dict[str, int]):
-        dimension_data = _run_with_session(self._get_var_data, dataset_name, dimension_names)
+    def get_variable_data(self, dataset_name: str,
+                          dimension_names: Dict[str, int],
+                          start_time: str = '1900-01-01T00:00:00',
+                          end_time: str = '3001-12-31T00:00:00'):
+        dimension_data = _run_with_session(self._get_var_data, dataset_name, dimension_names, start_time, end_time)
         return dimension_data
 
-    async def _get_var_data(self, session, dataset_name: str, variable_names: Dict[str, int]):
+    async def _get_var_data(self, session, dataset_name: str, variable_names: Dict[str, int],
+                            start_time: str, end_time: str):
         fid = await self._get_fid_for_dataset(session, dataset_name)
         request = dict(parentIdentifier=fid,
-                       startDate='1900-01-01T00:00:00',
-                       endDate='3001-12-31T00:00:00',
+                       startDate=start_time,
+                       endDate=end_time,
                        drsId=dataset_name
                        )
         opendap_url = await self._get_opendap_url(session, request)
@@ -734,32 +738,6 @@ class CciOdp:
                 if time_format:
                     start_time = datetime.strptime(start_time_string[start:end], time_format)
                     return start_time
-        return None
-
-    def get_latest_end_date(self, dataset_name: str, start_time: str, end_time: str, frequency: str) -> \
-            Optional[datetime]:
-        return _run_with_session(self._get_latest_end_date, dataset_name, start_time, end_time, frequency)
-
-    async def _get_latest_end_date(self, session, dataset_name: str, start_time: str, end_time: str,
-                                       frequency: str) -> Optional[datetime]:
-        fid = await self._get_fid_for_dataset(session, dataset_name)
-        query_args = dict(parentIdentifier=fid,
-                          startDate=start_time,
-                          endDate=end_time,
-                          frequency=frequency,
-                          drsId=dataset_name,
-                          fileFormat='.nc')
-        opendap_url = await self._get_opendap_url(session, query_args, get_latest=True)
-        if opendap_url:
-            dataset = await self._get_opendap_dataset(session, opendap_url)
-            end_time_attributes = ['time_coverage_end', 'end_date', 'stop_date']
-            attributes = dataset.attributes.get('NC_GLOBAL', {})
-            for end_time_attribute in end_time_attributes:
-                end_time_string = attributes.get(end_time_attribute, '')
-                time_format, start, end, timedelta = find_datetime_format(end_time_string)
-                if time_format:
-                    end_time = datetime.strptime(end_time_string[start:end], time_format)
-                    return end_time
         return None
 
     async def _get_feature_list(self, session, request):
@@ -820,6 +798,8 @@ class CciOdp:
                     else:
                         end_time = start_time
             if start_time:
+                start_time = pd.Timestamp(datetime.strftime(start_time, _TIMESTAMP_FORMAT))
+                end_time = pd.Timestamp(datetime.strftime(end_time, _TIMESTAMP_FORMAT))
                 sorted_features.append((start_time, end_time, opendap_url))
         sorted_features.sort(key=lambda x: x[0])
         return sorted_features
@@ -839,18 +819,8 @@ class CciOdp:
                        drsId=dataset_name,
                        fileFormat='.nc')
 
-        start_date = datetime.strptime(request['startDate'], _TIMESTAMP_FORMAT)
-        end_date = datetime.strptime(request['endDate'], _TIMESTAMP_FORMAT)
         feature_list = await self._get_feature_list(session, request)
-
-        request_time_ranges = []
-        for feature in feature_list:
-            feature_start_date = feature[0]
-            feature_end_date = feature[1]
-            if feature_end_date < start_date or feature_start_date > end_date:
-                continue
-            request_time_ranges.append((pd.Timestamp(datetime.strftime(feature_start_date, _TIMESTAMP_FORMAT)),
-                                        pd.Timestamp(datetime.strftime(feature_end_date, _TIMESTAMP_FORMAT))))
+        request_time_ranges = [feature[0:2] for feature in feature_list]
         return request_time_ranges
 
     def get_fid_for_dataset(self, dataset_name: str) -> str:

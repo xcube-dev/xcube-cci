@@ -249,7 +249,9 @@ class CciOdpTest(unittest.TestCase):
     def test_get_variable_data(self):
         cci_odp = CciOdp()
         dimension_data = cci_odp.get_variable_data('esacci.AEROSOL.day.L3C.AER_PRODUCTS.AATSR.Envisat.ORAC.04-01-.r1',
-                                                   {'latitude': 180, 'longitude': 360, 'view': 2, 'aerosol_type': 10})
+                                                   {'latitude': 180, 'longitude': 360, 'view': 2, 'aerosol_type': 10},
+                                                   '2002-08-01T00:00:00',
+                                                   '2002-08-01T00:00:00')
         self.assertIsNotNone(dimension_data)
         self.assertEqual(dimension_data['latitude']['size'], 180)
         self.assertEqual(dimension_data['latitude']['chunkSize'], 180)
