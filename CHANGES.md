@@ -12,8 +12,9 @@ dimensions will be normalized to `lat`, `lon`, `time` and possibly additional di
 Variables that cannot be normalized to use these dimensions will not be shown.
 If `normalize_data` is False, dimensions will not be changed and all data variables will be shown 
 (i.e., all variables that are not dimensionns, that are numeric and that have more than one dimension).
-* Updated setup.py [#16]()https://github.com/dcs4cop/xcube-cci/issues/16)
+* Updated setup.py [#16](https://github.com/dcs4cop/xcube-cci/issues/16)
 * Added opener parameters `time_range` and `spatial_res`
+* Support type specifiers [#18](https://github.com/dcs4cop/xcube-cci/issues/18)
 
 ## Changes in 0.5.0.
  
