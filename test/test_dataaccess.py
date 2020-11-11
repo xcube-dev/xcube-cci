@@ -288,6 +288,10 @@ class CciOdpDataStoreTest(unittest.TestCase):
         self.assertEqual('dataset', dataset_search_result[0].type_specifier)
         self.assertEqual('dataset', dataset_search_result[1].type_specifier)
 
+        geodataframe_search_result = list(self.store.search_data('geodataframe'))
+        self.assertIsNotNone(geodataframe_search_result)
+        self.assertEqual(0, len(geodataframe_search_result))
+
     @skipIf(os.environ.get('XCUBE_DISABLE_WEB_TESTS', None) == '1', 'XCUBE_DISABLE_WEB_TESTS = 1')
     def test_has_data(self):
         self.assertTrue(self.store.has_data('esacci.FIRE.mon.L4.BA.MODIS.Terra.MODIS_TERRA.v5-1.grid'))

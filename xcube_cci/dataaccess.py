@@ -467,7 +467,8 @@ class CciOdpDataStore(DataStore):
         return search_schema
 
     def search_data(self, type_specifier: str = None, **search_params) -> Iterator[DatasetDescriptor]:
-        self._assert_valid_type_specifier(type_specifier)
+        if not self._is_valid_type_specifier(type_specifier):
+            return iter([])
         search_schema = self.get_search_params_schema()
         search_schema.validate_instance(search_params)
         opener = self._get_opener(type_specifier=type_specifier)
@@ -498,10 +499,12 @@ class CciOdpDataStore(DataStore):
     # Implementation helpers
 
     @classmethod
+    def _is_valid_type_specifier(cls, type_specifier: str) -> bool:
+        return type_specifier is None or TYPE_SPECIFIER_CUBE.satisfies(type_specifier)
+
+    @classmethod
     def _assert_valid_type_specifier(cls, type_specifier):
-        if type_specifier is not None and \
-                type_specifier != TYPE_SPECIFIER_DATASET and \
-                type_specifier != TYPE_SPECIFIER_CUBE:
+        if not cls._is_valid_type_specifier(type_specifier):
             raise DataStoreError(
                 f'Type Specifier must be "{TYPE_SPECIFIER_DATASET}" or "{TYPE_SPECIFIER_CUBE}", '
                 f'but got "{type_specifier}"')
