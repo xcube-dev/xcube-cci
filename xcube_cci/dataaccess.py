@@ -368,7 +368,7 @@ class CciOdpDataStore(DataStore):
         self._assert_valid_opener_id(opener_id)
         self._assert_valid_type_specifier(type_specifier)
         if type_specifier:
-            if TYPE_SPECIFIER_CUBE.is_compatible(type_specifier):
+            if TYPE_SPECIFIER_CUBE.is_satisfied_by(type_specifier):
                 type_opener_id = CUBE_OPENER_ID
             else:
                 type_opener_id = DATASET_OPENER_ID
@@ -478,7 +478,7 @@ class CciOdpDataStore(DataStore):
         self._assert_valid_type_specifier(type_specifier)
         available_as_cube = self.has_data(data_id, str(TYPE_SPECIFIER_CUBE))
         if type_specifier:
-            if TYPE_SPECIFIER_CUBE.is_compatible(type_specifier):
+            if TYPE_SPECIFIER_CUBE.is_satisfied_by(type_specifier):
                 if not available_as_cube:
                     raise DataStoreError(f'Data Resource "{data_id}" is not available '
                                          f'as specified type "{type_specifier}".')
