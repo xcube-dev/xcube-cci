@@ -253,8 +253,8 @@ class CciOdpDataOpener(DataOpener):
 
 class CciOdpDatasetOpener(CciOdpDataOpener):
 
-    def __init__(self):
-        super().__init__(CciOdp(only_consider_cube_ready=False), DATASET_OPENER_ID, TYPE_SPECIFIER_DATASET)
+    def __init__(self, **store_params):
+        super().__init__(CciOdp(only_consider_cube_ready=False, **store_params), DATASET_OPENER_ID, TYPE_SPECIFIER_DATASET)
 
     def _get_subsetting_params(self, min_lon:float, min_lat:float, max_lon:float, max_lat:float):
         # no subsetting allowed on non-cubes
@@ -278,8 +278,8 @@ class CciOdpDatasetOpener(CciOdpDataOpener):
 
 class CciOdpCubeOpener(CciOdpDataOpener):
 
-    def __init__(self):
-        super().__init__(CciOdp(only_consider_cube_ready=True), CUBE_OPENER_ID, TYPE_SPECIFIER_CUBE)
+    def __init__(self, **store_params):
+        super().__init__(CciOdp(only_consider_cube_ready=True, **store_params), CUBE_OPENER_ID, TYPE_SPECIFIER_CUBE)
 
     def _get_subsetting_params(self, min_lon:float, min_lat:float, max_lon:float, max_lat:float):
         return dict(
@@ -309,9 +309,7 @@ class CciOdpCubeOpener(CciOdpDataOpener):
 
 class CciOdpDataStore(DataStore):
 
-    def __init__(self,
-                 # normalize_data: bool = True,
-                 **store_params):
+    def __init__(self, **store_params):
         cci_schema = self.get_data_store_params_schema()
         cci_schema.validate_instance(store_params)
         store_kwargs, store_params = cci_schema.process_kwargs_subset(store_params, (
@@ -322,8 +320,8 @@ class CciOdpDataStore(DataStore):
             'retry_backoff_max',
             'retry_backoff_base',
         ))
-        self._dataset_opener = CciOdpDatasetOpener()
-        self._cube_opener = CciOdpCubeOpener()
+        self._dataset_opener = CciOdpDatasetOpener(**store_params)
+        self._cube_opener = CciOdpCubeOpener(**store_params)
 
     @property
     def description(self) -> dict:
