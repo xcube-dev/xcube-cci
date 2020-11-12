@@ -746,33 +746,40 @@ class CciOdp:
         start_date = datetime.strptime(start_date_str, _TIMESTAMP_FORMAT)
         end_date_str = request['endDate']
         end_date = datetime.strptime(end_date_str, _TIMESTAMP_FORMAT)
+        feature_list = []
         if ds_id not in self._features or len(self._features[ds_id]) == 0:
             self._features[ds_id] = []
-            feature_list = await self._fetch_opensearch_feature_list(session, self._opensearch_url, request)
+            await self._fetch_opensearch_feature_list(session, self._opensearch_url, feature_list,
+                                                      self._extract_times_and_opendap_url, request)
             if len(feature_list) == 0:
                 # try without dates. For some data sets, this works better
                 request.pop('startDate')
                 request.pop('endDate')
-                feature_list = await self._fetch_opensearch_feature_list(session, self._opensearch_url, request)
-            self._features[ds_id] = self._get_sorted_features(feature_list)
+                await self._fetch_opensearch_feature_list(session, self._opensearch_url, feature_list,
+                                                          self._extract_times_and_opendap_url, request)
+                feature_list.sort(key=lambda x: x[0])
+            self._features[ds_id] = feature_list
             return self._features[ds_id]
         else:
             if start_date < self._features[ds_id][0][0]:
                 request['endDate'] = datetime.strftime(self._features[ds_id][0][0], _TIMESTAMP_FORMAT)
-                leading_features = await self._fetch_opensearch_feature_list(session, self._opensearch_url, request)
-                self._features[ds_id] = self._get_sorted_features(leading_features) + self._features[ds_id]
+                await self._fetch_opensearch_feature_list(session, self._opensearch_url, feature_list,
+                                                          self._extract_times_and_opendap_url, request)
+                feature_list.sort(key=lambda x: x[0])
+                self._features[ds_id] = feature_list + self._features[ds_id]
             if end_date > self._features[ds_id][-1][1]:
                 request['startDate'] = datetime.strftime(self._features[ds_id][-1][1], _TIMESTAMP_FORMAT)
                 request['endDate'] = end_date_str
-                trailing_features = await self._fetch_opensearch_feature_list(session, self._opensearch_url, request)
-                self._features[ds_id] = self._features[ds_id] + self._get_sorted_features(trailing_features)
+                await self._fetch_opensearch_feature_list(session, self._opensearch_url, feature_list,
+                                                          self._extract_times_and_opendap_url, request)
+                feature_list.sort(key=lambda x: x[0])
+                self._features[ds_id] = self._features[ds_id] + feature_list
         start = bisect.bisect_left([feature[0] for feature in self._features[ds_id]], start_date)
         end = bisect.bisect_right([feature[1] for feature in self._features[ds_id]], end_date)
         return self._features[ds_id][start:end]
 
-    def _get_sorted_features(self, new_features: List[dict]):
-        sorted_features = []
-        for feature in new_features:
+    def _extract_times_and_opendap_url(self, features: List[Tuple], feature_list: List[Dict]):
+        for feature in feature_list:
             start_time = None
             end_time = None
             properties = feature.get('properties', {})
@@ -800,9 +807,7 @@ class CciOdp:
             if start_time:
                 start_time = pd.Timestamp(datetime.strftime(start_time, _TIMESTAMP_FORMAT))
                 end_time = pd.Timestamp(datetime.strftime(end_time, _TIMESTAMP_FORMAT))
-                sorted_features.append((start_time, end_time, opendap_url))
-        sorted_features.sort(key=lambda x: x[0])
-        return sorted_features
+                features.append((start_time, end_time, opendap_url))
 
     def get_time_ranges_from_data(self, dataset_name: str, start_time: str, end_time: str) -> \
             List[Tuple[datetime, datetime]]:
@@ -828,11 +833,7 @@ class CciOdp:
 
     async def _get_fid_for_dataset(self, session, dataset_name: str) -> str:
         await self._ensure_in_data_sources(session, [dataset_name])
-        if 'fid' in self._data_sources[dataset_name]:
-            return self._data_sources[dataset_name]['fid']
-        fid, uuid = await self._fetch_fid_and_uuid(session, self._opensearch_url, dataset_name)
-        self._data_sources[dataset_name]['fid'] = fid
-        return fid
+        return self._data_sources[dataset_name]['fid']
 
     async def _get_opendap_url(self, session, request: Dict, get_earliest: bool = False, get_latest: bool = False):
         if get_earliest and get_latest:
@@ -928,57 +929,39 @@ class CciOdp:
             return slice(start_index, end_index)
         return start_index
 
-    async def _fetch_fid_and_uuid(self, session, opensearch_url: str, dataset_id: str) -> (str, str):
-        ds_components = dataset_id.split('.')
-        query_args = dict(parentIdentifier='cci',
-                          drsId=dataset_id
-                          )
-        feature_list = await self._fetch_opensearch_feature_list(session, opensearch_url, query_args)
-        if len(feature_list) == 0:
-            raise ValueError(f'Could not find any fid for dataset {dataset_id}')
-        if len(feature_list) > 1:
-            for feature in feature_list:
-                title = feature.get("properties", {}).get("title", '')
-                if ds_components[9] in title:
-                    fid = feature.get("properties", {}).get("identifier", None)
-                    uuid = feature.get("id", "uuid=").split("uuid=")[-1]
-                    return fid, uuid
-            raise ValueError(f'Could not unambiguously determine fid for dataset {dataset_id}')
-        fid = feature_list[0].get("properties", {}).get("identifier", None)
-        uuid = feature_list[0].get("id", "uuid=").split("uuid=")[-1]
-        return fid, uuid
-
     async def _fetch_data_source_list_json(self, session, base_url, query_args) -> Sequence:
-        feature_collection_list = await self._fetch_opensearch_feature_list(session, base_url, query_args)
+        def _extender(catalogue: dict, feature_list: List[Dict]):
+            for fc in feature_list:
+                fc_props = fc.get("properties", {})
+                fc_id = fc_props.get("identifier", None)
+                if not fc_id:
+                    continue
+                catalogue[fc_id] = _get_feature_dict_from_feature(fc)
         catalogue = {}
-        for fc in feature_collection_list:
-            fc_props = fc.get("properties", {})
-            fc_id = fc_props.get("identifier", None)
-            if not fc_id:
-                continue
-            catalogue[fc_id] = _get_feature_dict_from_feature(fc)
+        await self._fetch_opensearch_feature_list(session, base_url, catalogue, _extender, query_args)
         return catalogue
 
-    async def _fetch_opensearch_feature_list(self, session, base_url, query_args) -> List:
+    async def _fetch_opensearch_feature_list(self, session, base_url, extension, extender, query_args):
         """
         Return JSON value read from Opensearch web service.
         :return:
         """
         start_page = 1
         maximum_records = 10000
-        full_feature_list = []
         total_results = await self._fetch_opensearch_feature_part_list(session, base_url, query_args,
-                                                                       full_feature_list, start_page, maximum_records)
+                                                                       start_page, maximum_records,
+                                                                       extension, extender)
         num_results = maximum_records
+        tasks = []
         while num_results < total_results:
             start_page += 1
-            await self._fetch_opensearch_feature_part_list(session, base_url, query_args, full_feature_list,
-                                                           start_page, maximum_records)
+            tasks.append(self._fetch_opensearch_feature_part_list(session, base_url, query_args,
+                                                                  start_page, maximum_records, extension, extender))
             num_results += maximum_records
-        return full_feature_list
+        await asyncio.gather(*tasks)
 
-    async def _fetch_opensearch_feature_part_list(self, session, base_url, query_args, full_feature_list, start_page,
-                                                  maximum_records) -> int:
+    async def _fetch_opensearch_feature_part_list(self, session, base_url, query_args, start_page,
+                                                  maximum_records, extension, extender) -> int:
         paging_query_args = dict(query_args or {})
         paging_query_args.update(startPage=start_page, maximumRecords=maximum_records,
                                  httpAccept='application/geo+json')
@@ -988,8 +971,9 @@ class CciOdp:
             json_text = await resp.read()
             _LOG.debug(f'Read page {start_page}')
             json_dict = json.loads(json_text.decode('utf-8'))
-            feature_list = json_dict.get("features", [])
-            full_feature_list.extend(feature_list)
+            if extender:
+                feature_list = json_dict.get("features", [])
+                extender(extension, feature_list)
             return json_dict['totalResults']
         _LOG.debug(f'Did not read page {start_page}')
 
