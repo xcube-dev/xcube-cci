@@ -20,7 +20,8 @@
 # SOFTWARE.
 
 DATA_STORE_ID = 'cciodp'
-DATA_OPENER_ID = f'dataset:zarr:{DATA_STORE_ID}'
+CUBE_OPENER_ID = f'dataset[cube]:zarr:{DATA_STORE_ID}'
+DATASET_OPENER_ID = f'dataset:zarr:{DATA_STORE_ID}'
 DATA_ARRAY_NAME = 'var_data'
 
 OPENSEARCH_CEDA_URL = "https://archive.opensearch.ceda.ac.uk/opensearch/request"
