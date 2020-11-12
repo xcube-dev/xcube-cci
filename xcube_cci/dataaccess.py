@@ -491,7 +491,7 @@ class CciOdpDataStore(DataStore):
         return self._get_opener(opener_id=opener_id).get_open_data_params_schema(data_id)
 
     def open_data(self, data_id: str, opener_id: str = None, **open_params) -> xr.Dataset:
-        return self._get_opener(opener_id=opener_id).open_data(data_id)
+        return self._get_opener(opener_id=opener_id).open_data(data_id, **open_params)
 
     #############################################################################
     # Implementation helpers

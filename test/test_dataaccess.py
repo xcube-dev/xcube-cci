@@ -120,10 +120,8 @@ class CciOdpDatasetOpenerTest(unittest.TestCase):
                                         bbox=[-10.0, 40.0, 10.0, 60.0]
                                         )
         self.assertIsNotNone(dataset)
-        self.assertTrue(3, len(dataset.variables))
-        self.assertTrue('approximate_altitude' in dataset.variables)
-        self.assertTrue('ozone_mixing_ratio' in dataset.variables)
-        self.assertTrue('sample_standard_deviation' in dataset.variables)
+        self.assertEqual({'approximate_altitude', 'ozone_mixing_ratio', 'sample_standard_deviation'},
+                         set(dataset.data_vars))
 
         dataset = self.opener.open_data(
             'esacci.AEROSOL.day.L3C.AER_PRODUCTS.AATSR.Envisat.ATSR2-ENVISAT-ENS_DAILY.v2-6.r1',
@@ -131,9 +129,7 @@ class CciOdpDatasetOpenerTest(unittest.TestCase):
             time_range=['2009-07-02', '2009-07-05'],
             bbox=[-10.0, 40.0, 10.0, 60.0])
         self.assertIsNotNone(dataset)
-        self.assertTrue(2, len(dataset.variables))
-        self.assertTrue('AOD550' in dataset.variables)
-        self.assertTrue('NMEAS' in dataset.variables)
+        self.assertEqual({'AOD550', 'NMEAS'}, set(dataset.data_vars))
 
 
 class CciOdpCubeOpenerTest(unittest.TestCase):
@@ -209,10 +205,8 @@ class CciOdpCubeOpenerTest(unittest.TestCase):
                                         bbox=[-10.0, 40.0, 10.0, 60.0]
                                         )
         self.assertIsNotNone(dataset)
-        self.assertTrue(3, len(dataset.variables))
-        self.assertTrue('standard_error_of_the_mean' in dataset.variables)
-        self.assertTrue('ozone_mixing_ratio' in dataset.variables)
-        self.assertTrue('sample_standard_deviation' in dataset.variables)
+        self.assertEqual({'standard_error_of_the_mean', 'ozone_mixing_ratio', 'sample_standard_deviation'},
+                         set(dataset.data_vars))
 
 class CciOdpDataStoreTest(unittest.TestCase):
 
@@ -484,10 +478,8 @@ class CciOdpDataStoreTest(unittest.TestCase):
                                         bbox=[-10.0, 40.0, 10.0, 60.0]
                                         )
         self.assertIsNotNone(dataset)
-        self.assertTrue(3, len(dataset.variables))
-        self.assertTrue('approximate_altitude' in dataset.variables)
-        self.assertTrue('ozone_mixing_ratio' in dataset.variables)
-        self.assertTrue('sample_standard_deviation' in dataset.variables)
+        self.assertEqual({'approximate_altitude', 'ozone_mixing_ratio', 'sample_standard_deviation'},
+                         set(dataset.data_vars))
 
         dataset = self.store.open_data(
             'esacci.AEROSOL.day.L3C.AER_PRODUCTS.AATSR.Envisat.ATSR2-ENVISAT-ENS_DAILY.v2-6.r1',
@@ -495,10 +487,7 @@ class CciOdpDataStoreTest(unittest.TestCase):
             variable_names=['AOD550', 'NMEAS'],
             time_range=['2009-07-02', '2009-07-05'],
             bbox=[-10.0, 40.0, 10.0, 60.0])
-        self.assertIsNotNone(dataset)
-        self.assertTrue(2, len(dataset.variables))
-        self.assertTrue('AOD550' in dataset.variables)
-        self.assertTrue('NMEAS' in dataset.variables)
+        self.assertEqual({'AOD550', 'NMEAS'}, set(dataset.data_vars))
 
         with self.assertRaises(DataStoreError) as dse:
             self.store.open_data('esacci.AEROSOL.day.L3C.AER_PRODUCTS.AATSR.Envisat.ATSR2-ENVISAT-ENS_DAILY.v2-6.r1',
@@ -518,10 +507,8 @@ class CciOdpDataStoreTest(unittest.TestCase):
                                         bbox=[-10.0, 40.0, 10.0, 60.0]
                                         )
         self.assertIsNotNone(dataset)
-        self.assertTrue(3, len(dataset.variables))
-        self.assertTrue('standard_error_of_the_mean' in dataset.variables)
-        self.assertTrue('ozone_mixing_ratio' in dataset.variables)
-        self.assertTrue('sample_standard_deviation' in dataset.variables)
+        self.assertEqual({'standard_error_of_the_mean', 'ozone_mixing_ratio', 'sample_standard_deviation'},
+                         set(dataset.data_vars))
 
 class CciDataNormalizationTest(unittest.TestCase):
 
