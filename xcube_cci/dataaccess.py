@@ -473,19 +473,19 @@ class CciOdpDataStore(DataStore):
         return opener.search_data(**search_params)
 
     def get_data_opener_ids(self, data_id: str = None, type_specifier: str = None, ) -> Tuple[str, ...]:
-        if not self.has_data(data_id):
-            raise DataStoreError(f'Data Resource "{data_id}" is not available.')
         self._assert_valid_type_specifier(type_specifier)
-        available_as_cube = self.has_data(data_id, str(TYPE_SPECIFIER_CUBE))
+        if data_id is not None and not self.has_data(data_id):
+            raise DataStoreError(f'Data Resource "{data_id}" is not available.')
+        may_be_cube = data_id is None or self.has_data(data_id, str(TYPE_SPECIFIER_CUBE))
         if type_specifier:
             if TYPE_SPECIFIER_CUBE.is_satisfied_by(type_specifier):
-                if not available_as_cube:
+                if not may_be_cube:
                     raise DataStoreError(f'Data Resource "{data_id}" is not available '
                                          f'as specified type "{type_specifier}".')
                 return CUBE_OPENER_ID,
-        if not available_as_cube:
-            return DATASET_OPENER_ID,
-        return DATASET_OPENER_ID, CUBE_OPENER_ID
+        if may_be_cube:
+            return DATASET_OPENER_ID, CUBE_OPENER_ID
+        return DATASET_OPENER_ID,
 
     def get_open_data_params_schema(self, data_id: str = None, opener_id: str = None) -> JsonObjectSchema:
         return self._get_opener(opener_id=opener_id).get_open_data_params_schema(data_id)

@@ -441,6 +441,8 @@ class CciOdpDataStoreTest(unittest.TestCase):
         self.assertFalse(schema['additionalProperties'])
 
     def test_get_data_opener_ids(self):
+        self.assertEqual(('dataset:zarr:cciodp', 'dataset[cube]:zarr:cciodp'),
+                         self.store.get_data_opener_ids())
         self.assertEqual(('dataset:zarr:cciodp', ),
                          self.store.get_data_opener_ids(
                              'esacci.OZONE.mon.L3.NP.multi-sensor.multi-platform.MERGED.fv0002.r1'))
