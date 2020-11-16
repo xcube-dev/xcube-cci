@@ -954,13 +954,14 @@ class CciOdp:
                                                                        start_page, maximum_records,
                                                                        extension, extender)
         num_results = maximum_records
-        tasks = []
         while num_results < total_results:
-            start_page += 1
-            tasks.append(self._fetch_opensearch_feature_part_list(session, base_url, query_args,
-                                                                  start_page, maximum_records, extension, extender))
-            num_results += maximum_records
-        await asyncio.gather(*tasks)
+            tasks = []
+            while len(tasks) < 4 and num_results < total_results:
+                start_page += 1
+                tasks.append(self._fetch_opensearch_feature_part_list(session, base_url, query_args,
+                                                                      start_page, maximum_records, extension, extender))
+                num_results += maximum_records
+            await asyncio.gather(*tasks)
 
     async def _fetch_opensearch_feature_part_list(self, session, base_url, query_args, start_page,
                                                   maximum_records, extension, extender) -> int:
