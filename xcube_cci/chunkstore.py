@@ -48,17 +48,6 @@ def _str_to_bytes(s: str):
     return bytes(s, encoding='utf-8')
 
 
-def format_millis(time: float) -> str:
-    return f'{round(time * 1000)} ms'
-
-
-def cate_observer(var_name: str = None, chunk_index=None, time_range=None, duration=None, exception=None):
-    tr = f'{time_range[0]}/{time_range[1]}'
-    data = f'{var_name};{chunk_index};{tr};{format_millis(duration)}'
-    status = f'{type(exception).__name__}({exception})' if exception else 'OK'
-    print(f'{status};{data}\n')
-
-
 # todo move this to xcube
 class RemoteChunkStore(MutableMapping, metaclass=ABCMeta):
     """
@@ -79,7 +68,6 @@ class RemoteChunkStore(MutableMapping, metaclass=ABCMeta):
             cube_params = {}
         self._variable_names = cube_params.get('variable_names', self.get_all_variable_names())
         self._observers = [observer] if observer is not None else []
-        self._observers.append(cate_observer)
         self._trace_store_calls = trace_store_calls
 
         self._dataset_name = data_id
@@ -637,7 +625,7 @@ class CciChunkStore(RemoteChunkStore):
     def get_encoding(self, var_name: str) -> Dict[str, Any]:
         encoding_dict = {}
         encoding_dict['fill_value'] = self._metadata.get('variable_infos', {}).get(var_name, {}).get('fill_value')
-        encoding_dict['dtype'] = self._metadata.get('variable_infos', {}).get(var_name, {}).get('dtype')
+        encoding_dict['dtype'] = self._metadata.get('variable_infos', {}).get(var_name, {}).get('data_type')
         return encoding_dict
 
     def get_attrs(self, var_name: str) -> Dict[str, Any]:
