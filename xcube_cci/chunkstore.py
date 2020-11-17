@@ -268,6 +268,21 @@ class RemoteChunkStore(MutableMapping, metaclass=ABCMeta):
     def _safe_int_div(cls, x: int, y: int) -> int:
         return (x + y - 1) // y
 
+    @classmethod
+    def _extract_time_as_string(cls, time: Union[pd.Timestamp, str]) -> str:
+        if isinstance(time, str):
+            time = pd.to_datetime(time, utc=True)
+        return time.tz_localize(None).isoformat()
+
+    @classmethod
+    def _extract_time_range_as_strings(cls, time_range: Union[Tuple, List]) -> (str, str):
+        if isinstance(time_range, tuple):
+            time_start, time_end = time_range
+        else:
+            time_start = time_range[0]
+            time_end = time_range[1]
+        return cls._extract_time_as_string(time_start), cls._extract_time_as_string(time_end)
+
     @abstractmethod
     def get_time_ranges(self, cube_id: str, cube_params: Mapping[str, Any]) -> List[Tuple]:
         pass
@@ -523,21 +538,6 @@ class CciChunkStore(RemoteChunkStore):
                          cube_params,
                          observer=observer,
                          trace_store_calls=trace_store_calls)
-
-    @classmethod
-    def _extract_time_as_string(cls, time: Union[pd.Timestamp, str]) -> str:
-        if isinstance(time, str):
-            time = pd.to_datetime(time, utc=True)
-        return time.tz_localize(None).isoformat()
-
-    @classmethod
-    def _extract_time_range_as_strings(cls, time_range: Union[Tuple, List]) -> (str, str):
-        if isinstance(time_range, tuple):
-            time_start, time_end = time_range
-        else:
-            time_start = time_range[0]
-            time_end = time_range[1]
-        return cls._extract_time_as_string(time_start), cls._extract_time_as_string(time_end)
 
     def _extract_time_range_as_datetime(self, time_range: Union[Tuple, List]) -> (datetime, datetime, str, str):
         iso_start_time, iso_end_time = self._extract_time_range_as_strings(time_range)
