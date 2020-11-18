@@ -109,7 +109,7 @@ class CciOdpDataOpener(DataOpener):
     def dataset_names(self) -> List[str]:
         return self._cci_odp.dataset_names
 
-    def _describe_data(self, data_ids: List[str]) -> List[DataDescriptor]:
+    def _describe_data(self, data_ids: List[str]) -> List[DatasetDescriptor]:
         ds_metadata_list = self._cci_odp.get_datasets_metadata(data_ids)
         data_descriptors = []
         for i, ds_metadata in enumerate(ds_metadata_list):
@@ -165,9 +165,7 @@ class CciOdpDataOpener(DataOpener):
 
     def search_data(self, **search_params) -> Iterator[DatasetDescriptor]:
         search_result = self._cci_odp.search(**search_params)
-        data_descriptors = []
-        for data_id in search_result:
-            data_descriptors.append(self.describe_data(data_id))
+        data_descriptors = self._describe_data(search_result)
         return iter(data_descriptors)
 
     def get_open_data_params_schema(self, data_id: str = None) -> JsonObjectSchema:
