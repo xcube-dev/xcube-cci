@@ -126,6 +126,10 @@ class CciOdpDataOpener(DataOpener):
     # noinspection PyArgumentList
     def _get_data_descriptor_from_metadata(self, data_id: str, ds_metadata: dict) -> DatasetDescriptor:
         dims = self._normalize_dims(ds_metadata.get('dimensions', {}))
+        if 'time' not in dims:
+            dims['time'] = ds_metadata.get('time_dimension_size')
+        else:
+            dims['time'] *= ds_metadata.get('time_dimension_size')
         temporal_resolution = _get_temporal_resolution_from_id(data_id)
         dataset_info = self._cci_odp.get_dataset_info(data_id, ds_metadata)
         spatial_resolution = dataset_info['lat_res']
@@ -241,7 +245,7 @@ class CciOdpDataOpener(DataOpener):
         pass
 
     @abstractmethod
-    def _normalize_var_dims(self, var_dims: tuple) -> Optional[tuple]:
+    def _normalize_var_dims(self, var_dims: List[str]) -> Optional[List[str]]:
         pass
 
 
@@ -266,8 +270,11 @@ class CciOdpDatasetOpener(CciOdpDataOpener):
     def _normalize_dims(self, dims: dict) -> dict:
         return dims
 
-    def _normalize_var_dims(self, var_dims: tuple) -> Optional[tuple]:
-        return var_dims
+    def _normalize_var_dims(self, var_dims: List[str]) -> Optional[List[str]]:
+        new_var_dims = var_dims.copy()
+        if not 'time' in new_var_dims:
+            new_var_dims.append('time')
+        return new_var_dims
 
 
 class CciOdpCubeOpener(CciOdpDataOpener):
@@ -297,7 +304,7 @@ class CciOdpCubeOpener(CciOdpDataOpener):
     def _normalize_dims(self, dims: dict) -> dict:
         return normalize_dims_description(dims)
 
-    def _normalize_var_dims(self, var_dims: tuple) -> Optional[tuple]:
+    def _normalize_var_dims(self, var_dims: List[str]) -> Optional[tuple]:
         return normalize_variable_dims_description(var_dims)
 
 

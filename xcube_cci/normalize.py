@@ -24,7 +24,7 @@ import pandas as pd
 import xarray as xr
 import warnings
 
-from typing import Optional
+from typing import List, Optional
 
 from xcube_cci.timeutil import get_timestamps_from_string
 
@@ -179,7 +179,7 @@ def normalize_dims_description(dims: dict) -> dict:
     return new_dims
 
 
-def normalize_variable_dims_description(var_dims: tuple) -> Optional[tuple]:
+def normalize_variable_dims_description(var_dims: List[str]) -> Optional[List[str]]:
     if ('lat' in var_dims and 'lon' in var_dims) or \
             ('latitude' in var_dims and 'longitude' in var_dims) or \
             ('latitude_centers' in var_dims):

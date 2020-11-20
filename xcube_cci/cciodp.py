@@ -533,26 +533,30 @@ class CciOdp:
         if 'dimensions' in data_source and 'variable_infos' in data_source and 'attributes' in data_source:
             return
         data_fid = await self._get_fid_for_dataset(session, dataset_name)
-        data_source['dimensions'], data_source['variable_infos'], data_source['attributes'] = \
+        data_source['dimensions'], data_source['variable_infos'], data_source['attributes'],\
+            data_source['time_dimension_size'] = \
             await self._fetch_variable_infos(self._opensearch_url, data_fid, session)
 
     def _get_data_var_names(self, variable_infos) -> List:
         variables = []
-        names_of_dims = ['period', 'hist1d_cla_vis006_bin_centre', 'lon_bnds', 'air_pressure', 'field_name_length',
-                         'lon', 'view', 'hist2d_cot_bin_centre', 'hist1d_cer_bin_border', 'altitude',
-                         'vegetation_class', 'hist1d_cla_vis006_bin_border', 'time_bnds', 'hist1d_ctp_bin_border',
-                         'hist1d_cot_bin_centre', 'hist1d_cot_bin_border', 'hist1d_cla_vis008_bin_centre', 'lat_bnds',
-                         'hist1d_cwp_bin_border', 'layers', 'hist1d_cer_bin_centre', 'aerosol_type',
-                         'hist1d_ctt_bin_border', 'hist1d_ctp_bin_centre', 'fieldsp1', 'time', 'hist_phase',
-                         'hist1d_cwp_bin_centre', 'hist2d_ctp_bin_border', 'lat', 'fields', 'hist2d_cot_bin_border',
-                         'hist2d_ctp_bin_centre', 'hist1d_ctt_bin_centre', 'hist1d_cla_vis008_bin_border', 'crs']
+        names_of_dims = ['period', 'hist1d_cla_vis006_bin_centre', 'lon_bnds', 'air_pressure',
+                         'field_name_length', 'lon', 'view', 'hist2d_cot_bin_centre',
+                         'hist1d_cer_bin_border', 'altitude', 'vegetation_class',
+                         'hist1d_cla_vis006_bin_border', 'time_bnds', 'hist1d_ctp_bin_border',
+                         'hist1d_cot_bin_centre', 'hist1d_cot_bin_border',
+                         'hist1d_cla_vis008_bin_centre', 'lat_bnds', 'hist1d_cwp_bin_border',
+                         'layers', 'hist1d_cer_bin_centre', 'aerosol_type',
+                         'hist1d_ctt_bin_border', 'hist1d_ctp_bin_centre', 'fieldsp1', 'time',
+                         'hist_phase', 'hist1d_cwp_bin_centre', 'hist2d_ctp_bin_border', 'lat',
+                         'fields', 'hist2d_cot_bin_border', 'hist2d_ctp_bin_centre',
+                         'hist1d_ctt_bin_centre', 'hist1d_cla_vis008_bin_border', 'crs']
         for variable in variable_infos:
             if variable in names_of_dims:
                 continue
             if len(variable_infos[variable]['dimensions']) == 0:
                 continue
-            if variable_infos[variable].get('data_type', '') not in ['uint8', 'uint16', 'uint32', 'int8', 'int16',
-                                                                     'int32', 'float32', 'float64']:
+            if variable_infos[variable].get('data_type', '') not in \
+                    ['uint8', 'uint16', 'uint32', 'int8', 'int16', 'int32', 'float32', 'float64']:
                 continue
             variables.append(variable)
         return variables
@@ -984,27 +988,39 @@ class CciOdp:
         attributes = {}
         dimensions = {}
         variable_infos = {}
-        feature = await self._fetch_feature_at(session, opensearch_url, dict(parentIdentifier=dataset_id), 1)
+        feature, time_dimension_size = \
+            await self._fetch_feature_and_num_nc_files_at(session,
+                                                          opensearch_url,
+                                                          dict(parentIdentifier=dataset_id),
+                                                          1)
         if feature is not None:
-            variable_infos, attributes = await self._get_variable_infos_from_feature(feature, session)
+            variable_infos, attributes = \
+                await self._get_variable_infos_from_feature(feature, session)
             for variable_info in variable_infos:
                 for dimension in variable_infos[variable_info]['dimensions']:
                     if not dimension in dimensions:
                         if dimension == 'bin_index':
                             dimensions[dimension] = variable_infos[variable_info]['size']
-                        elif not dimension in variable_infos and variable_info.split('_')[-1] == 'bnds':
+                        elif not dimension in variable_infos and \
+                                variable_info.split('_')[-1] == 'bnds':
                             dimensions[dimension] = 2
                         else:
-                            if dimension not in variable_infos and len(variable_infos[variable_info]['dimensions']):
+                            if dimension not in variable_infos and \
+                                    len(variable_infos[variable_info]['dimensions']):
                                 dimensions[dimension] = variable_infos[variable_info]['size']
                             else:
                                 dimensions[dimension] = variable_infos[dimension]['size']
-        return dimensions, variable_infos, attributes
+            if 'time' in dimensions:
+                time_dimension_size *= dimensions['time']
+        return dimensions, variable_infos, attributes, time_dimension_size
 
-    async def _fetch_feature_at(self, session, base_url, query_args, index) -> Optional[Dict]:
+    async def _fetch_feature_and_num_nc_files_at(self, session, base_url, query_args, index) -> \
+            Tuple[Optional[Dict], int]:
         paging_query_args = dict(query_args or {})
         maximum_records = 1
-        paging_query_args.update(startPage=index, maximumRecords=maximum_records, httpAccept='application/geo+json',
+        paging_query_args.update(startPage=index,
+                                 maximumRecords=maximum_records,
+                                 httpAccept='application/geo+json',
                                  fileFormat='.nc')
         url = base_url + '?' + urllib.parse.urlencode(paging_query_args)
         resp = await self.get_response(session, url)
@@ -1013,8 +1029,8 @@ class CciOdp:
             json_dict = json.loads(json_text.decode('utf-8'))
             feature_list = json_dict.get("features", [])
             if len(feature_list) > 0:
-                return feature_list[0]
-        return None
+                return feature_list[0], json_dict.get("totalResults", 0)
+        return None, 0
 
     async def _fetch_meta_info(self, session, odd_url: str, metadata_url: str) -> Dict:
         meta_info_dict = {}
