@@ -198,7 +198,7 @@ class CciOdpDataOpener(DataOpener):
         constant_params = dict(
             spatial_res=JsonNumberSchema(const=dsd.spatial_res if dsd and dsd.spatial_res else 0.0),
             time_period=JsonStringSchema(const=dsd.time_period if dsd and dsd.time_period else ''),
-            crs=JsonStringSchema(const=dsd.crs if dsd and dsd.crs else '')
+            crs=JsonStringSchema(const=dsd.crs if dsd and dsd.crs else 'WGS84')
         )
         cci_schema = JsonObjectSchema(
             properties=dict(**cube_params,
