@@ -19,7 +19,6 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-import re
 from abc import abstractmethod
 from typing import Any, Iterator, List, Tuple, Optional
 
@@ -127,10 +126,7 @@ class CciOdpDataOpener(DataOpener):
     # noinspection PyArgumentList
     def _get_data_descriptor_from_metadata(self, data_id: str, ds_metadata: dict) -> DatasetDescriptor:
         dims = self._normalize_dims(ds_metadata.get('dimensions', {}))
-        attrs = ds_metadata.get('attributes', {}).get('NC_GLOBAL', {})
-        temporal_resolution = attrs.get('time_coverage_resolution', 'P')[1:]
-        if re.match(TIME_PERIOD_PATTERN, temporal_resolution) is None:
-            temporal_resolution = _get_temporal_resolution_from_id(data_id)
+        temporal_resolution = _get_temporal_resolution_from_id(data_id)
         dataset_info = self._cci_odp.get_dataset_info(data_id, ds_metadata)
         spatial_resolution = dataset_info['lat_res']
         bbox = dataset_info['bbox']
@@ -154,6 +150,7 @@ class CciOdpDataOpener(DataOpener):
         ds_metadata.pop('dimensions')
         ds_metadata.pop('variable_infos')
         ds_metadata.pop('attributes')
+        attrs = ds_metadata.get('attributes', {}).get('NC_GLOBAL', {})
         attrs.update(ds_metadata)
         descriptor = DatasetDescriptor(data_id=data_id, type_specifier=self._type_specifier, dims=dims,
                                        data_vars=var_descriptors, attrs=attrs, bbox=bbox,
