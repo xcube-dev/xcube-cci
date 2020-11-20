@@ -168,14 +168,15 @@ def _normalize_missing_time(ds: xr.Dataset) -> xr.Dataset:
 
 
 def normalize_dims_description(dims: dict) -> dict:
-    if 'latitude' in dims:
-        dims['lat'] = dims.pop('latitude')
-    if 'longitude' in dims:
-        dims['lon'] = dims.pop('longitude')
-    if 'latitude_centers' in dims:
-        dims['lat'] = dims.pop('latitude_centers')
-        dims['lon'] = dims['lat'] * 2
-    return dims
+    new_dims = dims.copy()
+    if 'latitude' in new_dims:
+        new_dims['lat'] = new_dims.pop('latitude')
+    if 'longitude' in new_dims:
+        new_dims['lon'] = new_dims.pop('longitude')
+    if 'latitude_centers' in new_dims:
+        new_dims['lat'] = new_dims.pop('latitude_centers')
+        new_dims['lon'] = new_dims['lat'] * 2
+    return new_dims
 
 
 def normalize_variable_dims_description(var_dims: tuple) -> Optional[tuple]:

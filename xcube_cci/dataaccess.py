@@ -119,7 +119,7 @@ class CciOdpDataOpener(DataOpener):
     def describe_data(self, data_id: str) -> DataDescriptor:
         self._assert_valid_data_id(data_id)
         try:
-            ds_metadata = self._cci_odp.get_dataset_metadata(data_id)
+            ds_metadata = self._cci_odp.get_dataset_metadata(data_id).copy()
             return self._get_data_descriptor_from_metadata(data_id, ds_metadata)
         except ValueError:
             raise DataStoreError(f'Cannot describe metadata. "{data_id}" does not seem to be a valid identifier.')
@@ -219,8 +219,7 @@ class CciOdpDataOpener(DataOpener):
             'time_range'
         ))
         max_cache_size: int = 2 ** 30
-        cci_odp = CciOdp()
-        chunk_store = CciChunkStore(cci_odp, data_id, cube_kwargs)
+        chunk_store = CciChunkStore(self._cci_odp, data_id, cube_kwargs)
         if max_cache_size:
             chunk_store = zarr.LRUStoreCache(chunk_store, max_cache_size)
         ds = xr.open_zarr(chunk_store)
