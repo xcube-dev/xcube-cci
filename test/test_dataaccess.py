@@ -123,6 +123,9 @@ class CciOdpDatasetOpenerTest(unittest.TestCase):
         self.assertIsNotNone(dataset)
         self.assertEqual({'approximate_altitude', 'ozone_mixing_ratio', 'sample_standard_deviation'},
                          set(dataset.data_vars))
+        self.assertEqual({'time', 'air_pressure', 'latitude_centers'},
+                         set(dataset.ozone_mixing_ratio.dims))
+        self.assertEqual({1, 32, 18}, set(dataset.ozone_mixing_ratio.chunk_sizes))
 
         dataset = self.opener.open_data(
             'esacci.AEROSOL.day.L3C.AER_PRODUCTS.AATSR.Envisat.ATSR2-ENVISAT-ENS_DAILY.v2-6.r1',
@@ -131,6 +134,8 @@ class CciOdpDatasetOpenerTest(unittest.TestCase):
             bbox=[-10.0, 40.0, 10.0, 60.0])
         self.assertIsNotNone(dataset)
         self.assertEqual({'AOD550', 'NMEAS'}, set(dataset.data_vars))
+        self.assertEqual({'latitude', 'longitude', 'time'}, set(dataset.AOD550.dims))
+        self.assertEqual({180, 360, 1}, set(dataset.AOD550.chunk_sizes))
 
 
 class CciOdpCubeOpenerTest(unittest.TestCase):
@@ -209,6 +214,9 @@ class CciOdpCubeOpenerTest(unittest.TestCase):
         self.assertIsNotNone(dataset)
         self.assertEqual({'standard_error_of_the_mean', 'ozone_mixing_ratio', 'sample_standard_deviation'},
                          set(dataset.data_vars))
+        self.assertEqual({'time', 'air_pressure', 'lat', 'lon'},
+                         set(dataset.ozone_mixing_ratio.dims))
+        self.assertEqual({1, 32, 18, 36}, set(dataset.ozone_mixing_ratio.chunk_sizes))
 
 class CciOdpDataStoreTest(unittest.TestCase):
 
@@ -486,6 +494,9 @@ class CciOdpDataStoreTest(unittest.TestCase):
         self.assertIsNotNone(dataset)
         self.assertEqual({'approximate_altitude', 'ozone_mixing_ratio', 'sample_standard_deviation'},
                          set(dataset.data_vars))
+        self.assertEqual({'time', 'air_pressure', 'latitude_centers'},
+                         set(dataset.ozone_mixing_ratio.dims))
+        self.assertEqual({1, 32, 18}, set(dataset.ozone_mixing_ratio.chunk_sizes))
 
         dataset = self.store.open_data(
             'esacci.AEROSOL.day.L3C.AER_PRODUCTS.AATSR.Envisat.ATSR2-ENVISAT-ENS_DAILY.v2-6.r1',
@@ -494,6 +505,8 @@ class CciOdpDataStoreTest(unittest.TestCase):
             time_range=['2009-07-02', '2009-07-05'],
             bbox=[-10.0, 40.0, 10.0, 60.0])
         self.assertEqual({'AOD550', 'NMEAS'}, set(dataset.data_vars))
+        self.assertEqual({'latitude', 'longitude', 'time'}, set(dataset.AOD550.dims))
+        self.assertEqual({180, 360, 1}, set(dataset.AOD550.chunk_sizes))
 
         with self.assertRaises(DataStoreError) as dse:
             self.store.open_data('esacci.AEROSOL.day.L3C.AER_PRODUCTS.AATSR.Envisat.ATSR2-ENVISAT-ENS_DAILY.v2-6.r1',
@@ -515,6 +528,9 @@ class CciOdpDataStoreTest(unittest.TestCase):
         self.assertIsNotNone(dataset)
         self.assertEqual({'standard_error_of_the_mean', 'ozone_mixing_ratio', 'sample_standard_deviation'},
                          set(dataset.data_vars))
+        self.assertEqual({'time', 'air_pressure', 'lat', 'lon'},
+                         set(dataset.ozone_mixing_ratio.dims))
+        self.assertEqual({1, 32, 18, 36}, set(dataset.ozone_mixing_ratio.chunk_sizes))
 
 class CciDataNormalizationTest(unittest.TestCase):
 

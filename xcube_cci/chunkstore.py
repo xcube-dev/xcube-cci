@@ -88,10 +88,11 @@ class RemoteChunkStore(MutableMapping, metaclass=ABCMeta):
         }
 
         self._dimension_data = self.get_dimension_data(data_id)
+        self._dimension_data['time'] = {}
+        self._dimension_data['time']['size'] = len(t_array)
+        self._dimension_data['time']['data'] = t_array
         for dimension_name in self._dimension_data:
             if dimension_name == 'time':
-                self._dimension_data['time']['size'] = len(t_array)
-                self._dimension_data['time']['data'] = t_array
                 continue
             dim_attrs = self.get_attrs(dimension_name)
             dim_attrs['_ARRAY_DIMENSIONS'] = dimension_name
@@ -147,10 +148,13 @@ class RemoteChunkStore(MutableMapping, metaclass=ABCMeta):
                               f"Will omit it from the dataset.")
                 remove.append(variable_name)
                 continue
-            var_attrs.update(_ARRAY_DIMENSIONS=dimensions)
             chunk_sizes = var_attrs.get('chunk_sizes', [-1] * len(dimensions))
             if isinstance(chunk_sizes, int):
                 chunk_sizes = [chunk_sizes]
+            if not 'time' in dimensions:
+                dimensions.append('time')
+                chunk_sizes.append(1)
+            var_attrs.update(_ARRAY_DIMENSIONS=dimensions)
             sizes = []
             self._time_indexes[variable_name] = -1
             time_dimension = -1
