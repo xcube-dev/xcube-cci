@@ -51,9 +51,19 @@ def _normalize_zonal_lat_lon(ds: xr.Dataset) -> xr.Dataset:
     ds_zonal = ds_zonal.assign_coords(lon=[i + (resolution / 2) for i in np.arange(-180.0, 180.0, resolution)])
 
     for var in ds_zonal.data_vars:
-        if sorted([dim for dim in ds_zonal[var].dims]) == sorted([coord for coord in ds.coords]):
+        if 'latitude_centers' in ds_zonal[var].dims:
             ds_zonal[var] = xr.concat([ds_zonal[var] for _ in ds_zonal.lon], 'lon')
             ds_zonal[var]['lon'] = ds_zonal.lon
+            var_dims = ds_zonal[var].attrs.get('dimensions', [])
+            lat_center_index = var_dims.index('latitude_centers')
+            var_dims.remove('latitude_centers')
+            var_dims.append('lat')
+            var_dims.append('lon')
+            var_chunk_sizes = ds_zonal[var].attrs.get('chunk_sizes', [])
+            lat_chunk_size = var_chunk_sizes[lat_center_index]
+            del var_chunk_sizes[lat_center_index]
+            var_chunk_sizes.append(lat_chunk_size)
+            var_chunk_sizes.append(ds_zonal.lon.size)
     ds_zonal = ds_zonal.rename_dims({'latitude_centers': 'lat'})
     ds_zonal = ds_zonal.assign_coords(lat=ds.latitude_centers.values)
     ds_zonal = ds_zonal.drop('latitude_centers')
