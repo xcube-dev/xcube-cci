@@ -398,7 +398,7 @@ class RemoteChunkStore(MutableMapping, metaclass=ABCMeta):
             self._vfs[name + '/' + filename] = name, index
 
     def _fetch_chunk(self, var_name: str, chunk_index: Tuple[int, ...]) -> bytes:
-        request_time_range = self.request_time_range(self._time_indexes[var_name])
+        request_time_range = self.request_time_range(chunk_index[self._time_indexes[var_name]])
 
         t0 = time.perf_counter()
         try:
