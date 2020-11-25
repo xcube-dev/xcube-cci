@@ -19,6 +19,7 @@ As not all datasets can be normalized to cubes, the CciOdpCubeOpener supports a 
 * Updated setup.py [#16](https://github.com/dcs4cop/xcube-cci/issues/16)
 * Added opener parameters `time_range` and `spatial_res`
 * String-encoded variables are added to datasets as metadata
+* Updated example notebooks
 
 ## Changes in 0.5.0.
  
