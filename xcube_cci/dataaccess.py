@@ -118,13 +118,14 @@ class CciOdpDataOpener(DataOpener):
     def describe_data(self, data_id: str) -> DataDescriptor:
         self._assert_valid_data_id(data_id)
         try:
-            ds_metadata = self._cci_odp.get_dataset_metadata(data_id).copy()
+            ds_metadata = self._cci_odp.get_dataset_metadata(data_id)
             return self._get_data_descriptor_from_metadata(data_id, ds_metadata)
         except ValueError:
             raise DataStoreError(f'Cannot describe metadata. "{data_id}" does not seem to be a valid identifier.')
 
     # noinspection PyArgumentList
-    def _get_data_descriptor_from_metadata(self, data_id: str, ds_metadata: dict) -> DatasetDescriptor:
+    def _get_data_descriptor_from_metadata(self, data_id: str, metadata: dict) -> DatasetDescriptor:
+        ds_metadata = metadata.copy()
         dims = self._normalize_dims(ds_metadata.get('dimensions', {}))
         if 'time' not in dims:
             dims['time'] = ds_metadata.get('time_dimension_size')
