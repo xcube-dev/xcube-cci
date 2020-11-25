@@ -196,7 +196,7 @@ def normalize_variable_dims_description(var_dims: List[str]) -> Optional[List[st
         # dataset cannot be normalized
         # return None
         default_dims = ['time', 'lat', 'lon', 'latitude', 'longitude', 'latitude_centers']
-        if var_dims != ('time', 'lat', 'lon'):
+        if var_dims != ['time', 'lat', 'lon']:
             other_dims = []
             for dim in var_dims:
                 if dim not in default_dims:
@@ -204,5 +204,5 @@ def normalize_variable_dims_description(var_dims: List[str]) -> Optional[List[st
             new_dims = ['time', 'lat', 'lon']
             for i in range(len(other_dims)):
                 new_dims.insert(i + 1, other_dims[i])
-            var_dims = tuple(new_dims)
+            var_dims = new_dims
         return var_dims

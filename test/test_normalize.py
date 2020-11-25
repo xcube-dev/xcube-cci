@@ -140,10 +140,12 @@ class TestNormalize(TestCase):
         self.assertEqual(dims_1, normalize_variable_dims_description(dims_4))
 
         dims_5 = ['lat', 'lon', 'draeftgyhesj']
-        self.assertEqual(('time', 'draeftgyhesj', 'lat', 'lon'), normalize_variable_dims_description(dims_5))
+        self.assertEqual(['time', 'draeftgyhesj', 'lat', 'lon'],
+                         normalize_variable_dims_description(dims_5))
 
         dims_6 = ['latitude_centers', 'draeftgyhesj']
-        self.assertEqual(('time', 'draeftgyhesj', 'lat', 'lon'), normalize_variable_dims_description(dims_6))
+        self.assertEqual(['time', 'draeftgyhesj', 'lat', 'lon'],
+                         normalize_variable_dims_description(dims_6))
 
         dims_7 = ['lat', 'gyfdvtz', 'time']
         self.assertIsNone(normalize_variable_dims_description(dims_7))

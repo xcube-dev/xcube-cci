@@ -307,7 +307,7 @@ class CciOdpCubeOpener(CciOdpDataOpener):
     def _normalize_dims(self, dims: dict) -> dict:
         return normalize_dims_description(dims)
 
-    def _normalize_var_dims(self, var_dims: List[str]) -> Optional[tuple]:
+    def _normalize_var_dims(self, var_dims: List[str]) -> Optional[List[str]]:
         return normalize_variable_dims_description(var_dims)
 
 
