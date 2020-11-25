@@ -88,6 +88,17 @@ class CciOdpDatasetOpenerTest(unittest.TestCase):
         self.assertEqual(('1978-11-01', '2015-12-31'), descriptor.time_range)
         self.assertEqual('1D', descriptor.time_period)
 
+    def test_get_open_data_params_schema_no_data(self):
+        schema = self.opener.get_open_data_params_schema().to_dict()
+        self.assertIsNotNone(schema)
+        self.assertTrue('variable_names' in schema['properties'])
+        self.assertTrue('time_range' in schema['properties'])
+        self.assertTrue('bbox' in schema['properties'])
+        self.assertTrue('spatial_res' in schema['properties'])
+        self.assertTrue('time_period' in schema['properties'])
+        self.assertTrue('crs' in schema['properties'])
+        self.assertFalse(schema['additionalProperties'])
+
     @skipIf(os.environ.get('XCUBE_DISABLE_WEB_TESTS', None) == '1', 'XCUBE_DISABLE_WEB_TESTS = 1')
     def test_get_open_data_params_schema(self):
         schema = self.opener.get_open_data_params_schema(
@@ -173,6 +184,17 @@ class CciOdpCubeOpenerTest(unittest.TestCase):
         self.assertEqual(1.0, descriptor.spatial_res)
         self.assertEqual(('1978-11-01', '2015-12-31'), descriptor.time_range)
         self.assertEqual('1D', descriptor.time_period)
+
+    def test_get_open_data_params_schema_no_data(self):
+        schema = self.opener.get_open_data_params_schema().to_dict()
+        self.assertIsNotNone(schema)
+        self.assertTrue('variable_names' in schema['properties'])
+        self.assertTrue('time_range' in schema['properties'])
+        self.assertTrue('bbox' in schema['properties'])
+        self.assertTrue('spatial_res' in schema['properties'])
+        self.assertTrue('time_period' in schema['properties'])
+        self.assertTrue('crs' in schema['properties'])
+        self.assertFalse(schema['additionalProperties'])
 
     @skipIf(os.environ.get('XCUBE_DISABLE_WEB_TESTS', None) == '1', 'XCUBE_DISABLE_WEB_TESTS = 1')
     def test_get_open_data_params_schema(self):
@@ -408,6 +430,17 @@ class CciOdpDataStoreTest(unittest.TestCase):
         self.assertEqual('LC CCI: 13 year ASAR L4 Map WB, v4.0',
                          self.store._create_human_readable_title_from_data_id(
                              'esacci.LC.13-yrs.L4.WB.ASAR.Envisat.Map.4-0.r1'))
+
+    def test_get_open_data_params_schema_no_data(self):
+        schema = self.store.get_open_data_params_schema().to_dict()
+        self.assertIsNotNone(schema)
+        self.assertTrue('variable_names' in schema['properties'])
+        self.assertTrue('time_range' in schema['properties'])
+        self.assertTrue('bbox' in schema['properties'])
+        self.assertTrue('spatial_res' in schema['properties'])
+        self.assertTrue('time_period' in schema['properties'])
+        self.assertTrue('crs' in schema['properties'])
+        self.assertFalse(schema['additionalProperties'])
 
     @skipIf(os.environ.get('XCUBE_DISABLE_WEB_TESTS', None) == '1', 'XCUBE_DISABLE_WEB_TESTS = 1')
     def test_get_open_data_params_schema(self):

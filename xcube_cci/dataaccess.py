@@ -171,12 +171,14 @@ class CciOdpDataOpener(DataOpener):
         return iter(data_descriptors)
 
     def get_open_data_params_schema(self, data_id: str = None) -> JsonObjectSchema:
+        if data_id is None:
+            return self._get_open_data_params_schema()
         self._assert_valid_data_id(data_id)
-        dsd = self.describe_data(data_id) if data_id else None
+        dsd = self.describe_data(data_id)
         return self._get_open_data_params_schema(dsd)
 
     @staticmethod
-    def _get_open_data_params_schema(dsd: DataDescriptor):
+    def _get_open_data_params_schema(dsd: DataDescriptor=None):
         min_date = dsd.time_range[0] if dsd and dsd.time_range else None
         max_date = dsd.time_range[1] if dsd and dsd.time_range else None
         # noinspection PyUnresolvedReferences
