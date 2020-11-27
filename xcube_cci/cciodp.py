@@ -36,7 +36,7 @@ import urllib.parse
 import warnings
 from datetime import datetime
 from dateutil.relativedelta import relativedelta
-from typing import List, Any, Dict, Tuple, Optional, Union, Sequence
+from typing import List, Dict, Tuple, Optional, Union, Sequence
 from urllib.parse import quote
 from xcube_cci.constants import CCI_ODD_URL
 from xcube_cci.constants import DEFAULT_NUM_RETRIES
@@ -98,25 +98,24 @@ def _convert_time_from_drs_id(time_value: str) -> str:
     return time_value
 
 
-def _run_with_session(function, *params):
+def _run_with_session(async_function, *params):
     # See https://github.com/aio-libs/aiohttp/blob/master/docs/client_advanced.rst#graceful-shutdown
     loop = asyncio.get_event_loop()
-    result = loop.run_until_complete(_run_with_session_executor(function, *params))
+    result = loop.run_until_complete(_run_with_session_executor(async_function, *params))
     # Zero-sleep to allow underlying connections to close
     loop.run_until_complete(asyncio.sleep(0))
     return result
 
 
-async def _run_with_session_executor(function, *params):
+async def _run_with_session_executor(async_function, *params):
     async with aiohttp.ClientSession() as session:
-        return await function(session, *params)
+        return await async_function(session, *params)
 
 
 def _get_feature_dict_from_feature(feature: dict) -> Optional[dict]:
     fc_props = feature.get("properties", {})
-    feature_dict = {}
-    feature_dict['uuid'] = feature.get("id", "").split("=")[-1]
-    feature_dict['title'] = fc_props.get("title", "")
+    feature_dict = {'uuid': feature.get("id", "").split("=")[-1],
+                    'title': fc_props.get("title", "")}
     variables = _get_variables_from_feature(feature)
     feature_dict['variables'] = variables
     fc_props_links = fc_props.get("links", None)
@@ -160,7 +159,8 @@ def _harmonize_info_field_names(catalogue: dict, single_field_name: str, multipl
                 catalogue.pop(single_field_name)
         else:
             if catalogue[single_field_name] not in catalogue[multiple_fields_name] \
-                    and (multiple_items_name is None or catalogue[single_field_name] != multiple_items_name):
+                    and (multiple_items_name is None
+                         or catalogue[single_field_name] != multiple_items_name):
                 catalogue[multiple_fields_name].append(catalogue[single_field_name])
             catalogue.pop(single_field_name)
 
@@ -168,44 +168,52 @@ def _harmonize_info_field_names(catalogue: dict, single_field_name: str, multipl
 def _extract_metadata_from_descxml(descxml: etree.XML) -> dict:
     metadata = {}
     metadata_elems = {
-        'abstract': 'gmd:identificationInfo/gmd:MD_DataIdentification/gmd:abstract/gco:CharacterString',
-        'title': 'gmd:identificationInfo/gmd:MD_DataIdentification/gmd:citation/gmd:CI_Citation/gmd:title/'
-                 'gco:CharacterString',
-        'licences': 'gmd:identificationInfo/gmd:MD_DataIdentification/gmd:resourceConstraints/gmd:MD_Constraints/'
-                    'gmd:useLimitation/gco:CharacterString',
+        'abstract': 'gmd:identificationInfo/gmd:MD_DataIdentification/gmd:abstract/'
+                    'gco:CharacterString',
+        'title': 'gmd:identificationInfo/gmd:MD_DataIdentification/gmd:citation/gmd:CI_Citation/'
+                 'gmd:title/gco:CharacterString',
+        'licences': 'gmd:identificationInfo/gmd:MD_DataIdentification/gmd:resourceConstraints/'
+                    'gmd:MD_Constraints/gmd:useLimitation/gco:CharacterString',
         'bbox_minx': 'gmd:identificationInfo/gmd:MD_DataIdentification/gmd:extent/gmd:EX_Extent/'
-                     'gmd:geographicElement/gmd:EX_GeographicBoundingBox/gmd:westBoundLongitude/gco:Decimal',
+                     'gmd:geographicElement/gmd:EX_GeographicBoundingBox/gmd:westBoundLongitude/'
+                     'gco:Decimal',
         'bbox_miny': 'gmd:identificationInfo/gmd:MD_DataIdentification/gmd:extent/gmd:EX_Extent/'
-                     'gmd:geographicElement/gmd:EX_GeographicBoundingBox/gmd:southBoundLatitude/gco:Decimal',
+                     'gmd:geographicElement/gmd:EX_GeographicBoundingBox/gmd:southBoundLatitude/'
+                     'gco:Decimal',
         'bbox_maxx': 'gmd:identificationInfo/gmd:MD_DataIdentification/gmd:extent/gmd:EX_Extent/'
-                     'gmd:geographicElement/gmd:EX_GeographicBoundingBox/gmd:eastBoundLongitude/gco:Decimal',
+                     'gmd:geographicElement/gmd:EX_GeographicBoundingBox/gmd:eastBoundLongitude/'
+                     'gco:Decimal',
         'bbox_maxy': 'gmd:identificationInfo/gmd:MD_DataIdentification/gmd:extent/gmd:EX_Extent/'
-                     'gmd:geographicElement/gmd:EX_GeographicBoundingBox/gmd:northBoundLatitude/gco:Decimal',
-        'temporal_coverage_start': 'gmd:identificationInfo/gmd:MD_DataIdentification/gmd:extent/gmd:EX_Extent/'
-                                   'gmd:temporalElement/gmd:EX_TemporalExtent/gmd:extent/gml:TimePeriod/'
-                                   'gml:beginPosition',
-        'temporal_coverage_end': 'gmd:identificationInfo/gmd:MD_DataIdentification/gmd:extent/gmd:EX_Extent/'
-                                 'gmd:temporalElement/gmd:EX_TemporalExtent/gmd:extent/gml:TimePeriod/gml:endPosition'
+                     'gmd:geographicElement/gmd:EX_GeographicBoundingBox/gmd:northBoundLatitude/'
+                     'gco:Decimal',
+        'temporal_coverage_start': 'gmd:identificationInfo/gmd:MD_DataIdentification/gmd:extent/'
+                                   'gmd:EX_Extent/gmd:temporalElement/gmd:EX_TemporalExtent/'
+                                   'gmd:extent/gml:TimePeriod/gml:beginPosition',
+        'temporal_coverage_end': 'gmd:identificationInfo/gmd:MD_DataIdentification/gmd:extent/'
+                                 'gmd:EX_Extent/gmd:temporalElement/gmd:EX_TemporalExtent/'
+                                 'gmd:extent/gml:TimePeriod/gml:endPosition'
     }
     for identifier in metadata_elems:
         content = _get_element_content(descxml, metadata_elems[identifier])
         if content:
             metadata[identifier] = content
     metadata_elems_with_replacement = {'file_formats': [
-        'gmd:identificationInfo/gmd:MD_DataIdentification/gmd:resourceFormat/gmd:MD_Format/gmd:name/'
-        'gco:CharacterString', 'Data are in NetCDF format', '.nc']
+        'gmd:identificationInfo/gmd:MD_DataIdentification/gmd:resourceFormat/gmd:MD_Format/'
+        'gmd:name/gco:CharacterString', 'Data are in NetCDF format', '.nc']
     }
     for metadata_elem in metadata_elems_with_replacement:
-        content = _get_replaced_content_from_descxml_elem(descxml, metadata_elems_with_replacement[metadata_elem])
+        content = \
+            _get_replaced_content_from_descxml_elem(descxml,
+                                                    metadata_elems_with_replacement[metadata_elem])
         if content:
             metadata[metadata_elem] = content
     metadata_linked_elems = {
         'publication_date': ['gmd:identificationInfo/gmd:MD_DataIdentification/gmd:citation/'
-                             'gmd:CI_Citation/gmd:date/gmd:CI_Date/gmd:dateType/gmd:CI_DateTypeCode', 'publication',
-                             '../../gmd:date/gco:DateTime'],
+                             'gmd:CI_Citation/gmd:date/gmd:CI_Date/gmd:dateType/'
+                             'gmd:CI_DateTypeCode', 'publication', '../../gmd:date/gco:DateTime'],
         'creation_date': ['gmd:identificationInfo/gmd:MD_DataIdentification/gmd:citation/'
-                          'gmd:CI_Citation/gmd:date/gmd:CI_Date/gmd:dateType/gmd:CI_DateTypeCode', 'creation',
-                          '../../gmd:date/gco:DateTime']
+                          'gmd:CI_Citation/gmd:date/gmd:CI_Date/gmd:dateType/gmd:CI_DateTypeCode',
+                          'creation', '../../gmd:date/gco:DateTime']
     }
     for identifier in metadata_linked_elems:
         content = _get_linked_content_from_descxml_elem(descxml, metadata_linked_elems[identifier])
@@ -251,13 +259,16 @@ def find_datetime_format(filename: str) -> Tuple[Optional[str], int, int, relati
 
 def _extract_metadata_from_odd(odd_xml: etree.XML) -> dict:
     metadata = {}
-    metadata_names = {'ecv': ['ecv', 'ecvs'], 'frequency': ['time_frequency', 'time_frequencies'],
+    metadata_names = {'ecv': ['ecv', 'ecvs'],
+                      'frequency': ['time_frequency', 'time_frequencies'],
                       'institute': ['institute', 'institutes'],
                       'processingLevel': ['processing_level', 'processing_levels'],
                       'productString': ['product_string', 'product_strings'],
                       'productVersion': ['product_version', 'product_versions'],
-                      'dataType': ['data_type', 'data_types'], 'sensor': ['sensor_id', 'sensor_ids'],
-                      'platform': ['platform_id', 'platform_ids'], 'fileFormat': ['file_format', 'file_formats'],
+                      'dataType': ['data_type', 'data_types'],
+                      'sensor': ['sensor_id', 'sensor_ids'],
+                      'platform': ['platform_id', 'platform_ids'],
+                      'fileFormat': ['file_format', 'file_formats'],
                       'drsId': ['drs_id', 'drs_ids']}
     for param_elem in odd_xml.findall('os:Url/param:Parameter', namespaces=ODD_NS):
         if param_elem.attrib['name'] in metadata_names:
@@ -303,12 +314,38 @@ def _extract_feature_info(feature: dict) -> List:
     return [filename, start_time, end_time, file_size, urls]
 
 
+def _get_res(nc_attrs: dict, dim: str) -> float:
+    if dim == 'lat':
+        attr_name = 'geospatial_lat_resolution'
+        index = 0
+    else:
+        attr_name = 'geospatial_lon_resolution'
+        index = -1
+    for name in [attr_name, 'resolution', 'spatial_resolution']:
+        if name in nc_attrs:
+            res_attr = nc_attrs[name]
+            try:
+                if type(res_attr) == float:
+                    return res_attr
+                elif type(res_attr) == int:
+                    return float(res_attr)
+                # as we now expect to deal with a string, we try to parse a float
+                # for that, we remove any trailing units and consider that
+                # lat and lon might be given, separated by an 'x'
+                return float(res_attr.split('(')[0].split('x')[index].split('deg')[0].
+                             split('degree')[0].split('km')[0].split('m')[0])
+            except ValueError:
+                continue
+    return -1.0
+
+
 class CciOdp:
     """
     Represents the ESA CCI Open Data Portal
 
     :param opensearch_url: The base URL to the opensearch service
-    :param opensearch_description_url: The URL to a document describing the capabilities of the opensearch service
+    :param opensearch_description_url: The URL to a document describing
+    the capabilities of the opensearch service
     """
 
     def __init__(self,
@@ -329,11 +366,13 @@ class CciOdp:
         self._drs_ids = None
         self._data_sources = {}
         self._features = {}
-        eds_file = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'data/excluded_data_sources')
+        eds_file = os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                                'data/excluded_data_sources')
         with open(eds_file, 'r') as eds:
             self._excluded_data_sources = eds.read().split('\n')
         if only_consider_cube_ready:
-            ncds_file = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'data/non_cube_data_sources')
+            ncds_file = os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                                     'data/non_cube_data_sources')
             with open(ncds_file, 'r') as ncds:
                 non_cube_ready_data_sources = ncds.read().split('\n')
                 self._excluded_data_sources += non_cube_ready_data_sources
@@ -350,35 +389,16 @@ class CciOdp:
         if not dataset_metadata:
             dataset_metadata = self.get_dataset_metadata(dataset_id)
         nc_attrs = dataset_metadata.get('attributes', {}).get('NC_GLOBAL', {})
-        data_info['lat_res'] = self._get_res(nc_attrs, 'lat')
-        data_info['lon_res'] = self._get_res(nc_attrs, 'lon')
-        data_info['bbox'] = (float(dataset_metadata['bbox_minx']), float(dataset_metadata['bbox_miny']),
-                             float(dataset_metadata['bbox_maxx']), float(dataset_metadata['bbox_maxy']))
+        data_info['lat_res'] = _get_res(nc_attrs, 'lat')
+        data_info['lon_res'] = _get_res(nc_attrs, 'lon')
+        data_info['bbox'] = (float(dataset_metadata['bbox_minx']),
+                             float(dataset_metadata['bbox_miny']),
+                             float(dataset_metadata['bbox_maxx']),
+                             float(dataset_metadata['bbox_maxy']))
         data_info['temporal_coverage_start'] = dataset_metadata.get('temporal_coverage_start', '')
         data_info['temporal_coverage_end'] = dataset_metadata.get('temporal_coverage_end', '')
         data_info['var_names'] = self.var_names(dataset_id)
         return data_info
-
-    def _get_res(self, nc_attrs: dict, dim: str) -> float:
-        if dim == 'lat':
-            attr_name = 'geospatial_lat_resolution'
-            index = 0
-        else:
-            attr_name = 'geospatial_lon_resolution'
-            index = -1
-        for name in [attr_name, 'resolution', 'spatial_resolution']:
-            if name in nc_attrs:
-                res_attr = nc_attrs[name]
-                try:
-                    if type(res_attr) == float:
-                        return res_attr
-                    elif type(res_attr) == int:
-                        return float(res_attr)
-                    return float(res_attr.split('(')[0].split('x')[index].split('deg')[0].split('degree')[0].
-                                 split('km')[0].split('m')[0])
-                except ValueError:
-                    continue
-        return -1.0
 
     def get_dataset_metadata(self, dataset_id: str) -> dict:
         return self.get_datasets_metadata([dataset_id])[0]
@@ -394,7 +414,8 @@ class CciOdp:
     async def _fetch_dataset_names(self, session):
         if self._drs_ids:
             return self._drs_ids
-        meta_info_dict = await self._extract_metadata_from_odd_url(session, self._opensearch_description_url)
+        meta_info_dict = \
+            await self._extract_metadata_from_odd_url(session, self._opensearch_description_url)
         if 'drs_ids' in meta_info_dict:
             self._drs_ids = meta_info_dict['drs_ids']
             for excluded_data_source in self._excluded_data_sources:
@@ -403,11 +424,15 @@ class CciOdp:
             return self._drs_ids
         if not self._data_sources:
             self._data_sources = {}
-            catalogue = await self._fetch_data_source_list_json(session, self._opensearch_url, dict(parentIdentifier='cci'))
+            catalogue = await self._fetch_data_source_list_json(session,
+                                                                self._opensearch_url,
+                                                                dict(parentIdentifier='cci'))
             if catalogue:
                 tasks = []
                 for catalogue_item in catalogue:
-                    tasks.append(self._create_data_source(session, catalogue[catalogue_item], catalogue_item))
+                    tasks.append(self._create_data_source(session,
+                                                          catalogue[catalogue_item],
+                                                          catalogue_item))
                 await asyncio.gather(*tasks)
         return list(self._data_sources.keys())
 
@@ -433,19 +458,25 @@ class CciOdp:
         values = drs_id.split('.')
         self._adjust_json_dict_for_param(json_dict, 'time_frequency', 'time_frequencies',
                                          _convert_time_from_drs_id(values[2]))
-        self._adjust_json_dict_for_param(json_dict, 'processing_level', 'processing_levels', values[3])
+        self._adjust_json_dict_for_param(json_dict, 'processing_level', 'processing_levels',
+                                         values[3])
         self._adjust_json_dict_for_param(json_dict, 'data_type', 'data_types', values[4])
         self._adjust_json_dict_for_param(json_dict, 'sensor_id', 'sensor_ids', values[5])
         self._adjust_json_dict_for_param(json_dict, 'platform_id', 'platform_ids', values[6])
-        self._adjust_json_dict_for_param(json_dict, 'product_string', 'product_strings', values[7])
-        self._adjust_json_dict_for_param(json_dict, 'product_version', 'product_versions', values[8])
+        self._adjust_json_dict_for_param(json_dict, 'product_string', 'product_strings',
+                                         values[7])
+        self._adjust_json_dict_for_param(json_dict, 'product_version', 'product_versions',
+                                         values[8])
 
-    def _adjust_json_dict_for_param(self, json_dict: dict, single_name: str, list_name: str, param_value: str):
+    @staticmethod
+    def _adjust_json_dict_for_param(json_dict: dict, single_name: str, list_name: str,
+                                    param_value: str):
         json_dict[single_name] = param_value
         if list_name in json_dict:
             json_dict.pop(list_name)
 
-    def _get_as_list(self, meta_info: dict, single_name: str, list_name: str) -> List:
+    @staticmethod
+    def _get_as_list(meta_info: dict, single_name: str, list_name: str) -> List:
         if single_name in meta_info:
             return [meta_info[single_name]]
         if list_name in meta_info:
@@ -465,14 +496,17 @@ class CciOdp:
 
     async def _ensure_all_info_in_data_source(self, session, dataset_name: str):
         data_source = self._data_sources[dataset_name]
-        if 'dimensions' in data_source and 'variable_infos' in data_source and 'attributes' in data_source:
+        if 'dimensions' in data_source \
+                and 'variable_infos' in data_source \
+                and 'attributes' in data_source:
             return
         data_fid = await self._get_fid_for_dataset(session, dataset_name)
         data_source['dimensions'], data_source['variable_infos'], data_source['attributes'],\
             data_source['time_dimension_size'] = \
             await self._fetch_variable_infos(self._opensearch_url, data_fid, session)
 
-    def _get_data_var_names(self, variable_infos) -> List:
+    @staticmethod
+    def _get_data_var_names(variable_infos) -> List:
         variables = []
         names_of_dims = ['period', 'hist1d_cla_vis006_bin_centre', 'lon_bnds', 'air_pressure',
                          'field_name_length', 'lon', 'view', 'hist2d_cot_bin_centre',
@@ -510,8 +544,8 @@ class CciOdp:
                sensor: Optional[str] = None,
                platform: Optional[str] = None) -> List[str]:
         candidate_names = []
-        if not self._data_sources and not ecv and not frequency and not processing_level and not data_type and \
-                not product_string and not product_version:
+        if not self._data_sources and not ecv and not frequency and not processing_level \
+                and not data_type and not product_string and not product_version:
             _run_with_session(self._read_all_data_sources)
             candidate_names = self.dataset_names
         else:
@@ -519,7 +553,8 @@ class CciOdp:
                 split_dataset_name = dataset_name.split('.')
                 if ecv is not None and ecv != split_dataset_name[1]:
                     continue
-                if frequency is not None and frequency != _convert_time_from_drs_id(split_dataset_name[2]):
+                if frequency is not None and frequency != \
+                        _convert_time_from_drs_id(split_dataset_name[2]):
                     continue
                 if processing_level is not None and processing_level != split_dataset_name[3]:
                     continue
@@ -527,12 +562,14 @@ class CciOdp:
                     continue
                 if product_string is not None and product_string != split_dataset_name[7]:
                     continue
-                if product_version is not None and product_version.replace('.', '-') != split_dataset_name[8]:
+                if product_version is not None and product_version.replace('.', '-') != \
+                        split_dataset_name[8]:
                     continue
                 candidate_names.append(dataset_name)
             if len(candidate_names) == 0:
                 return []
-        if not start_date and not end_date and not institute and not sensor and not platform and not bbox:
+        if not start_date and not end_date and not institute and not sensor and not platform \
+                and not bbox:
             return candidate_names
         results = []
         if start_date:
@@ -561,11 +598,15 @@ class CciOdp:
                 if float(data_source_info['bbox_maxy']) < bbox[1]:
                     continue
             if start_date:
-                data_source_end = datetime.strptime(data_source_info['temporal_coverage_end'], _TIMESTAMP_FORMAT)
+                data_source_end = datetime.strptime(data_source_info['temporal_coverage_end'],
+                                                    _TIMESTAMP_FORMAT)
+                # noinspection PyUnboundLocalVariable
                 if converted_start_date > data_source_end:
                     continue
             if end_date:
-                data_source_start = datetime.strptime(data_source_info['temporal_coverage_start'], _TIMESTAMP_FORMAT)
+                data_source_start = datetime.strptime(data_source_info['temporal_coverage_start'],
+                                                      _TIMESTAMP_FORMAT)
+                # noinspection PyUnboundLocalVariable
                 if converted_end_date < data_source_start:
                     continue
             results.append(candidate_name)
@@ -578,7 +619,9 @@ class CciOdp:
         if catalogue:
             tasks = []
             for catalogue_item in catalogue:
-                tasks.append(self._create_data_source(session, catalogue[catalogue_item], catalogue_item))
+                tasks.append(self._create_data_source(session,
+                                                      catalogue[catalogue_item],
+                                                      catalogue_item))
             await asyncio.gather(*tasks)
 
     async def _ensure_in_data_sources(self, session, dataset_names: List[str]):
@@ -592,22 +635,28 @@ class CciOdp:
         catalogue = {}
         for dataset_name in dataset_names_to_check:
             fetch_fid_tasks.append(
-                self._fetch_data_source_list_json_and_add_to_catalogue(session, catalogue, dataset_name)
+                self._update_catalogue_with_data_source_list(session, catalogue, dataset_name)
             )
         await asyncio.gather(*fetch_fid_tasks)
         create_source_tasks = []
         for catalogue_item in catalogue:
-            create_source_tasks.append(self._create_data_source(session, catalogue[catalogue_item], catalogue_item))
+            create_source_tasks.append(self._create_data_source(session,
+                                                                catalogue[catalogue_item],
+                                                                catalogue_item))
         await asyncio.gather(*create_source_tasks)
 
-    async def _fetch_data_source_list_json_and_add_to_catalogue(self, session, catalogue: dict, dataset_name: str):
+    async def _update_catalogue_with_data_source_list(self,
+                                                      session,
+                                                      catalogue: dict,
+                                                      dataset_name: str):
         dataset_catalogue = await self._fetch_data_source_list_json(session,
                                                                     self._opensearch_url,
                                                                     dict(parentIdentifier='cci',
                                                                     drsId=dataset_name))
         catalogue.update(dataset_catalogue)
 
-    def _get_datetime_from_string(self, time_as_string: str) -> datetime:
+    @staticmethod
+    def _get_datetime_from_string(time_as_string: str) -> datetime:
         time_format, start, end, timedelta = find_datetime_format(time_as_string)
         return datetime.strptime(time_as_string[start:end], time_format)
 
@@ -615,7 +664,8 @@ class CciOdp:
                           dimension_names: Dict[str, int],
                           start_time: str = '1900-01-01T00:00:00',
                           end_time: str = '3001-12-31T00:00:00'):
-        dimension_data = _run_with_session(self._get_var_data, dataset_name, dimension_names, start_time, end_time)
+        dimension_data = _run_with_session(self._get_var_data, dataset_name, dimension_names,
+                                           start_time, end_time)
         return dimension_data
 
     async def _get_var_data(self, session, dataset_name: str, variable_names: Dict[str, int],
@@ -635,8 +685,9 @@ class CciOdp:
             return var_data
         for var_name in variable_names:
             if var_name in dataset:
-                var_data[var_name] = dict(size=dataset[var_name].size,
-                                          chunkSize=dataset[var_name].attributes.get('_ChunkSizes'))
+                var_data[var_name] = \
+                    dict(size=dataset[var_name].size,
+                         chunkSize=dataset[var_name].attributes.get('_ChunkSizes'))
                 if dataset[var_name].size < 512 * 512:
                     data = await self._get_data_from_opendap_dataset(dataset, session, var_name,
                                                                      (slice(None, None, None),))
@@ -667,30 +718,42 @@ class CciOdp:
                 # try without dates. For some data sets, this works better
                 request.pop('startDate')
                 request.pop('endDate')
-                await self._fetch_opensearch_feature_list(session, self._opensearch_url, feature_list,
-                                                          self._extract_times_and_opendap_url, request)
+                await self._fetch_opensearch_feature_list(session,
+                                                          self._opensearch_url,
+                                                          feature_list,
+                                                          self._extract_times_and_opendap_url,
+                                                          request)
                 feature_list.sort(key=lambda x: x[0])
             self._features[ds_id] = feature_list
             return self._features[ds_id]
         else:
             if start_date < self._features[ds_id][0][0]:
-                request['endDate'] = datetime.strftime(self._features[ds_id][0][0], _TIMESTAMP_FORMAT)
-                await self._fetch_opensearch_feature_list(session, self._opensearch_url, feature_list,
-                                                          self._extract_times_and_opendap_url, request)
+                request['endDate'] = datetime.strftime(self._features[ds_id][0][0],
+                                                       _TIMESTAMP_FORMAT)
+                await self._fetch_opensearch_feature_list(session,
+                                                          self._opensearch_url,
+                                                          feature_list,
+                                                          self._extract_times_and_opendap_url,
+                                                          request)
                 feature_list.sort(key=lambda x: x[0])
                 self._features[ds_id] = feature_list + self._features[ds_id]
             if end_date > self._features[ds_id][-1][1]:
-                request['startDate'] = datetime.strftime(self._features[ds_id][-1][1], _TIMESTAMP_FORMAT)
+                request['startDate'] = datetime.strftime(self._features[ds_id][-1][1],
+                                                         _TIMESTAMP_FORMAT)
                 request['endDate'] = end_date_str
-                await self._fetch_opensearch_feature_list(session, self._opensearch_url, feature_list,
-                                                          self._extract_times_and_opendap_url, request)
+                await self._fetch_opensearch_feature_list(session,
+                                                          self._opensearch_url,
+                                                          feature_list,
+                                                          self._extract_times_and_opendap_url,
+                                                          request)
                 feature_list.sort(key=lambda x: x[0])
                 self._features[ds_id] = self._features[ds_id] + feature_list
         start = bisect.bisect_left([feature[0] for feature in self._features[ds_id]], start_date)
         end = bisect.bisect_right([feature[1] for feature in self._features[ds_id]], end_date)
         return self._features[ds_id][start:end]
 
-    def _extract_times_and_opendap_url(self, features: List[Tuple], feature_list: List[Dict]):
+    @staticmethod
+    def _extract_times_and_opendap_url(features: List[Tuple], feature_list: List[Dict]):
         for feature in feature_list:
             start_time = None
             end_time = None
@@ -704,8 +767,12 @@ class CciOdp:
                 continue
             date_property = properties.get('date', None)
             if date_property:
-                start_time = datetime.strptime(date_property.split('/')[0].split('.')[0].split('+')[0], _TIMESTAMP_FORMAT)
-                end_time = datetime.strptime(date_property.split('/')[1].split('.')[0].split('+')[0], _TIMESTAMP_FORMAT)
+                split_date = date_property.split('/')
+                # remove trailing symbols from times
+                start_time = datetime.strptime(split_date[0].split('.')[0].split('+')[0],
+                                               _TIMESTAMP_FORMAT)
+                end_time = datetime.strptime(split_date[1].split('.')[0].split('+')[0],
+                                             _TIMESTAMP_FORMAT)
             else:
                 title = properties.get('title', None)
                 if title:
@@ -723,12 +790,13 @@ class CciOdp:
 
     def get_time_ranges_from_data(self, dataset_name: str, start_time: str, end_time: str) -> \
             List[Tuple[datetime, datetime]]:
-        return _run_with_session(self._get_time_ranges_from_data, dataset_name, start_time, end_time)
+        return _run_with_session(self._get_time_ranges_from_data,
+                                 dataset_name,
+                                 start_time,
+                                 end_time)
 
-    async def _get_time_ranges_from_data(self, session,
-                                                         dataset_name: str,
-                                                         start_time: str,
-                                                         end_time: str) -> List[Tuple[datetime, datetime]]:
+    async def _get_time_ranges_from_data(self, session, dataset_name: str, start_time: str,
+                                         end_time: str) -> List[Tuple[datetime, datetime]]:
         fid = await self._get_fid_for_dataset(session, dataset_name)
         request = dict(parentIdentifier=fid,
                        startDate=start_time,
@@ -747,7 +815,8 @@ class CciOdp:
         await self._ensure_in_data_sources(session, [dataset_name])
         return self._data_sources[dataset_name]['fid']
 
-    async def _get_opendap_url(self, session, request: Dict, get_earliest: bool = False, get_latest: bool = False):
+    async def _get_opendap_url(self, session, request: Dict, get_earliest: bool = False,
+                               get_latest: bool = False):
         if get_earliest and get_latest:
             raise ValueError('Not both get_earliest and get_latest may be set to true')
         request['fileFormat'] = '.nc'
@@ -776,34 +845,39 @@ class CciOdp:
         return result
 
     async def _fetch_data_source_list_json(self, session, base_url, query_args) -> Sequence:
-        def _extender(catalogue: dict, feature_list: List[Dict]):
+        def _extender(inner_catalogue: dict, feature_list: List[Dict]):
             for fc in feature_list:
                 fc_props = fc.get("properties", {})
                 fc_id = fc_props.get("identifier", None)
                 if not fc_id:
                     continue
-                catalogue[fc_id] = _get_feature_dict_from_feature(fc)
+                inner_catalogue[fc_id] = _get_feature_dict_from_feature(fc)
         catalogue = {}
-        await self._fetch_opensearch_feature_list(session, base_url, catalogue, _extender, query_args)
+        await self._fetch_opensearch_feature_list(session, base_url, catalogue, _extender,
+                                                  query_args)
         return catalogue
 
-    async def _fetch_opensearch_feature_list(self, session, base_url, extension, extender, query_args):
+    async def _fetch_opensearch_feature_list(self, session, base_url, extension, extender,
+                                             query_args):
         """
         Return JSON value read from Opensearch web service.
         :return:
         """
         start_page = 1
         maximum_records = 10000
-        total_results = await self._fetch_opensearch_feature_part_list(session, base_url, query_args,
-                                                                       start_page, maximum_records,
+        total_results = await self._fetch_opensearch_feature_part_list(session, base_url,
+                                                                       query_args, start_page,
+                                                                       maximum_records,
                                                                        extension, extender)
         num_results = maximum_records
         while num_results < total_results:
             tasks = []
             while len(tasks) < 4 and num_results < total_results:
                 start_page += 1
-                tasks.append(self._fetch_opensearch_feature_part_list(session, base_url, query_args,
-                                                                      start_page, maximum_records, extension, extender))
+                tasks.append(self._fetch_opensearch_feature_part_list(session, base_url,
+                                                                      query_args, start_page,
+                                                                      maximum_records, extension,
+                                                                      extender))
                 num_results += maximum_records
             await asyncio.gather(*tasks)
 
@@ -900,7 +974,8 @@ class CciOdp:
                 _LOG.info(f'Cannot read metadata from {descxml_url} due to parsing error.')
         return {}
 
-    async def _extract_metadata_from_odd_url(self, session: aiohttp.ClientSession, odd_url: str = None) -> dict:
+    async def _extract_metadata_from_odd_url(self, session: aiohttp.ClientSession,
+                                             odd_url: str = None) -> dict:
         if not odd_url:
             return {}
         resp = await self.get_response(session, odd_url)
@@ -914,7 +989,8 @@ class CciOdp:
         opendap_url = f"{feature_info[4]['Opendap']}"
         dataset = await self._get_opendap_dataset(session, opendap_url)
         if not dataset:
-            _LOG.warning(f'Could not extract information about variables and attributes from {opendap_url}')
+            _LOG.warning(f'Could not extract information about variables and attributes '
+                         f'from {opendap_url}')
             return {}, {}
         variable_infos = {}
         for key in dataset.keys():
@@ -1018,7 +1094,8 @@ class CciOdp:
         dataset.data = unpack_data(BytesReader(data), dataset)
         return dataset[proxy.id].data
 
-    async def get_response(self, session: aiohttp.ClientSession, url: str) -> Optional[aiohttp.ClientResponse]:
+    async def get_response(self, session: aiohttp.ClientSession, url: str) -> \
+            Optional[aiohttp.ClientResponse]:
         num_retries = self._num_retries
         retry_backoff_max = self._retry_backoff_max  # ms
         retry_backoff_base = self._retry_backoff_base
@@ -1038,7 +1115,8 @@ class CciOdp:
                 if self._enable_warnings:
                     retry_message = f'Error 429: Too Many Requests. ' \
                                     f'Attempt {i + 1} of {num_retries} to retry after ' \
-                                    f'{"%.2f" % retry_min} + {"%.2f" % retry_backoff} = {"%.2f" % retry_total} ms...'
+                                    f'{"%.2f" % retry_min} + {"%.2f" % retry_backoff} = ' \
+                                    f'{"%.2f" % retry_total} ms...'
                     warnings.warn(retry_message)
                 time.sleep(retry_total / 1000.0)
                 retry_backoff_max *= retry_backoff_base
