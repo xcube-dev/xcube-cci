@@ -10,25 +10,6 @@ from xcube_cci.cciodp import find_datetime_format, CciOdp
 class CciOdpTest(unittest.TestCase):
 
     @skipIf(os.environ.get('XCUBE_DISABLE_WEB_TESTS', None) == '1', 'XCUBE_DISABLE_WEB_TESTS = 1')
-    def test_get_data(self):
-        cci_odp = CciOdp()
-        request = dict(parentIdentifier='4eb4e801424a47f7b77434291921f889',
-                       startDate='1997-05-01T00:00:00',
-                       endDate='1997-05-01T00:00:00',
-                       varNames=['surface_pressure', 'O3e_du_tot'],
-                       drsId='esacci.OZONE.mon.L3.NP.multi-sensor.multi-platform.MERGED.fv0002.r1'
-                       )
-        bbox = (-10.0, 40.0, 10.0, 60.0)
-        data = cci_odp.get_data(request, bbox, {}, {})
-        self.assertIsNotNone(data)
-        data_array = np.frombuffer(data, dtype=np.float32)
-        self.assertEqual(800, len(data_array))
-        self.assertAlmostEqual(1003.18524, data_array[0], 5)
-        self.assertAlmostEqual(960.9344, data_array[399], 4)
-        self.assertAlmostEqual(0.63038087, data_array[400], 8)
-        self.assertAlmostEqual(0.659591, data_array[799], 6)
-
-    @skipIf(os.environ.get('XCUBE_DISABLE_WEB_TESTS', None) == '1', 'XCUBE_DISABLE_WEB_TESTS = 1')
     def test_get_data_chunk(self):
         cci_odp = CciOdp()
         request = dict(parentIdentifier='4eb4e801424a47f7b77434291921f889',
@@ -201,26 +182,6 @@ class CciOdpTest(unittest.TestCase):
         self.assertEqual(0, timedelta.hours)
         self.assertEqual(0, timedelta.minutes)
         self.assertEqual(-1, timedelta.seconds)
-
-    def test_convert_time_data(self):
-        cci_odp = CciOdp()
-        converted_time_data = cci_odp._convert_time_data([39407, 22403, 25100], 'days since 1900-01-01 00:00:00')
-        self.assertEqual(3, len(converted_time_data))
-        self.assertEqual('2007-11-23', datetime.strftime(converted_time_data[0], '%Y-%m-%d'))
-        self.assertEqual('1961-05-04', datetime.strftime(converted_time_data[1], '%Y-%m-%d'))
-        self.assertEqual('1968-09-21', datetime.strftime(converted_time_data[2], '%Y-%m-%d'))
-
-        converted_time_data = cci_odp._convert_time_data([39407, 22403, 25100], 'days since 1901-01-01 00:00:00')
-        self.assertEqual(3, len(converted_time_data))
-        self.assertEqual('2008-11-22', datetime.strftime(converted_time_data[0], '%Y-%m-%d'))
-        self.assertEqual('1962-05-04', datetime.strftime(converted_time_data[1], '%Y-%m-%d'))
-        self.assertEqual('1969-09-21', datetime.strftime(converted_time_data[2], '%Y-%m-%d'))
-
-        converted_time_data = cci_odp._convert_time_data([39407, 22403, 25100], 'days since')
-        self.assertEqual(3, len(converted_time_data))
-        self.assertEqual(39407, converted_time_data[0])
-        self.assertEqual(22403, converted_time_data[1])
-        self.assertEqual(25100, converted_time_data[2])
 
     @skipIf(os.environ.get('XCUBE_DISABLE_WEB_TESTS', None) == '1', 'XCUBE_DISABLE_WEB_TESTS = 1')
     def test_get_variable_data(self):

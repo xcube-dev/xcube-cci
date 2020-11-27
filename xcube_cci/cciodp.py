@@ -72,13 +72,14 @@ DESC_NS = {'gmd': 'http://www.isotc211.org/2005/gmd',
 
 _TIMESTAMP_FORMAT = "%Y-%m-%dT%H:%M:%S"
 
-_RE_TO_DATETIME_FORMATS = patterns = [(re.compile(14 * '\\d'), '%Y%m%d%H%M%S', relativedelta()),
-                                      (re.compile(12 * '\\d'), '%Y%m%d%H%M', relativedelta(minutes=1, seconds=-1)),
-                                      (re.compile(8 * '\\d'), '%Y%m%d', relativedelta(days=1, seconds=-1)),
-                                      (re.compile(4 * '\\d' + '-' + 2 * '\\d' + '-' + 2 * '\\d'), '%Y-%m-%d',
-                                       relativedelta(days=1, seconds=-1)),
-                                      (re.compile(6 * '\\d'), '%Y%m', relativedelta(months=1, seconds=-1)),
-                                      (re.compile(4 * '\\d'), '%Y', relativedelta(years=1, seconds=-1))]
+_RE_TO_DATETIME_FORMATS = \
+    [(re.compile(14 * '\\d'), '%Y%m%d%H%M%S', relativedelta()),
+     (re.compile(12 * '\\d'), '%Y%m%d%H%M', relativedelta(minutes=1, seconds=-1)),
+     (re.compile(8 * '\\d'), '%Y%m%d', relativedelta(days=1, seconds=-1)),
+     (re.compile(4 * '\\d' + '-' + 2 * '\\d' + '-' + 2 * '\\d'), '%Y-%m-%d',
+      relativedelta(days=1, seconds=-1)),
+     (re.compile(6 * '\\d'), '%Y%m', relativedelta(months=1, seconds=-1)),
+     (re.compile(4 * '\\d'), '%Y', relativedelta(years=1, seconds=-1))]
 
 
 def _convert_time_from_drs_id(time_value: str) -> str:
@@ -341,10 +342,6 @@ class CciOdp:
         pass
 
     @property
-    def token_info(self) -> Dict[str, Any]:
-        return {}
-
-    @property
     def dataset_names(self) -> List[str]:
         return _run_with_session(self._fetch_dataset_names)
 
@@ -447,22 +444,6 @@ class CciOdp:
         json_dict[single_name] = param_value
         if list_name in json_dict:
             json_dict.pop(list_name)
-
-    def _get_pretty_id(self, json_dict: dict, value_tuple: Tuple, drs_id: str) -> str:
-        pretty_values = []
-        for value in value_tuple:
-            pretty_values.append(self._make_string_pretty(value))
-        return f'esacci.{json_dict["ecv"]}.{".".join(pretty_values)}.{drs_id}'
-
-    def _make_string_pretty(self, string: str):
-        string = string.replace(" ", "-")
-        if string.startswith("."):
-            string = string[1:]
-        if string.endswith("."):
-            string = string[:-1]
-        if "." in string:
-            string = string.replace(".", "-")
-        return string
 
     def _get_as_list(self, meta_info: dict, single_name: str, list_name: str) -> List:
         if single_name in meta_info:
@@ -671,32 +652,6 @@ class CciOdp:
                                           data=list(range(variable_names[var_name])))
         return var_data
 
-    def get_earliest_start_date(self, dataset_name: str, start_time: str, end_time: str, frequency: str) -> \
-            Optional[datetime]:
-        return _run_with_session(self._get_earliest_start_date, dataset_name, start_time, end_time, frequency)
-
-    async def _get_earliest_start_date(self, session, dataset_name: str, start_time: str, end_time: str,
-                                       frequency: str) -> Optional[datetime]:
-        fid = await self._get_fid_for_dataset(session, dataset_name)
-        query_args = dict(parentIdentifier=fid,
-                          startDate=start_time,
-                          endDate=end_time,
-                          frequency=frequency,
-                          drsId=dataset_name,
-                          fileFormat='.nc')
-        opendap_url = await self._get_opendap_url(session, query_args, get_earliest=True)
-        if opendap_url:
-            dataset = await self._get_opendap_dataset(session, opendap_url)
-            start_time_attributes = ['time_coverage_start', 'start_date']
-            attributes = dataset.attributes.get('NC_GLOBAL', {})
-            for start_time_attribute in start_time_attributes:
-                start_time_string = attributes.get(start_time_attribute, '')
-                time_format, start, end, timedelta = find_datetime_format(start_time_string)
-                if time_format:
-                    start_time = datetime.strptime(start_time_string[start:end], time_format)
-                    return start_time
-        return None
-
     async def _get_feature_list(self, session, request):
         ds_id = request['drsId']
         start_date_str = request['startDate']
@@ -803,38 +758,6 @@ class CciOdp:
             return feature_list[-1][2]
         return feature_list[0][2]
 
-    def get_data(self, request: Dict, bbox: Tuple[float, float, float, float], dim_indexes: dict, dim_flipped: dict) \
-            -> Optional[bytes]:
-        return _run_with_session(self._get_data, request, bbox, dim_indexes, dim_flipped)
-
-    async def _get_data(self, session, request: Dict, bbox: Tuple[float, float, float, float], dim_indexes: dict,
-                        dim_flipped: dict) -> Optional[bytes]:
-        start_date = datetime.strptime(request['startDate'], _TIMESTAMP_FORMAT)
-        end_date = datetime.strptime(request['endDate'], _TIMESTAMP_FORMAT)
-        var_names = request['varNames']
-        opendap_url = await self._get_opendap_url(session, request)
-        if not opendap_url:
-            return None
-        dataset = await self._get_opendap_dataset(session, opendap_url)
-        # todo support more dimensions
-        supported_dimensions = ['lat', 'lon', 'time', 'latitude', 'longitude']
-        result = bytearray()
-        for i, var in enumerate(var_names):
-            indexes = []
-            for dimension in dataset[var].dimensions:
-                if dimension not in dim_indexes:
-                    if dimension not in supported_dimensions:
-                        raise ValueError(f'Variable {var} has unsupported dimension {dimension}. '
-                                         f'Cannot retrieve this variable.')
-                    dim_indexes[dimension] = self._get_indexing(dataset, dimension, bbox, start_date, end_date)
-                indexes.append(dim_indexes[dimension])
-            variable_data = np.array(dataset[var][tuple(indexes)].data[0], dtype=dataset[var].dtype.type)
-            for i, dimension in enumerate(dataset[var].dimensions):
-                if dim_flipped.get(dimension, False):
-                    variable_data = np.flip(variable_data, axis=i)
-            result += variable_data.flatten().tobytes()
-        return result
-
     def get_data_chunk(self, request: Dict, dim_indexes: Tuple) -> Optional[bytes]:
         data_chunk = _run_with_session(self._get_data_chunk, request, dim_indexes)
         return data_chunk
@@ -851,43 +774,6 @@ class CciOdp:
         variable_data = np.array(data, dtype=dataset[var_name].dtype.type)
         result = variable_data.flatten().tobytes()
         return result
-
-    def _get_indexing(self, dataset, dimension: str, bbox: (float, float, float, float),
-                      start_date: datetime, end_date: datetime):
-        if dimension == 'lat' or dimension == 'latitude':
-            return self._get_dim_indexing(dataset[dimension].data[:], bbox[1], bbox[3])
-        if dimension == 'lon' or dimension == 'longitude':
-            return self._get_dim_indexing(dataset[dimension].data[:], bbox[0], bbox[2])
-        if dimension == 'time':
-            time_units = dataset.time.attributes.get('units', '')
-            time_data = self._convert_time_data(dataset[dimension].data[:], time_units)
-            return self._get_dim_indexing(time_data, start_date, end_date)
-        else:
-            return 0
-
-    def _convert_time_data(self, time_data: np.array, units: str):
-        converted_time = []
-        format, start, end, timedelta = find_datetime_format(units)
-        if format:
-            start_time = datetime.strptime(units[start:end], format)
-            for time in time_data:
-                if units.startswith('days'):
-                    converted_time.append(start_time + relativedelta(days=int(time), hours=12))
-                elif units.startswith('seconds'):
-                    converted_time.append(start_time + relativedelta(seconds=int(time)))
-        else:
-            for time in time_data:
-                converted_time.append(time)
-        return converted_time
-
-    def _get_dim_indexing(self, data, min, max):
-        if len(data) == 1:
-            return 0
-        start_index = bisect.bisect_right(data, min)
-        end_index = bisect.bisect_right(data, max)
-        if start_index != end_index:
-            return slice(start_index, end_index)
-        return start_index
 
     async def _fetch_data_source_list_json(self, session, base_url, query_args) -> Sequence:
         def _extender(catalogue: dict, feature_list: List[Dict]):
