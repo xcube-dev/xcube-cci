@@ -1,4 +1,5 @@
 ## Changes in 0.6.1. (under development)
+* Removed CLI
 
 ## Changes in 0.6.0.
 * Support type specifiers [#18](https://github.com/dcs4cop/xcube-cci/issues/18). 

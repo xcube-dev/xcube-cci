@@ -30,9 +30,6 @@ from xcube.util import extension
 
 def init_plugin(ext_registry: extension.ExtensionRegistry):
     """xcube CCI ODP extensions"""
-    ext_registry.add_extension(loader=extension.import_component('xcube_cci.main:cli'),
-                               point=EXTENSION_POINT_CLI_COMMANDS,
-                               name='cci_cli')
     ext_registry.add_extension(loader=extension.import_component('xcube_cci.dataaccess:CciOdpDataStore'),
                                point=EXTENSION_POINT_DATA_STORES,
                                name=DATA_STORE_ID,
