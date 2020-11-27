@@ -815,16 +815,11 @@ class CciOdp:
         await self._ensure_in_data_sources(session, [dataset_name])
         return self._data_sources[dataset_name]['fid']
 
-    async def _get_opendap_url(self, session, request: Dict, get_earliest: bool = False,
-                               get_latest: bool = False):
-        if get_earliest and get_latest:
-            raise ValueError('Not both get_earliest and get_latest may be set to true')
+    async def _get_opendap_url(self, session, request: Dict):
         request['fileFormat'] = '.nc'
         feature_list = await self._get_feature_list(session, request)
         if len(feature_list) == 0:
             return
-        if get_latest:
-            return feature_list[-1][2]
         return feature_list[0][2]
 
     def get_data_chunk(self, request: Dict, dim_indexes: Tuple) -> Optional[bytes]:
