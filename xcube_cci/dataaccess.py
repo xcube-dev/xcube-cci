@@ -327,18 +327,6 @@ class CciOdpDataStore(DataStore):
         self._dataset_opener = CciOdpDatasetOpener(**store_params)
         self._cube_opener = CciOdpCubeOpener(**store_params)
 
-    @property
-    def description(self) -> dict:
-        all_data = list(self.search_data())
-        datasets = []
-        for data in all_data:
-            datasets.append(data.to_dict())
-        description = dict(store_id='cciodp',
-                           description='ESA CCI Open Data Portal',
-                           datasets=datasets
-                           )
-        return description
-
     @classmethod
     def get_data_store_params_schema(cls) -> JsonObjectSchema:
         cciodp_params = dict(

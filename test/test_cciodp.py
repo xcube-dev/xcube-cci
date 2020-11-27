@@ -120,29 +120,6 @@ class CciOdpTest(unittest.TestCase):
         self.assertTrue('temporal_coverage_end' in dataset_info)
         self.assertEqual('2014-12-31T23:59:59', dataset_info['temporal_coverage_end'])
 
-
-    @skipIf(os.environ.get('XCUBE_DISABLE_WEB_TESTS', None) == '1', 'XCUBE_DISABLE_WEB_TESTS = 1')
-    @skip('Test takes long')
-    def test_description(self):
-        cci_odp = CciOdp()
-        description = cci_odp.description
-        self.assertIsNotNone(description)
-        self.assertEqual('cciodp', description['id'])
-        self.assertEqual('ESA CCI Open Data Portal', description['name'])
-        import json
-        with open('cci_datasets.json', 'w') as fp:
-            json.dump(description, fp, indent=4)
-
-    def test_shorten_dataset_name(self):
-        cci_odp = CciOdp()
-        self.assertEqual('gdrvtzsw', cci_odp._shorten_dataset_name('gdrvtzsw'))
-        self.assertEqual('Ozone CCI: Level3 Nadir Ozone Profile Merged Data Product version 2',
-                         cci_odp._shorten_dataset_name('ESA Ozone Climate Change Initiative (Ozone CCI): '
-                                                       'Level3 Nadir Ozone Profile Merged Data Product version 2'))
-        self.assertEqual('Ozone CCI: L3 Nadir Ozone Profile Merged Data Product v2',
-                         cci_odp._shorten_dataset_name('ESA Ozone Climate Change Initiative (Ozone CCI): '
-                                                       'Level 3 Nadir Ozone Profile Merged Data Product, version 2'))
-
     @skipIf(os.environ.get('XCUBE_DISABLE_WEB_TESTS', None) == '1', 'XCUBE_DISABLE_WEB_TESTS = 1')
     def test_get_opendap_dataset(self):
         opendap_url = 'http://data.cci.ceda.ac.uk/thredds/dodsC/esacci/aerosol/data/AATSR_SU/L3/v4.21/DAILY/2002/' \

@@ -245,16 +245,6 @@ class CciOdpDataStoreTest(unittest.TestCase):
     def setUp(self) -> None:
         self.store = CciOdpDataStore()
 
-    @skip('Test takes long')
-    def test_description(self):
-        description = self.store.description
-        self.assertIsNotNone(description)
-        self.assertEqual('cciodp', description['store_id'])
-        self.assertEqual('ESA CCI Open Data Portal', description['description'])
-        import json
-        with open('cci_store_datasets.json', 'w') as fp:
-            json.dump(description, fp, indent=4)
-
     def test_get_data_store_params_schema(self):
         cci_store_params_schema = CciOdpDataStore.get_data_store_params_schema().to_dict()
         self.assertIsNotNone(cci_store_params_schema)

@@ -348,52 +348,6 @@ class CciOdp:
     def dataset_names(self) -> List[str]:
         return _run_with_session(self._fetch_dataset_names)
 
-    @property
-    def description(self) -> dict:
-        _run_with_session(self._ensure_all_info_in_data_sources, self.dataset_names)
-        datasets = []
-        for data_source in self._data_sources:
-            metadata = self._data_sources[data_source]
-            var_names = self._get_data_var_names(metadata.get('variable_infos', {}))
-            variables = []
-            for variable in var_names:
-                variable_dict = {}
-                var_metadata_list = [dict for dict in metadata['variables'] if dict['name'] == variable]
-                var_metadata = var_metadata_list[0]
-                variable_dict['id'] = var_metadata.get('name', '')
-                variable_dict['name'] = var_metadata.get('name', '')
-                variable_dict['units'] = var_metadata.get('units', '')
-                variable_dict['description'] = var_metadata.get('description', '')
-                variable_dict['dtype'] = metadata.get('variable_infos', {}).get(variable, {}).get('data_type', '')
-                variable_dict['spatialRes'] = metadata.get('attributes', {}).get('NC_GLOBAL', {}). \
-                    get('geospatial_lat_resolution', '')
-                variable_dict['spatialLatRes'] = metadata.get('attributes', {}).get('NC_GLOBAL', {}). \
-                    get('geospatial_lat_resolution', '')
-                variable_dict['spatialLonRes'] = metadata.get('attributes', {}).get('NC_GLOBAL', {}). \
-                    get('geospatial_lon_resolution', '')
-                variable_dict['temporal_coverage_start'] = metadata.get('temporal_coverage_start', '')
-                variable_dict['temporal_coverage_end'] = metadata.get('temporal_coverage_end', '')
-                variable_dict['temporalRes'] = metadata.get('attributes', {}).get('NC_GLOBAL', {}). \
-                    get('time_coverage_resolution', '')
-                variables.append(variable_dict)
-            dataset_dict = dict(id=data_source,
-                                name=self._shorten_dataset_name(metadata['title']),
-                                variables=variables
-                                )
-            datasets.append(dataset_dict)
-        description = dict(id='cciodp',
-                           name='ESA CCI Open Data Portal',
-                           datasets=datasets)
-        return description
-
-    def _shorten_dataset_name(self, dataset_name: str) -> str:
-        if re.match('.*[(].*[)].*[:].*', dataset_name) is None:
-            return dataset_name
-        split_name = dataset_name.split(':')
-        cci_name = split_name[0][split_name[0].index('(') + 1:split_name[0].index(')')]
-        set_name = split_name[1].replace('Level ', 'L').replace(', version ', ' v').replace(', Version ', ' v')
-        return f'{cci_name}:{set_name}'
-
     def get_dataset_info(self, dataset_id: str, dataset_metadata: dict = None) -> dict:
         data_info = {}
         if not dataset_metadata:
