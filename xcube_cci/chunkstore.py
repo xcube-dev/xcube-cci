@@ -161,7 +161,6 @@ class RemoteChunkStore(MutableMapping, metaclass=ABCMeta):
             for i, dimension_name in enumerate(dimensions):
                 sizes.append(self._dimension_data[dimension_name]['size'])
                 if dimension_name == 'time':
-                    chunk_sizes[i] = 1
                     self._time_indexes[variable_name] = i
                     time_dimension = i
                 if chunk_sizes[i] == -1:
