@@ -258,36 +258,45 @@ def find_datetime_format(filename: str) -> Tuple[Optional[str], int, int, relati
 
 
 def _extract_metadata_from_odd(odd_xml: etree.XML) -> dict:
-    metadata = {}
-    metadata_names = {'ecv': ['ecv', 'ecvs'],
-                      'frequency': ['time_frequency', 'time_frequencies'],
-                      'institute': ['institute', 'institutes'],
-                      'processingLevel': ['processing_level', 'processing_levels'],
-                      'productString': ['product_string', 'product_strings'],
-                      'productVersion': ['product_version', 'product_versions'],
-                      'dataType': ['data_type', 'data_types'],
-                      'sensor': ['sensor_id', 'sensor_ids'],
-                      'platform': ['platform_id', 'platform_ids'],
-                      'fileFormat': ['file_format', 'file_formats'],
-                      'drsId': ['drs_id', 'drs_ids']}
+    metadata = {'num_files': {}}
+    metadata_names = {'ecv': (['ecv', 'ecvs'], False),
+                      'frequency': (['time_frequency', 'time_frequencies'], False),
+                      'institute': (['institute', 'institutes'], False),
+                      'processingLevel': (['processing_level', 'processing_levels'], False),
+                      'productString': (['product_string', 'product_strings'], False),
+                      'productVersion': (['product_version', 'product_versions'], False),
+                      'dataType': (['data_type', 'data_types'], False),
+                      'sensor': (['sensor_id', 'sensor_ids'], False),
+                      'platform': (['platform_id', 'platform_ids'], False),
+                      'fileFormat': (['file_format', 'file_formats'], False),
+                      'drsId': (['drs_id', 'drs_ids'], True)}
     for param_elem in odd_xml.findall('os:Url/param:Parameter', namespaces=ODD_NS):
         if param_elem.attrib['name'] in metadata_names:
+            element_names, add_to_num_files = metadata_names[param_elem.attrib['name']]
             param_content = _get_from_param_elem(param_elem)
             if param_content:
-                if type(param_content) == str:
-                    metadata[metadata_names[param_elem.attrib['name']][0]] = param_content
+                if type(param_content) == tuple:
+                    metadata[element_names[0]] = param_content[0]
+                    if add_to_num_files:
+                        metadata['num_files'][param_content[0]] = param_content[1]
                 else:
-                    metadata[metadata_names[param_elem.attrib['name']][1]] = param_content
+                    names = []
+                    for name, num_files in param_content:
+                        names.append(name)
+                        if add_to_num_files:
+                            metadata['num_files'][name] = num_files
+                    metadata[element_names[1]] = names
     return metadata
 
 
-def _get_from_param_elem(param_elem: etree.Element) -> Optional[Union[str, List[str]]]:
+def _get_from_param_elem(param_elem: etree.Element):
     options = param_elem.findall('param:Option', namespaces=ODD_NS)
     if not options:
         return None
     if len(options) == 1:
-        return options[0].get('value')
-    return [option.get('value') for option in options]
+        return options[0].get('value'), int(options[0].get('label').split('(')[-1][:-1])
+    return [(option.get('value'), int(option.get('label').split('(')[-1][:-1]))
+            for option in options]
 
 
 def _extract_feature_info(feature: dict) -> List:
@@ -445,14 +454,15 @@ class CciOdp:
             if excluded_data_source in drs_ids:
                     drs_ids.remove(excluded_data_source)
         for drs_id in drs_ids:
-            meta_info = meta_info.copy()
-            meta_info.update(json_dict)
-            self._adjust_json_dict(meta_info, drs_id)
-            for variable in meta_info.get('variables', []):
+            drs_meta_info = meta_info.copy()
+            drs_meta_info.update(json_dict)
+            self._adjust_json_dict(drs_meta_info, drs_id)
+            for variable in drs_meta_info.get('variables', []):
                 variable['name'] = variable['name'].replace('.', '_')
-            meta_info['cci_project'] = meta_info['ecv']
-            meta_info['fid'] = datasource_id
-            self._data_sources[drs_id] = meta_info
+            drs_meta_info['cci_project'] = drs_meta_info['ecv']
+            drs_meta_info['fid'] = datasource_id
+            drs_meta_info['num_files'] = drs_meta_info['num_files'][drs_id]
+            self._data_sources[drs_id] = drs_meta_info
 
     def _adjust_json_dict(self, json_dict: dict, drs_id: str):
         values = drs_id.split('.')
@@ -501,9 +511,7 @@ class CciOdp:
                 and 'attributes' in data_source:
             return
         data_fid = await self._get_fid_for_dataset(session, dataset_name)
-        data_source['dimensions'], data_source['variable_infos'], data_source['attributes'],\
-            data_source['time_dimension_size'] = \
-            await self._fetch_variable_infos(self._opensearch_url, data_fid, session)
+        await self._set_variable_infos(self._opensearch_url, data_fid, session, data_source)
 
     @staticmethod
     def _get_data_var_names(variable_infos) -> List:
@@ -725,7 +733,6 @@ class CciOdp:
                                                           request)
                 feature_list.sort(key=lambda x: x[0])
             self._features[ds_id] = feature_list
-            return self._features[ds_id]
         else:
             if start_date < self._features[ds_id][0][0]:
                 request['endDate'] = datetime.strftime(self._features[ds_id][0][0],
@@ -892,8 +899,10 @@ class CciOdp:
                 extender(extension, feature_list)
             return json_dict['totalResults']
         _LOG.debug(f'Did not read page {start_page}')
+        return 0
 
-    async def _fetch_variable_infos(self, opensearch_url: str, dataset_id: str, session):
+    async def _set_variable_infos(self, opensearch_url: str, dataset_id: str, session,
+                                  data_source):
         attributes = {}
         dimensions = {}
         variable_infos = {}
@@ -902,6 +911,7 @@ class CciOdp:
                                                           opensearch_url,
                                                           dict(parentIdentifier=dataset_id),
                                                           1)
+        time_dimension_size = data_source['num_files']
         if feature is not None:
             variable_infos, attributes = \
                 await self._get_variable_infos_from_feature(feature, session)
@@ -921,14 +931,16 @@ class CciOdp:
                                 dimensions[dimension] = variable_infos[dimension]['size']
             if 'time' in dimensions:
                 time_dimension_size *= dimensions['time']
-        return dimensions, variable_infos, attributes, time_dimension_size
+        data_source['dimensions'] = dimensions
+        data_source['variable_infos'] = variable_infos
+        data_source['attributes'] = attributes
+        data_source['time_dimension_size'] = time_dimension_size
 
     async def _fetch_feature_and_num_nc_files_at(self, session, base_url, query_args, index) -> \
             Tuple[Optional[Dict], int]:
         paging_query_args = dict(query_args or {})
-        maximum_records = 1
         paging_query_args.update(startPage=index,
-                                 maximumRecords=maximum_records,
+                                 maximumRecords=2,
                                  httpAccept='application/geo+json',
                                  fileFormat='.nc')
         url = base_url + '?' + urllib.parse.urlencode(paging_query_args)
@@ -937,8 +949,10 @@ class CciOdp:
             json_text = await resp.read()
             json_dict = json.loads(json_text.decode('utf-8'))
             feature_list = json_dict.get("features", [])
+            # we try not to take the first feature, as the last and the first one may have
+            # different time chunkings
             if len(feature_list) > 0:
-                return feature_list[0], json_dict.get("totalResults", 0)
+                return feature_list[-1], json_dict.get("totalResults", 0)
         return None, 0
 
     async def _fetch_meta_info(self, session, odd_url: str, metadata_url: str) -> Dict:
