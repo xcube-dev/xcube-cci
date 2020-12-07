@@ -70,6 +70,8 @@ DESC_NS = {'gmd': 'http://www.isotc211.org/2005/gmd',
            'xlink': 'http://www.w3.org/1999/xlink'
            }
 
+_FEATURE_LIST_LOCK = asyncio.Lock()
+
 _TIMESTAMP_FORMAT = "%Y-%m-%dT%H:%M:%S"
 
 _RE_TO_DATETIME_FORMATS = \
@@ -375,6 +377,7 @@ class CciOdp:
         self._drs_ids = None
         self._data_sources = {}
         self._features = {}
+        self._datasets = {}
         eds_file = os.path.join(os.path.dirname(os.path.abspath(__file__)),
                                 'data/excluded_data_sources')
         with open(eds_file, 'r') as eds:
@@ -824,10 +827,11 @@ class CciOdp:
 
     async def _get_opendap_url(self, session, request: Dict):
         request['fileFormat'] = '.nc'
-        feature_list = await self._get_feature_list(session, request)
-        if len(feature_list) == 0:
-            return
-        return feature_list[0][2]
+        async with _FEATURE_LIST_LOCK:
+            feature_list = await self._get_feature_list(session, request)
+            if len(feature_list) == 0:
+                return
+            return feature_list[0][2]
 
     def get_data_chunk(self, request: Dict, dim_indexes: Tuple) -> Optional[bytes]:
         data_chunk = _run_with_session(self._get_data_chunk, request, dim_indexes)
@@ -1020,6 +1024,8 @@ class CciOdp:
         return _run_with_session(self._get_opendap_dataset, url)
 
     async def _get_opendap_dataset(self, session, url: str):
+        if url in self._datasets:
+            return self._datasets[url]
         tasks = []
         res_dict = {}
         tasks.append(self._get_content_from_opendap_url(url, 'dds', res_dict, session))
@@ -1069,7 +1075,7 @@ class CciOdp:
             var.set_output_grid(True)
 
         dataset.functions = Functions(url)
-
+        self._datasets[url] = dataset
         return dataset
 
     async def _get_content_from_opendap_url(self, url: str, part: str, res_dict: dict, session):
