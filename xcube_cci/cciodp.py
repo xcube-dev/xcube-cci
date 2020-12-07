@@ -115,7 +115,7 @@ def _run_with_session(async_function, *params):
 
 
 async def _run_with_session_executor(async_function, *params):
-    async with aiohttp.ClientSession() as session:
+    async with aiohttp.ClientSession(connector=aiohttp.TCPConnector(limit=50)) as session:
         return await async_function(session, *params)
 
 
