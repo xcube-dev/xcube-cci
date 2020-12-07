@@ -77,7 +77,7 @@ class CciOdpDatasetOpenerTest(unittest.TestCase):
         self.assertEqual(['longitude', 'latitude', 'time'], list(descriptor.dims.keys()))
         self.assertEqual(360, descriptor.dims['longitude'])
         self.assertEqual(180, descriptor.dims['latitude'])
-        self.assertEqual(13078, descriptor.dims['time'])
+        self.assertEqual(12644, descriptor.dims['time'])
         self.assertEqual(7, len(descriptor.data_vars))
         self.assertEqual('absorbing_aerosol_index', descriptor.data_vars[2].name)
         self.assertEqual(3, descriptor.data_vars[2].ndim)
@@ -174,7 +174,7 @@ class CciOdpCubeOpenerTest(unittest.TestCase):
         self.assertEqual(['lat', 'lon', 'time'], list(descriptor.dims.keys()))
         self.assertEqual(360, descriptor.dims['lon'])
         self.assertEqual(180, descriptor.dims['lat'])
-        self.assertEqual(13078, descriptor.dims['time'])
+        self.assertEqual(12644, descriptor.dims['time'])
         self.assertEqual(5, len(descriptor.data_vars))
         self.assertEqual('absorbing_aerosol_index', descriptor.data_vars[0].name)
         self.assertEqual(3, descriptor.data_vars[0].ndim)
@@ -234,10 +234,9 @@ class CciOdpCubeOpenerTest(unittest.TestCase):
                                         bbox=[-10.0, 40.0, 10.0, 60.0]
                                         )
         self.assertIsNotNone(dataset)
-        self.assertEqual({'standard_error_of_the_mean', 'ozone_mixing_ratio', 'sample_standard_deviation'},
-                         set(dataset.data_vars))
-        self.assertEqual({'time', 'air_pressure', 'lat', 'lon'},
-                         set(dataset.ozone_mixing_ratio.dims))
+        self.assertEqual({'standard_error_of_the_mean', 'ozone_mixing_ratio',
+                          'sample_standard_deviation'}, set(dataset.data_vars))
+        self.assertEqual({'time', 'air_pressure', 'lat', 'lon'}, dataset.ozone_mixing_ratio.dims)
         self.assertEqual({1, 32, 18, 36}, set(dataset.ozone_mixing_ratio.chunk_sizes))
 
 class CciOdpDataStoreTest(unittest.TestCase):
@@ -360,7 +359,7 @@ class CciOdpDataStoreTest(unittest.TestCase):
         self.assertEqual(['longitude', 'latitude', 'time'], list(descriptor.dims.keys()))
         self.assertEqual(360, descriptor.dims['longitude'])
         self.assertEqual(180, descriptor.dims['latitude'])
-        self.assertEqual(13078, descriptor.dims['time'])
+        self.assertEqual(12644, descriptor.dims['time'])
         self.assertEqual(7, len(descriptor.data_vars))
         self.assertEqual('absorbing_aerosol_index', descriptor.data_vars[2].name)
         self.assertEqual(3, descriptor.data_vars[2].ndim)
@@ -387,7 +386,7 @@ class CciOdpDataStoreTest(unittest.TestCase):
         self.assertEqual(['lat', 'lon', 'time'], list(descriptor.dims.keys()))
         self.assertEqual(360, descriptor.dims['lon'])
         self.assertEqual(180, descriptor.dims['lat'])
-        self.assertEqual(13078, descriptor.dims['time'])
+        self.assertEqual(12644, descriptor.dims['time'])
         self.assertEqual(5, len(descriptor.data_vars))
         self.assertEqual('absorbing_aerosol_index', descriptor.data_vars[0].name)
         self.assertEqual(3, descriptor.data_vars[0].ndim)
@@ -554,6 +553,25 @@ class CciOdpDataStoreTest(unittest.TestCase):
         self.assertEqual({'time', 'air_pressure', 'lat', 'lon'},
                          set(dataset.ozone_mixing_ratio.dims))
         self.assertEqual({1, 32, 18, 36}, set(dataset.ozone_mixing_ratio.chunk_sizes))
+
+    @skipIf(os.environ.get('XCUBE_DISABLE_WEB_TESTS', None) == '1', 'XCUBE_DISABLE_WEB_TESTS = 1')
+    def test_open_more_data(self):
+        dataset = self.store.open_data('esacci.OZONE.mon.L3.LP.GOMOS.Envisat.GOMOS_ENVISAT.v0001.r1',
+                                       'dataset:zarr:cciodp',
+                                        variable_names=['approximate_altitude', 'ozone_mixing_ratio',
+                                                        'sample_standard_deviation'],
+                                        time_range=['2004-05-01', '2004-08-31']
+                                       # ,
+                                        # bbox=[-10.0, 40.0, 10.0, 60.0]
+                                        )
+        self.assertIsNotNone(dataset)
+        self.assertEqual({'approximate_altitude', 'ozone_mixing_ratio', 'sample_standard_deviation'},
+                         set(dataset.data_vars))
+        self.assertEqual({'time', 'air_pressure', 'latitude_centers'},
+                         set(dataset.ozone_mixing_ratio.dims))
+        self.assertEqual({4, 51, 18}, set(dataset.ozone_mixing_ratio.chunk_sizes))
+        dataset.ozone_mixing_ratio.sel(time='2004-05-15 12:00:00', method='nearest').plot.\
+            imshow(cmap='Greys_r', figsize=(8, 8))
 
 class CciDataNormalizationTest(unittest.TestCase):
 
