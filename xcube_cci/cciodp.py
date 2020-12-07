@@ -103,9 +103,14 @@ def _convert_time_from_drs_id(time_value: str) -> str:
 def _run_with_session(async_function, *params):
     # See https://github.com/aio-libs/aiohttp/blob/master/docs/client_advanced.rst#graceful-shutdown
     loop = asyncio.get_event_loop()
-    result = loop.run_until_complete(_run_with_session_executor(async_function, *params))
-    # Zero-sleep to allow underlying connections to close
-    loop.run_until_complete(asyncio.sleep(0))
+    coro = _run_with_session_executor(async_function, *params)
+    if loop.is_running():
+        future = asyncio.run_coroutine_threadsafe(coro, loop)
+        result = future.result()
+    else:
+        result = loop.run_until_complete(coro)
+        # Zero-sleep to allow underlying connections to close
+        loop.run_until_complete(asyncio.sleep(0))
     return result
 
 
