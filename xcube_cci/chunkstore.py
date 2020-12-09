@@ -151,9 +151,9 @@ class RemoteChunkStore(MutableMapping, metaclass=ABCMeta):
             chunk_sizes = var_attrs.get('chunk_sizes', [-1] * len(dimensions))
             if isinstance(chunk_sizes, int):
                 chunk_sizes = [chunk_sizes]
-            if not 'time' in dimensions:
-                dimensions.append('time')
-                chunk_sizes.append(1)
+            if 'time' not in dimensions:
+                dimensions.insert(0, 'time')
+                chunk_sizes.insert(0, 1)
             var_attrs.update(_ARRAY_DIMENSIONS=dimensions)
             sizes = []
             self._time_indexes[variable_name] = -1
@@ -179,6 +179,11 @@ class RemoteChunkStore(MutableMapping, metaclass=ABCMeta):
                 continue
             chunk_sizes = self._adjust_chunk_sizes(chunk_sizes, sizes, time_dimension)
             var_attrs['chunk_sizes'] = chunk_sizes
+            if type(var_attrs['file_chunk_sizes']) == int and len(chunk_sizes) == 2 or\
+                    len(var_attrs['file_chunk_sizes']) < len(chunk_sizes):
+                var_attrs['file_chunk_sizes'] = chunk_sizes[1:]
+            else:
+                var_attrs['file_chunk_sizes'] = chunk_sizes
             self._add_remote_array(variable_name,
                                    sizes,
                                    chunk_sizes,
@@ -661,12 +666,17 @@ class CciChunkStore(RemoteChunkStore):
             dtype = np.dtype(self._SAMPLE_TYPE_TO_DTYPE[var_info['data_type']])
             var_array = np.full(shape=length, fill_value=var_info['fill_value'], dtype=dtype)
             data += var_array.tobytes()
+        _LOG.info(f'Fetched chunk for ({chunk_index})"{var_name}"')
         return data
 
     def _get_dimension_indexes_for_chunk(self, var_name: str, chunk_index: Tuple[int, ...]) -> tuple:
         dim_indexes = []
-        var_dimensions = self._metadata.get('variable_infos', {}).get(var_name, {}).get('dimensions', [])
-        chunk_sizes = self.get_attrs(var_name).get('chunk_sizes', [])
+        var_dimensions = self.get_attrs(var_name).get('file_dimensions', [])
+        chunk_sizes = self.get_attrs(var_name).get('file_chunk_sizes', [])
+        offset = 0
+        # dealing with the case that time has been added as additional first dimension
+        if len(chunk_index) > len(chunk_sizes):
+            offset = 1
         for i, var_dimension in enumerate(var_dimensions):
             if var_dimension == 'time':
                 dim_indexes.append(slice(None, None, None))
@@ -674,7 +684,7 @@ class CciChunkStore(RemoteChunkStore):
             dim_size = self._metadata.get('dimensions', {}).get(var_dimension, -1)
             if dim_size < 0:
                 raise ValueError(f'Could not determine size of dimension {var_dimension}')
-            start = chunk_index[i] * chunk_sizes[i]
+            start = chunk_index[i + offset] * chunk_sizes[i]
             end = min(start + chunk_sizes[i], dim_size)
             dim_indexes.append(slice(start, end))
         return tuple(dim_indexes)

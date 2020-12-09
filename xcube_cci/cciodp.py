@@ -1019,9 +1019,17 @@ class CciOdp:
                 variable_infos[fixed_key].pop('_FillValue')
             if '_ChunkSizes' in variable_infos[fixed_key]:
                 variable_infos[fixed_key]['chunk_sizes'] = variable_infos[fixed_key]['_ChunkSizes']
+                if type(variable_infos[fixed_key]['chunk_sizes']) == int:
+                    variable_infos[fixed_key]['file_chunk_sizes'] = \
+                        variable_infos[fixed_key]['chunk_sizes']
+                else:
+                    variable_infos[fixed_key]['file_chunk_sizes'] = \
+                        variable_infos[fixed_key]['chunk_sizes'].copy()
                 variable_infos[fixed_key].pop('_ChunkSizes')
             variable_infos[fixed_key]['data_type'] = dataset[key].dtype.name
             variable_infos[fixed_key]['dimensions'] = list(dataset[key].dimensions)
+            variable_infos[fixed_key]['file_dimensions'] = \
+                variable_infos[fixed_key]['dimensions'].copy()
             variable_infos[fixed_key]['size'] = dataset[key].size
         return variable_infos, dataset.attributes
 
