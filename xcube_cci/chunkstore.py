@@ -622,7 +622,11 @@ class CciChunkStore(RemoteChunkStore):
 
     def get_dimension_data(self, dataset_id: str):
         dimensions = self._metadata['dimensions']
-        return self.get_variable_data(dataset_id, dimensions)
+        dimension_data = self.get_variable_data(dataset_id, dimensions)
+        if len(dimension_data) == 0:
+            # no valid data found in indicated time range, let's set this broader
+            dimension_data = self._cci_odp.get_variable_data(dataset_id, dimensions)
+        return dimension_data
 
     def get_variable_data(self, dataset_id: str, variables: Dict[str, int]):
         return self._cci_odp.get_variable_data(dataset_id,
