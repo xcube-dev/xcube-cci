@@ -763,8 +763,8 @@ class CciOdp:
                                                           request)
                 feature_list.sort(key=lambda x: x[0])
                 self._features[ds_id] = self._features[ds_id] + feature_list
-        start = bisect.bisect_left([feature[0] for feature in self._features[ds_id]], start_date)
-        end = bisect.bisect_right([feature[1] for feature in self._features[ds_id]], end_date)
+        start = bisect.bisect_left([feature[1] for feature in self._features[ds_id]], start_date)
+        end = bisect.bisect_right([feature[0] for feature in self._features[ds_id]], end_date)
         return self._features[ds_id][start:end]
 
     @staticmethod
