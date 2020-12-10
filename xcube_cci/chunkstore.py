@@ -179,8 +179,7 @@ class RemoteChunkStore(MutableMapping, metaclass=ABCMeta):
                 continue
             chunk_sizes = self._adjust_chunk_sizes(chunk_sizes, sizes, time_dimension)
             var_attrs['chunk_sizes'] = chunk_sizes
-            if type(var_attrs['file_chunk_sizes']) == int and len(chunk_sizes) == 2 or\
-                    len(var_attrs['file_chunk_sizes']) < len(chunk_sizes):
+            if len(var_attrs['file_dimensions']) < len(dimensions):
                 var_attrs['file_chunk_sizes'] = chunk_sizes[1:]
             else:
                 var_attrs['file_chunk_sizes'] = chunk_sizes
