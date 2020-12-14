@@ -879,35 +879,71 @@ class CciOdp:
         total_results = await self._fetch_opensearch_feature_part_list(session, base_url,
                                                                        query_args, start_page,
                                                                        maximum_records,
-                                                                       extension, extender)
+                                                                       extension, extender,
+                                                                       None, None)
         num_results = maximum_records
         while num_results < total_results:
-            tasks = []
-            while len(tasks) < 4 and num_results < total_results:
-                start_page += 1
-                tasks.append(self._fetch_opensearch_feature_part_list(session, base_url,
-                                                                      query_args, start_page,
-                                                                      maximum_records, extension,
-                                                                      extender))
-                num_results += maximum_records
-            await asyncio.gather(*tasks)
+            if 'startDate' in query_args and 'endDate' in query_args:
+                # we have to clear the extension of any previous values to avoud duplicate values
+                extension.clear()
+                start_time = datetime.strptime(query_args.pop('startDate'), _TIMESTAMP_FORMAT)
+                end_time = datetime.strptime(query_args.pop('endDate'), _TIMESTAMP_FORMAT)
+                num_days_per_delta = \
+                    int(np.ceil((end_time - start_time).days / (total_results / 1000)))
+                delta = relativedelta(days=num_days_per_delta, seconds=-1)
+                tasks = []
+                current_time = start_time
+                while current_time < end_time:
+                    task_start = current_time.strftime(_TIMESTAMP_FORMAT)
+                    current_time += delta
+                    if current_time > end_time:
+                        current_time = end_time
+                    task_end = current_time.strftime(_TIMESTAMP_FORMAT)
+                    tasks.append(self._fetch_opensearch_feature_part_list(session, base_url,
+                                                                          query_args, start_page,
+                                                                          maximum_records,
+                                                                          extension,
+                                                                          extender,
+                                                                          task_start, task_end))
+                await asyncio.gather(*tasks)
+                num_results = total_results
+            else:
+                tasks = []
+                while len(tasks) < 4 and num_results < total_results:
+                    start_page += 1
+                    tasks.append(self._fetch_opensearch_feature_part_list(session, base_url,
+                                                                          query_args, start_page,
+                                                                          maximum_records,
+                                                                          extension,
+                                                                          extender, None, None))
+                    num_results += maximum_records
+                await asyncio.gather(*tasks)
 
     async def _fetch_opensearch_feature_part_list(self, session, base_url, query_args, start_page,
-                                                  maximum_records, extension, extender) -> int:
+                                                  maximum_records, extension, extender,
+                                                  start_date, end_date) -> int:
         paging_query_args = dict(query_args or {})
         paging_query_args.update(startPage=start_page, maximumRecords=maximum_records,
                                  httpAccept='application/geo+json')
+        if start_date:
+            paging_query_args.update(startDate=start_date)
+        if end_date:
+            paging_query_args.update(endDate=end_date)
         url = base_url + '?' + urllib.parse.urlencode(paging_query_args)
         resp = await self.get_response(session, url)
         if resp:
             json_text = await resp.read()
-            _LOG.debug(f'Read page {start_page}')
             json_dict = json.loads(json_text.decode('utf-8'))
             if extender:
                 feature_list = json_dict.get("features", [])
                 extender(extension, feature_list)
             return json_dict['totalResults']
-        _LOG.debug(f'Did not read page {start_page}')
+        if 'startDate' in paging_query_args and 'endDate' in paging_query_args:
+            _LOG.debug(f'Did not read page {start_page} with start date '
+                       f'{paging_query_args["startDate"]} and '
+                       f'end date {paging_query_args["endDate"]}')
+        else:
+            _LOG.debug(f'Did not read page {start_page}')
         return 0
 
     async def _set_variable_infos(self, opensearch_url: str, dataset_id: str, session,
@@ -928,6 +964,17 @@ class CciOdp:
                 for index, dimension in enumerate(variable_infos[variable_info]['dimensions']):
                     if not dimension in dimensions:
                         dimensions[dimension] = variable_infos[variable_info]['shape'][index]
+                        # if dimension == 'bin_index':
+                        #     dimensions[dimension] = variable_infos[variable_info]['size']
+                        # elif not dimension in variable_infos and \
+                        #         variable_info.split('_')[-1] == 'bnds':
+                        #     dimensions[dimension] = 2
+                        # else:
+                        #     if dimension not in variable_infos and \
+                        #             len(variable_infos[variable_info]['dimensions']):
+                        #         dimensions[dimension] = variable_infos[variable_info]['size']
+                        #     else:
+                        #         dimensions[dimension] = variable_infos[dimension]['size']
             if 'time' in dimensions:
                 time_dimension_size *= dimensions['time']
         data_source['dimensions'] = dimensions
