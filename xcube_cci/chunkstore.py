@@ -524,7 +524,6 @@ class RemoteChunkStore(MutableMapping, metaclass=ABCMeta):
                 filename = '.'.join(map(str, index))
                 self._vfs[name + '/' + filename] = name, index
 
-
     def __setitem__(self, key: str, value: bytes) -> None:
         if self._trace_store_calls:
             print(f'{self._class_name}.__setitem__(key={key!r}, value={value!r})')
