@@ -125,6 +125,19 @@ class CciOdpDatasetOpenerTest(unittest.TestCase):
 
     @skipIf(os.environ.get('XCUBE_DISABLE_WEB_TESTS', None) == '1', 'XCUBE_DISABLE_WEB_TESTS = 1')
     def test_open_data(self):
+        dataset = self.opener.open_data(
+            'esacci.AEROSOL.day.L3C.AER_PRODUCTS.AATSR.Envisat.ATSR2-ENVISAT-ENS_DAILY.v2-6.r1',
+            variable_names=['AOD550', 'NMEAS'],
+            time_range=['2009-07-02', '2009-07-05'],
+            bbox=[-10.0, 40.0, 10.0, 60.0])
+        self.assertIsNotNone(dataset)
+        self.assertEqual({'AOD550', 'NMEAS'}, set(dataset.data_vars))
+        self.assertEqual({'latitude', 'longitude', 'time'}, set(dataset.AOD550.dims))
+        self.assertEqual({180, 360, 1}, set(dataset.AOD550.chunk_sizes))
+
+    @skipIf(os.environ.get('XCUBE_DISABLE_WEB_TESTS', None) == '1', 'XCUBE_DISABLE_WEB_TESTS = 1')
+    @skip('Disabled while time series are not supported')
+    def test_open_data_with_time_series_and_latitude_centers(self):
         dataset = self.opener.open_data('esacci.OZONE.mon.L3.LP.SCIAMACHY.Envisat.SCIAMACHY_ENVISAT.v0001.r1',
                                         variable_names=['approximate_altitude', 'ozone_mixing_ratio',
                                                         'sample_standard_deviation'],
@@ -135,18 +148,8 @@ class CciOdpDatasetOpenerTest(unittest.TestCase):
         self.assertEqual({'approximate_altitude', 'ozone_mixing_ratio', 'sample_standard_deviation'},
                          set(dataset.data_vars))
         self.assertEqual({'time', 'air_pressure', 'latitude_centers'},
-                         set(dataset.ozone_mixing_ratio.dims))
-        self.assertEqual({1, 32, 18}, set(dataset.ozone_mixing_ratio.chunk_sizes))
-
-        dataset = self.opener.open_data(
-            'esacci.AEROSOL.day.L3C.AER_PRODUCTS.AATSR.Envisat.ATSR2-ENVISAT-ENS_DAILY.v2-6.r1',
-            variable_names=['AOD550', 'NMEAS'],
-            time_range=['2009-07-02', '2009-07-05'],
-            bbox=[-10.0, 40.0, 10.0, 60.0])
-        self.assertIsNotNone(dataset)
-        self.assertEqual({'AOD550', 'NMEAS'}, set(dataset.data_vars))
-        self.assertEqual({'latitude', 'longitude', 'time'}, set(dataset.AOD550.dims))
-        self.assertEqual({180, 360, 1}, set(dataset.AOD550.chunk_sizes))
+                         dataset.ozone_mixing_ratio.dims)
+        self.assertEqual({1, 32, 18}, dataset.ozone_mixing_ratio.chunk_sizes)
 
 
 class CciOdpCubeOpenerTest(unittest.TestCase):
@@ -227,6 +230,9 @@ class CciOdpCubeOpenerTest(unittest.TestCase):
                          '"esacci.AEROSOL.day.L3C.AER_PRODUCTS.AATSR.Envisat.ATSR2-ENVISAT-ENS_DAILY.v2-6.r1", '
                          'as it cannot be accessed by data accessor "dataset[cube]:zarr:cciodp".', f'{dse.exception}')
 
+    @skipIf(os.environ.get('XCUBE_DISABLE_WEB_TESTS', None) == '1', 'XCUBE_DISABLE_WEB_TESTS = 1')
+    @skip('Disabled while time series are not supported')
+    def test_open_data_with_time_series_and_latitude_centers(self):
         dataset = self.opener.open_data('esacci.OZONE.mon.L3.LP.SCIAMACHY.Envisat.SCIAMACHY_ENVISAT.v0001.r1',
                                         variable_names=['standard_error_of_the_mean', 'ozone_mixing_ratio',
                                                         'sample_standard_deviation'],
@@ -238,6 +244,7 @@ class CciOdpCubeOpenerTest(unittest.TestCase):
                           'sample_standard_deviation'}, set(dataset.data_vars))
         self.assertEqual({'time', 'air_pressure', 'lat', 'lon'}, dataset.ozone_mixing_ratio.dims)
         self.assertEqual({1, 32, 18, 36}, set(dataset.ozone_mixing_ratio.chunk_sizes))
+
 
 class CciOdpDataStoreTest(unittest.TestCase):
 
@@ -506,20 +513,6 @@ class CciOdpDataStoreTest(unittest.TestCase):
 
     @skipIf(os.environ.get('XCUBE_DISABLE_WEB_TESTS', None) == '1', 'XCUBE_DISABLE_WEB_TESTS = 1')
     def test_open_data(self):
-        dataset = self.store.open_data('esacci.OZONE.mon.L3.LP.SCIAMACHY.Envisat.SCIAMACHY_ENVISAT.v0001.r1',
-                                       'dataset:zarr:cciodp',
-                                        variable_names=['approximate_altitude', 'ozone_mixing_ratio',
-                                                        'sample_standard_deviation'],
-                                        time_range=['2009-05-02', '2009-08-31'],
-                                        bbox=[-10.0, 40.0, 10.0, 60.0]
-                                        )
-        self.assertIsNotNone(dataset)
-        self.assertEqual({'approximate_altitude', 'ozone_mixing_ratio', 'sample_standard_deviation'},
-                         set(dataset.data_vars))
-        self.assertEqual({'time', 'air_pressure', 'latitude_centers'},
-                         set(dataset.ozone_mixing_ratio.dims))
-        self.assertEqual({1, 32, 18}, set(dataset.ozone_mixing_ratio.chunk_sizes))
-
         dataset = self.store.open_data(
             'esacci.AEROSOL.day.L3C.AER_PRODUCTS.AATSR.Envisat.ATSR2-ENVISAT-ENS_DAILY.v2-6.r1',
             'dataset:zarr:cciodp',
@@ -540,6 +533,23 @@ class CciOdpDataStoreTest(unittest.TestCase):
                          '"esacci.AEROSOL.day.L3C.AER_PRODUCTS.AATSR.Envisat.ATSR2-ENVISAT-ENS_DAILY.v2-6.r1", '
                          'as it cannot be accessed by data accessor "dataset[cube]:zarr:cciodp".', f'{dse.exception}')
 
+
+    @skipIf(os.environ.get('XCUBE_DISABLE_WEB_TESTS', None) == '1', 'XCUBE_DISABLE_WEB_TESTS = 1')
+    @skip('Disabled while time series are not supported')
+    def test_open_data_with_time_series_and_latitude_centers(self):
+        dataset = self.store.open_data('esacci.OZONE.mon.L3.LP.SCIAMACHY.Envisat.SCIAMACHY_ENVISAT.v0001.r1',
+                                       'dataset:zarr:cciodp',
+                                        variable_names=['approximate_altitude', 'ozone_mixing_ratio',
+                                                        'sample_standard_deviation'],
+                                        time_range=['2009-05-02', '2009-08-31'],
+                                        bbox=[-10.0, 40.0, 10.0, 60.0]
+                                        )
+        self.assertIsNotNone(dataset)
+        self.assertEqual({'approximate_altitude', 'ozone_mixing_ratio', 'sample_standard_deviation'},
+                         set(dataset.data_vars))
+        self.assertEqual({'time', 'air_pressure', 'latitude_centers'},
+                         set(dataset.ozone_mixing_ratio.dims))
+        self.assertEqual({1, 32, 18}, set(dataset.ozone_mixing_ratio.chunk_sizes))
         dataset = self.store.open_data('esacci.OZONE.mon.L3.LP.SCIAMACHY.Envisat.SCIAMACHY_ENVISAT.v0001.r1',
                                        'dataset[cube]:zarr:cciodp',
                                         variable_names=['standard_error_of_the_mean', 'ozone_mixing_ratio',
@@ -554,24 +564,6 @@ class CciOdpDataStoreTest(unittest.TestCase):
                          set(dataset.ozone_mixing_ratio.dims))
         self.assertEqual({1, 32, 18, 36}, set(dataset.ozone_mixing_ratio.chunk_sizes))
 
-    @skipIf(os.environ.get('XCUBE_DISABLE_WEB_TESTS', None) == '1', 'XCUBE_DISABLE_WEB_TESTS = 1')
-    def test_open_more_data(self):
-        dataset = self.store.open_data('esacci.OZONE.mon.L3.LP.GOMOS.Envisat.GOMOS_ENVISAT.v0001.r1',
-                                       'dataset:zarr:cciodp',
-                                        variable_names=['approximate_altitude', 'ozone_mixing_ratio',
-                                                        'sample_standard_deviation'],
-                                        time_range=['2004-05-01', '2004-08-31']
-                                       # ,
-                                        # bbox=[-10.0, 40.0, 10.0, 60.0]
-                                        )
-        self.assertIsNotNone(dataset)
-        self.assertEqual({'approximate_altitude', 'ozone_mixing_ratio', 'sample_standard_deviation'},
-                         set(dataset.data_vars))
-        self.assertEqual({'time', 'air_pressure', 'latitude_centers'},
-                         set(dataset.ozone_mixing_ratio.dims))
-        self.assertEqual({4, 51, 18}, set(dataset.ozone_mixing_ratio.chunk_sizes))
-        dataset.ozone_mixing_ratio.sel(time='2004-05-15 12:00:00', method='nearest').plot.\
-            imshow(cmap='Greys_r', figsize=(8, 8))
 
 class CciDataNormalizationTest(unittest.TestCase):
 
