@@ -925,19 +925,9 @@ class CciOdp:
             variable_infos, attributes = \
                 await self._get_variable_infos_from_feature(feature, session)
             for variable_info in variable_infos:
-                for dimension in variable_infos[variable_info]['dimensions']:
+                for index, dimension in enumerate(variable_infos[variable_info]['dimensions']):
                     if not dimension in dimensions:
-                        if dimension == 'bin_index':
-                            dimensions[dimension] = variable_infos[variable_info]['size']
-                        elif not dimension in variable_infos and \
-                                variable_info.split('_')[-1] == 'bnds':
-                            dimensions[dimension] = 2
-                        else:
-                            if dimension not in variable_infos and \
-                                    len(variable_infos[variable_info]['dimensions']):
-                                dimensions[dimension] = variable_infos[variable_info]['size']
-                            else:
-                                dimensions[dimension] = variable_infos[dimension]['size']
+                        dimensions[dimension] = variable_infos[variable_info]['shape'][index]
             if 'time' in dimensions:
                 time_dimension_size *= dimensions['time']
         data_source['dimensions'] = dimensions
@@ -1031,6 +1021,7 @@ class CciOdp:
             variable_infos[fixed_key]['file_dimensions'] = \
                 variable_infos[fixed_key]['dimensions'].copy()
             variable_infos[fixed_key]['size'] = dataset[key].size
+            variable_infos[fixed_key]['shape'] = list(dataset[key].shape)
         return variable_infos, dataset.attributes
 
     def get_opendap_dataset(self, url: str):
