@@ -72,7 +72,7 @@ class RemoteChunkStore(MutableMapping, metaclass=ABCMeta):
 
         self._dataset_name = data_id
         self._time_ranges = self.get_time_ranges(data_id, cube_params)
-
+        logging.debug('Determined time ranges')
         if not self._time_ranges:
             raise ValueError('Could not determine any valid time stamps')
 
@@ -88,6 +88,7 @@ class RemoteChunkStore(MutableMapping, metaclass=ABCMeta):
         }
 
         self._dimension_data = self.get_dimension_data(data_id)
+        logging.debug('Determined dimensionalities')
         self._dimension_data['time'] = {}
         self._dimension_data['time']['size'] = len(t_array)
         self._dimension_data['time']['data'] = t_array
@@ -136,6 +137,7 @@ class RemoteChunkStore(MutableMapping, metaclass=ABCMeta):
 
         self._time_indexes = {}
         remove = []
+        logging.debug('Adding variables to dataset ...')
         for variable_name in self._variable_names:
             if variable_name in self._dimension_data or variable_name == 'time_bnds':
                 remove.append(variable_name)
@@ -188,7 +190,7 @@ class RemoteChunkStore(MutableMapping, metaclass=ABCMeta):
                                    chunk_sizes,
                                    var_encoding,
                                    var_attrs)
-            logging.debug(f"Added variable '{variable_name}', total num of variables is {len(self._variable_names)}")
+        logging.debug(f"Added a total of {len(self._variable_names)} variables to the data set")
         for r in remove:
             self._variable_names.remove(r)
         cube_params['variable_names'] = self._variable_names
