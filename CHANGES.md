@@ -1,4 +1,6 @@
 ## Changes in 0.6.1. (under development)
+* * Fixed problem with the encoding of a dataset's coordinate variables that occurs 
+  when using `xcube_cci` with xcube 0.6.0. (#27)
 * Removed CLI
 
 ## Changes in 0.6.0.
