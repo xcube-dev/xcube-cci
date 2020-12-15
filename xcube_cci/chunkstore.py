@@ -28,6 +28,7 @@ import time
 import warnings
 from abc import abstractmethod, ABCMeta
 from collections.abc import MutableMapping
+from numcodecs import Blosc
 from typing import Iterator, Any, List, Dict, Tuple, Callable, Iterable, KeysView, Mapping, Union
 
 import numpy as np
@@ -35,6 +36,10 @@ import pandas as pd
 import re
 
 from .cciodp import CciOdp
+
+_STATIC_ARRAY_COMPRESSOR_PARAMS = dict(cname='zstd', clevel=1, shuffle=Blosc.SHUFFLE, blocksize=0)
+_STATIC_ARRAY_COMPRESSOR_CONFIG = dict(id='blosc', **_STATIC_ARRAY_COMPRESSOR_PARAMS)
+_STATIC_ARRAY_COMPRESSOR = Blosc(**_STATIC_ARRAY_COMPRESSOR_PARAMS)
 
 _LOG = logging.getLogger()
 _TIMESTAMP_FORMAT = "%Y-%m-%dT%H:%M:%S"
@@ -72,7 +77,7 @@ class RemoteChunkStore(MutableMapping, metaclass=ABCMeta):
 
         self._dataset_name = data_id
         self._time_ranges = self.get_time_ranges(data_id, cube_params)
-
+        logging.debug('Determined time ranges')
         if not self._time_ranges:
             raise ValueError('Could not determine any valid time stamps')
 
@@ -88,6 +93,7 @@ class RemoteChunkStore(MutableMapping, metaclass=ABCMeta):
         self._var_name_to_indexes = {}
 
         self._dimension_data = self.get_dimension_data(data_id)
+        logging.debug('Determined dimensionalities')
         self._dimension_data['time'] = {}
         self._dimension_data['time']['size'] = len(t_array)
         self._dimension_data['time']['data'] = t_array
@@ -137,6 +143,7 @@ class RemoteChunkStore(MutableMapping, metaclass=ABCMeta):
         self._time_indexes = {}
         remove = []
         self._num_data_var_chunks_not_in_vfs = 0
+        logging.debug('Adding variables to dataset ...')
         for variable_name in self._variable_names:
             if variable_name in self._dimension_data or variable_name == 'time_bnds':
                 remove.append(variable_name)
@@ -190,8 +197,7 @@ class RemoteChunkStore(MutableMapping, metaclass=ABCMeta):
                                    var_encoding,
                                    var_attrs)
             self._num_data_var_chunks_not_in_vfs += np.prod(chunk_sizes)
-            logging.debug(f"Added variable '{variable_name}', "
-                          f"total num of variables is {len(self._variable_names)}")
+        logging.debug(f"Added a total of {len(self._variable_names)} variables to the data set")
         for r in remove:
             self._variable_names.remove(r)
         cube_params['variable_names'] = self._variable_names
@@ -364,20 +370,24 @@ class RemoteChunkStore(MutableMapping, metaclass=ABCMeta):
     def _add_static_array(self, name: str, array: np.ndarray, attrs: Dict):
         shape = list(map(int, array.shape))
         dtype = str(array.dtype.str)
+        order = "C"
         array_metadata = {
             "zarr_format": 2,
             "chunks": shape,
             "shape": shape,
             "dtype": dtype,
             "fill_value": None,
-            "compressor": None,
+            "compressor": _STATIC_ARRAY_COMPRESSOR_CONFIG,
             "filters": None,
-            "order": "C",
+            "order": order,
         }
+        chunk_key = '.'.join(['0'] * array.ndim)
         self._vfs[name] = _str_to_bytes('')
         self._vfs[name + '/.zarray'] = _dict_to_bytes(array_metadata)
         self._vfs[name + '/.zattrs'] = _dict_to_bytes(attrs)
-        self._vfs[name + '/' + ('.'.join(['0'] * array.ndim))] = bytes(array)
+        self._vfs[name + '/' + chunk_key] = \
+            _STATIC_ARRAY_COMPRESSOR.encode(array.tobytes(order=order))
+
 
     def _add_remote_array(self,
                           name: str,
