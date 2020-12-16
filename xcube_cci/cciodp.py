@@ -739,7 +739,7 @@ class CciOdp:
                                                           feature_list,
                                                           self._extract_times_and_opendap_url,
                                                           request)
-                feature_list.sort(key=lambda x: x[0])
+            feature_list.sort(key=lambda x: x[0])
             self._features[ds_id] = feature_list
         else:
             if start_date < self._features[ds_id][0][0]:
