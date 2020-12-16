@@ -134,9 +134,15 @@ def _get_feature_dict_from_feature(feature: dict) -> Optional[dict]:
                 feature_dict['odd_url'] = odd_url
         described_by = fc_props_links.get("describedby", None)
         if described_by:
-            metadata_url = described_by[0].get("href", None)
-            if metadata_url:
-                feature_dict['metadata_url'] = metadata_url
+            for entry in described_by:
+                if entry.get('title', '') == 'ISO19115':
+                    metadata_url = entry.get("href", None)
+                    if metadata_url:
+                        feature_dict['metadata_url'] = metadata_url
+                elif entry.get('title', '') == 'Dataset Information':
+                    catalogue_url = entry.get("href", None)
+                    if catalogue_url:
+                        feature_dict['catalog_url'] = catalogue_url
     return feature_dict
 
 
