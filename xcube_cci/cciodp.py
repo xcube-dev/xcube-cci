@@ -895,17 +895,22 @@ class CciOdp:
         :return:
         """
         start_page = 1
+        initial_maximum_records = 1000
         maximum_records = 10000
         total_results = await self._fetch_opensearch_feature_part_list(session, base_url,
                                                                        query_args, start_page,
-                                                                       maximum_records,
+                                                                       initial_maximum_records,
                                                                        extension, extender,
                                                                        None, None)
-        num_results = maximum_records
+        if total_results < initial_maximum_records:
+            return
+        # num_results = maximum_records
+        num_results = 0
+        extension.clear()
         while num_results < total_results:
             if 'startDate' in query_args and 'endDate' in query_args:
-                # we have to clear the extension of any previous values to avoud duplicate values
-                extension.clear()
+                # we have to clear the extension of any previous values to avoid duplicate values
+                # extension.clear()
                 start_time = datetime.strptime(query_args.pop('startDate'), _TIMESTAMP_FORMAT)
                 end_time = datetime.strptime(query_args.pop('endDate'), _TIMESTAMP_FORMAT)
                 num_days_per_delta = \
@@ -929,13 +934,14 @@ class CciOdp:
                 num_results = total_results
             else:
                 tasks = []
+                # do not have more than 4 open connections at the same time
                 while len(tasks) < 4 and num_results < total_results:
-                    start_page += 1
                     tasks.append(self._fetch_opensearch_feature_part_list(session, base_url,
                                                                           query_args, start_page,
                                                                           maximum_records,
                                                                           extension,
                                                                           extender, None, None))
+                    start_page += 1
                     num_results += maximum_records
                 await asyncio.gather(*tasks)
 
