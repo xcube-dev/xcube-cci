@@ -43,7 +43,10 @@ from xcube_cci.constants import DEFAULT_NUM_RETRIES
 from xcube_cci.constants import DEFAULT_RETRY_BACKOFF_MAX
 from xcube_cci.constants import DEFAULT_RETRY_BACKOFF_BASE
 from xcube_cci.constants import OPENSEARCH_CEDA_URL
+from xcube_cci.observeutil import will_work
+from xcube_cci.observeutil import maybe_worked
 from xcube_cci.timeutil import get_timestrings_from_string
+from xcube.util.progress import observe_progress
 
 from pydap.client import Functions
 from pydap.handlers.dap import BaseProxy
@@ -698,32 +701,44 @@ class CciOdp:
                        endDate=end_time,
                        drsId=dataset_name
                        )
-        opendap_url = await self._get_opendap_url(session, request)
-        var_data = {}
-        if not opendap_url:
-            return var_data
-        dataset = await self._get_opendap_dataset(session, opendap_url)
-        if not dataset:
-            return var_data
-        for var_name in variable_names:
-            if var_name in dataset:
-                var_data[var_name] = \
-                    dict(size=dataset[var_name].size,
-                         chunkSize=dataset[var_name].attributes.get('_ChunkSizes'))
-                if dataset[var_name].size < 512 * 512:
-                    data = await self._get_data_from_opendap_dataset(dataset, session, var_name,
-                                                                     (slice(None, None, None),))
-                    if data is None:
-                        var_data[var_name]['data'] = []
+        total_progress = 9 + len(variable_names)
+        with observe_progress('Getting variable data', total_progress) as reporter:
+            reporter.will_work(8)
+            opendap_url = await self._get_opendap_url(session, request)
+            var_data = {}
+            if not opendap_url:
+                maybe_worked(reporter, total_progress - 8, 8)
+                return var_data
+            will_work(reporter, will_work_if_not_worked=9, will_work_if_worked=1)
+            dataset = await self._get_opendap_dataset(session, opendap_url)
+            if not dataset:
+                if reporter.state.completed_work > 1e-8 and len(variable_names) > 0:
+                    reporter.worked(total_progress - 9)
+                return var_data
+            maybe_worked(reporter, 9)
+            maybe_worked(reporter, 1, 8)
+            for var_name in variable_names:
+                if var_name in dataset:
+                    var_data[var_name] = \
+                        dict(size=dataset[var_name].size,
+                             chunkSize=dataset[var_name].attributes.get('_ChunkSizes'))
+                    if dataset[var_name].size < 512 * 512:
+                        reporter.will_work(1)
+                        data = await self._get_data_from_opendap_dataset(dataset, session, var_name,
+                                                                         (slice(None, None, None),))
+                        if data is None:
+                            var_data[var_name]['data'] = []
+                        else:
+                            var_data[var_name]['data'] = data
                     else:
-                        var_data[var_name]['data'] = data
+                        var_data[var_name]['data'] = []
+                        reporter.worked(1)
                 else:
-                    var_data[var_name]['data'] = []
-            else:
-                var_data[var_name] = dict(size=variable_names[var_name],
-                                          chunkSize=variable_names[var_name],
-                                          data=list(range(variable_names[var_name])))
-        return var_data
+                    var_data[var_name] = dict(size=variable_names[var_name],
+                                              chunkSize=variable_names[var_name],
+                                              data=list(range(variable_names[var_name])))
+                    reporter.worked(1)
+            return var_data
 
     async def _get_feature_list(self, session, request):
         ds_id = request['drsId']
@@ -733,20 +748,24 @@ class CciOdp:
         end_date = datetime.strptime(end_date_str, _TIMESTAMP_FORMAT)
         feature_list = []
         if ds_id not in self._features or len(self._features[ds_id]) == 0:
-            self._features[ds_id] = []
-            await self._fetch_opensearch_feature_list(session, self._opensearch_url, feature_list,
-                                                      self._extract_times_and_opendap_url, request)
-            if len(feature_list) == 0:
-                # try without dates. For some data sets, this works better
-                request.pop('startDate')
-                request.pop('endDate')
-                await self._fetch_opensearch_feature_list(session,
+            with observe_progress('Fetching feature list', 1) as reporter:
+                self._features[ds_id] = []
+                await self._fetch_opensearch_feature_list(session, self._opensearch_url,
+                                                          feature_list,
+                                                          self._extract_times_and_opendap_url,
+                                                          request)
+                if len(feature_list) == 0:
+                    # try without dates. For some data sets, this works better
+                    request.pop('startDate')
+                    request.pop('endDate')
+                    await self._fetch_opensearch_feature_list(session,
                                                           self._opensearch_url,
                                                           feature_list,
                                                           self._extract_times_and_opendap_url,
                                                           request)
-            feature_list.sort(key=lambda x: x[0])
-            self._features[ds_id] = feature_list
+                maybe_worked(reporter, 1)
+                feature_list.sort(key=lambda x: x[0])
+                self._features[ds_id] = feature_list
         else:
             if start_date < self._features[ds_id][0][0]:
                 request['endDate'] = datetime.strftime(self._features[ds_id][0][0],
@@ -864,15 +883,19 @@ class CciOdp:
 
     async def _get_data_chunk(self, session, request: Dict, dim_indexes: Tuple) -> Optional[bytes]:
         var_name = request['varNames'][0]
-        opendap_url = await self._get_opendap_url(session, request)
-        if not opendap_url:
-            return None
-        dataset = await self._get_opendap_dataset(session, opendap_url)
-        if not dataset:
-            return None
-        data = await self._get_data_from_opendap_dataset(dataset, session, var_name, dim_indexes)
-        variable_data = np.array(data, dtype=dataset[var_name].dtype.type)
-        result = variable_data.flatten().tobytes()
+        with observe_progress('Get data chunk', 10) as reporter:
+            reporter.will_work(8)
+            opendap_url = await self._get_opendap_url(session, request)
+            if not opendap_url:
+                return None
+            will_work(reporter, 9, 1)
+            dataset = await self._get_opendap_dataset(session, opendap_url)
+            if not dataset:
+                return None
+            reporter.will_work(1)
+            data = await self._get_data_from_opendap_dataset(dataset, session, var_name, dim_indexes)
+            variable_data = np.array(data, dtype=dataset[var_name].dtype.type)
+            result = variable_data.flatten().tobytes()
         return result
 
     async def _fetch_data_source_list_json(self, session, base_url, query_args) -> Sequence:
@@ -901,53 +924,56 @@ class CciOdp:
                                                                        query_args, start_page,
                                                                        initial_maximum_records,
                                                                        extension, extender,
-                                                                       None, None)
+                                                                       None, None, None)
         if total_results < initial_maximum_records:
             return
-        # num_results = maximum_records
-        num_results = 0
         extension.clear()
-        while num_results < total_results:
-            if 'startDate' in query_args and 'endDate' in query_args:
-                # we have to clear the extension of any previous values to avoid duplicate values
-                # extension.clear()
-                start_time = datetime.strptime(query_args.pop('startDate'), _TIMESTAMP_FORMAT)
-                end_time = datetime.strptime(query_args.pop('endDate'), _TIMESTAMP_FORMAT)
-                num_days_per_delta = \
-                    int(np.ceil((end_time - start_time).days / (total_results / 1000)))
-                delta = relativedelta(days=num_days_per_delta, seconds=-1)
-                tasks = []
-                current_time = start_time
+        if 'startDate' in query_args and 'endDate' in query_args:
+            # we have to clear the extension of any previous values to avoid duplicate values
+            # extension.clear()
+            start_time = datetime.strptime(query_args.pop('startDate'), _TIMESTAMP_FORMAT)
+            end_time = datetime.strptime(query_args.pop('endDate'), _TIMESTAMP_FORMAT)
+            num_sub_tasks = int(np.ceil(total_results / 1000))
+            num_days_per_delta = int(np.ceil(((end_time - start_time).days + 1) / num_sub_tasks))
+            delta = relativedelta(days=num_days_per_delta, seconds=-1)
+            one_second = relativedelta(seconds=1)
+            tasks = []
+            current_time = start_time
+            with observe_progress('Retrieving data times and files', num_sub_tasks) as reporter:
                 while current_time < end_time:
                     task_start = current_time.strftime(_TIMESTAMP_FORMAT)
                     current_time += delta
                     if current_time > end_time:
                         current_time = end_time
                     task_end = current_time.strftime(_TIMESTAMP_FORMAT)
+                    current_time += one_second
                     tasks.append(self._fetch_opensearch_feature_part_list(session, base_url,
                                                                           query_args, start_page,
                                                                           maximum_records,
-                                                                          extension,
-                                                                          extender,
-                                                                          task_start, task_end))
+                                                                          extension, extender,
+                                                                          task_start, task_end,
+                                                                          reporter))
                 await asyncio.gather(*tasks)
-                num_results = total_results
-            else:
+                return
+        num_results = 0
+        num_sub_tasks = int(np.ceil(total_results / maximum_records))
+        with observe_progress('Retrieving data times and files', num_sub_tasks) as reporter:
+            while num_results < total_results:
                 tasks = []
                 # do not have more than 4 open connections at the same time
                 while len(tasks) < 4 and num_results < total_results:
                     tasks.append(self._fetch_opensearch_feature_part_list(session, base_url,
                                                                           query_args, start_page,
                                                                           maximum_records,
-                                                                          extension,
-                                                                          extender, None, None))
+                                                                          extension,extender,
+                                                                          None, None, reporter))
                     start_page += 1
                     num_results += maximum_records
                 await asyncio.gather(*tasks)
 
     async def _fetch_opensearch_feature_part_list(self, session, base_url, query_args, start_page,
-                                                  maximum_records, extension, extender,
-                                                  start_date, end_date) -> int:
+                                                  maximum_records, extension, extender, start_date,
+                                                  end_date, progress_reporter) -> int:
         paging_query_args = dict(query_args or {})
         paging_query_args.update(startPage=start_page, maximumRecords=maximum_records,
                                  httpAccept='application/geo+json')
@@ -959,11 +985,15 @@ class CciOdp:
         resp = await self.get_response(session, url)
         if resp:
             json_text = await resp.read()
+            if progress_reporter:
+                progress_reporter.worked(1)
             json_dict = json.loads(json_text.decode('utf-8'))
             if extender:
                 feature_list = json_dict.get("features", [])
                 extender(extension, feature_list)
             return json_dict['totalResults']
+        if progress_reporter:
+            progress_reporter.worked(1)
         if 'startDate' in paging_query_args and 'endDate' in paging_query_args:
             _LOG.debug(f'Did not read page {start_page} with start date '
                        f'{paging_query_args["startDate"]} and '
@@ -1103,57 +1133,62 @@ class CciOdp:
     async def _get_opendap_dataset(self, session, url: str):
         if url in self._datasets:
             return self._datasets[url]
-        tasks = []
-        res_dict = {}
-        tasks.append(self._get_content_from_opendap_url(url, 'dds', res_dict, session))
-        tasks.append(self._get_content_from_opendap_url(url, 'das', res_dict, session))
-        await asyncio.gather(*tasks)
-        if 'dds' not in res_dict or 'das' not in res_dict:
-            _LOG.warning('Could not open opendap url. No dds or das file provided.')
-            return
-        if res_dict['dds'] == '':
-            _LOG.warning('Could not open opendap url. dds file is empty.')
-            return
-        dataset = build_dataset(res_dict['dds'])
-        res_dict['das'] = res_dict['das'].replace('        Float32 valid_min -Infinity;\n', '')
-        res_dict['das'] = res_dict['das'].replace('        Float32 valid_max Infinity;\n', '')
-        add_attributes(dataset, parse_das(res_dict['das']))
+        with observe_progress('Building Dataset', 3) as reporter:
+            tasks = []
+            res_dict = {}
+            tasks.append(self._get_content_from_opendap_url(url, 'dds', res_dict, session))
+            tasks.append(self._get_content_from_opendap_url(url, 'das', res_dict, session))
+            await asyncio.gather(*tasks)
+            reporter.worked(2)
+            if 'dds' not in res_dict or 'das' not in res_dict:
+                _LOG.warning('Could not open opendap url. No dds or das file provided.')
+                reporter.worked(1)
+                return
+            if res_dict['dds'] == '':
+                _LOG.warning('Could not open opendap url. dds file is empty.')
+                reporter.worked(1)
+                return
+            dataset = build_dataset(res_dict['dds'])
+            res_dict['das'] = res_dict['das'].replace('        Float32 valid_min -Infinity;\n', '')
+            res_dict['das'] = res_dict['das'].replace('        Float32 valid_max Infinity;\n', '')
+            add_attributes(dataset, parse_das(res_dict['das']))
 
-        # remove any projection from the url, leaving selections
-        scheme, netloc, path, query, fragment = urlsplit(url)
-        projection, selection = parse_ce(query)
-        url = urlunsplit((scheme, netloc, path, '&'.join(selection), fragment))
+            # remove any projection from the url, leaving selections
+            scheme, netloc, path, query, fragment = urlsplit(url)
+            projection, selection = parse_ce(query)
+            url = urlunsplit((scheme, netloc, path, '&'.join(selection), fragment))
 
-        # now add data proxies
-        for var in walk(dataset, BaseType):
-            var.data = BaseProxy(url, var.id, var.dtype, var.shape)
-        for var in walk(dataset, SequenceType):
-            template = copy.copy(var)
-            var.data = SequenceProxy(url, template)
+            # now add data proxies
+            for var in walk(dataset, BaseType):
+                var.data = BaseProxy(url, var.id, var.dtype, var.shape)
+            for var in walk(dataset, SequenceType):
+                template = copy.copy(var)
+                var.data = SequenceProxy(url, template)
 
-        # apply projections
-        for var in projection:
-            target = dataset
-            while var:
-                token, index = var.pop(0)
-                target = target[token]
-                if isinstance(target, BaseType):
-                    target.data.slice = fix_slice(index, target.shape)
-                elif isinstance(target, GridType):
-                    index = fix_slice(index, target.array.shape)
-                    target.array.data.slice = index
-                    for s, child in zip(index, target.maps):
-                        target[child].data.slice = (s,)
-                elif isinstance(target, SequenceType):
-                    target.data.slice = index
+            # apply projections
+            for var in projection:
+                target = dataset
+                while var:
+                    token, index = var.pop(0)
+                    target = target[token]
+                    if isinstance(target, BaseType):
+                        target.data.slice = fix_slice(index, target.shape)
+                    elif isinstance(target, GridType):
+                        index = fix_slice(index, target.array.shape)
+                        target.array.data.slice = index
+                        for s, child in zip(index, target.maps):
+                            target[child].data.slice = (s,)
+                    elif isinstance(target, SequenceType):
+                        target.data.slice = index
 
-        # retrieve only main variable for grid types:
-        for var in walk(dataset, GridType):
-            var.set_output_grid(True)
+            # retrieve only main variable for grid types:
+            for var in walk(dataset, GridType):
+                var.set_output_grid(True)
 
-        dataset.functions = Functions(url)
-        self._datasets[url] = dataset
-        return dataset
+            dataset.functions = Functions(url)
+            self._datasets[url] = dataset
+            reporter.worked(1)
+            return dataset
 
     async def _get_content_from_opendap_url(self, url: str, part: str, res_dict: dict, session):
         scheme, netloc, path, query, fragment = urlsplit(url)
@@ -1164,27 +1199,33 @@ class CciOdp:
             res_dict[part] = str(res_dict[part], 'utf-8')
 
     async def _get_data_from_opendap_dataset(self, dataset, session, variable_name, slices):
-        proxy = dataset[variable_name].data
-        if type(proxy) == list:
-            proxy = proxy[0]
-        # build download url
-        index = combine_slices(proxy.slice, fix_slice(slices, proxy.shape))
-        scheme, netloc, path, query, fragment = urlsplit(proxy.baseurl)
-        url = urlunsplit((
-            scheme, netloc, path + '.dods',
-            quote(proxy.id) + hyperslab(index) + '&' + query,
-            fragment)).rstrip('&')
-        # download and unpack data
-        resp = await self.get_response(session, url)
-        if not resp:
-            return None
-        content = await resp.read()
-        dds, data = content.split(b'\nData:\n', 1)
-        dds = str(dds, 'utf-8')
-        # Parse received dataset:
-        dataset = build_dataset(dds)
-        dataset.data = unpack_data(BytesReader(data), dataset)
-        return dataset[proxy.id].data
+        with observe_progress(f'Retrieving data of "{variable_name}" from  Dataset', 3) \
+                as reporter:
+            proxy = dataset[variable_name].data
+            if type(proxy) == list:
+                proxy = proxy[0]
+            # build download url
+            index = combine_slices(proxy.slice, fix_slice(slices, proxy.shape))
+            scheme, netloc, path, query, fragment = urlsplit(proxy.baseurl)
+            url = urlunsplit((
+                scheme, netloc, path + '.dods',
+                quote(proxy.id) + hyperslab(index) + '&' + query,
+                fragment)).rstrip('&')
+            # download and unpack data
+            resp = await self.get_response(session, url)
+            reporter.worked(1)
+            if not resp:
+                reporter.worked(2)
+                return None
+            content = await resp.read()
+            reporter.worked(1)
+            dds, data = content.split(b'\nData:\n', 1)
+            dds = str(dds, 'utf-8')
+            # Parse received dataset:
+            dataset = build_dataset(dds)
+            dataset.data = unpack_data(BytesReader(data), dataset)
+            reporter.worked(1)
+            return dataset[proxy.id].data
 
     async def get_response(self, session: aiohttp.ClientSession, url: str) -> \
             Optional[aiohttp.ClientResponse]:
