@@ -90,7 +90,9 @@ class RemoteChunkStore(MutableMapping, metaclass=ABCMeta):
             cube_params.get('time_range', self.get_default_time_range(data_id))))
 
         self._vfs = {}
-        self._var_name_to_indexes = {}
+        self._var_name_to_ranges = {}
+        self._ranges_to_indexes = {}
+        self._ranges_to_var_names = {}
 
         self._dimension_data = self.get_dimension_data(data_id)
         logging.debug('Determined dimensionalities')
@@ -407,8 +409,13 @@ class RemoteChunkStore(MutableMapping, metaclass=ABCMeta):
         self._vfs[name + '/.zarray'] = _dict_to_bytes(array_metadata)
         self._vfs[name + '/.zattrs'] = _dict_to_bytes(attrs)
         nums = np.array(shape) // np.array(chunks)
-        self._var_name_to_indexes[name] = \
-            list(itertools.product(*tuple(map(range, map(int, nums)))))
+        ranges = tuple(map(range, map(int, nums)))
+        self._var_name_to_ranges[name] = ranges
+        if ranges not in self._ranges_to_indexes:
+            self._ranges_to_indexes[ranges] = list(itertools.product(*ranges))
+        if ranges not in self._ranges_to_var_names:
+            self._ranges_to_var_names[ranges] = []
+        self._ranges_to_var_names[ranges].append(name)
 
     def _fetch_chunk(self, var_name: str, chunk_index: Tuple[int, ...]) -> bytes:
         request_time_range = self.request_time_range(chunk_index[self._time_indexes[var_name]])
@@ -521,15 +528,19 @@ class RemoteChunkStore(MutableMapping, metaclass=ABCMeta):
             try:
                 chunk_indexes = \
                     tuple(int(chunk_index) for chunk_index in chunk_index_part.split('.'))
-                if chunk_indexes in self._var_name_to_indexes[name]:
-                    self._vfs[key] = name, chunk_indexes
-                    self._var_name_to_indexes[name].remove(chunk_indexes)
-                    self._num_data_var_chunks_not_in_vfs -= 1
+                ranges = self._var_name_to_ranges[name]
+                indexes = self._ranges_to_indexes[ranges]
+                if chunk_indexes in indexes:
+                    for var_name in self._ranges_to_var_names[ranges]:
+                        self._vfs[key] = var_name, chunk_indexes
+                        self._num_data_var_chunks_not_in_vfs -= 1
+                    indexes.remove(chunk_indexes)
             except:
                 pass
 
     def _build_missing_vfs_entries(self):
-        for name, indexes in self._var_name_to_indexes.items():
+        for name, ranges in self._var_name_to_ranges.items():
+            indexes = self._ranges_to_indexes[ranges]
             for index in indexes:
                 filename = '.'.join(map(str, index))
                 self._vfs[name + '/' + filename] = name, index
