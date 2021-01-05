@@ -468,7 +468,7 @@ class CciOdp:
             if excluded_data_source in drs_ids:
                     drs_ids.remove(excluded_data_source)
         for drs_id in drs_ids:
-            drs_meta_info = meta_info.copy()
+            drs_meta_info = copy.deepcopy(meta_info)
             drs_meta_info.update(json_dict)
             self._adjust_json_dict(drs_meta_info, drs_id)
             for variable in drs_meta_info.get('variables', []):
@@ -525,7 +525,8 @@ class CciOdp:
                 and 'attributes' in data_source:
             return
         data_fid = await self._get_fid_for_dataset(session, dataset_name)
-        await self._set_variable_infos(self._opensearch_url, data_fid, session, data_source)
+        await self._set_variable_infos(self._opensearch_url, data_fid, dataset_name, session,
+                                       data_source)
 
     @staticmethod
     def _get_data_var_names(variable_infos) -> List:
@@ -972,15 +973,16 @@ class CciOdp:
             _LOG.debug(f'Did not read page {start_page}')
         return 0
 
-    async def _set_variable_infos(self, opensearch_url: str, dataset_id: str, session,
-                                  data_source):
+    async def _set_variable_infos(self, opensearch_url: str, dataset_id: str,
+                                  dataset_name: str, session, data_source):
         attributes = {}
         dimensions = {}
         variable_infos = {}
         feature, time_dimension_size = \
             await self._fetch_feature_and_num_nc_files_at(session,
                                                           opensearch_url,
-                                                          dict(parentIdentifier=dataset_id),
+                                                          dict(parentIdentifier=dataset_id,
+                                                               drsId=dataset_name),
                                                           1)
         time_dimension_size = data_source['num_files']
         if feature is not None:
@@ -990,17 +992,6 @@ class CciOdp:
                 for index, dimension in enumerate(variable_infos[variable_info]['dimensions']):
                     if not dimension in dimensions:
                         dimensions[dimension] = variable_infos[variable_info]['shape'][index]
-                        # if dimension == 'bin_index':
-                        #     dimensions[dimension] = variable_infos[variable_info]['size']
-                        # elif not dimension in variable_infos and \
-                        #         variable_info.split('_')[-1] == 'bnds':
-                        #     dimensions[dimension] = 2
-                        # else:
-                        #     if dimension not in variable_infos and \
-                        #             len(variable_infos[variable_info]['dimensions']):
-                        #         dimensions[dimension] = variable_infos[variable_info]['size']
-                        #     else:
-                        #         dimensions[dimension] = variable_infos[dimension]['size']
             if 'time' in dimensions:
                 time_dimension_size *= dimensions['time']
         data_source['dimensions'] = dimensions
@@ -1023,8 +1014,10 @@ class CciOdp:
             feature_list = json_dict.get("features", [])
             # we try not to take the first feature, as the last and the first one may have
             # different time chunkings
-            if len(feature_list) > 0:
-                return feature_list[-1], json_dict.get("totalResults", 0)
+            if len(feature_list) > 1:
+                return feature_list[1], json_dict.get("totalResults", 0)
+            elif len(feature_list) > 0:
+                return feature_list[0], json_dict.get("totalResults", 0)
         return None, 0
 
     async def _fetch_meta_info(self, session, odd_url: str, metadata_url: str) -> Dict:
@@ -1076,7 +1069,7 @@ class CciOdp:
         variable_infos = {}
         for key in dataset.keys():
             fixed_key = key.replace('%2E', '_').replace('.', '_')
-            variable_infos[fixed_key] = dataset[key].attributes
+            variable_infos[fixed_key] = copy.deepcopy(dataset[key].attributes)
             if '_FillValue' in variable_infos[fixed_key]:
                 variable_infos[fixed_key]['fill_value'] = variable_infos[fixed_key]['_FillValue']
                 variable_infos[fixed_key].pop('_FillValue')
@@ -1087,12 +1080,12 @@ class CciOdp:
                         variable_infos[fixed_key]['chunk_sizes']
                 else:
                     variable_infos[fixed_key]['file_chunk_sizes'] = \
-                        variable_infos[fixed_key]['chunk_sizes'].copy()
+                        copy.deepcopy(variable_infos[fixed_key]['chunk_sizes'])
                 variable_infos[fixed_key].pop('_ChunkSizes')
             variable_infos[fixed_key]['data_type'] = dataset[key].dtype.name
             variable_infos[fixed_key]['dimensions'] = list(dataset[key].dimensions)
             variable_infos[fixed_key]['file_dimensions'] = \
-                variable_infos[fixed_key]['dimensions'].copy()
+                copy.deepcopy(variable_infos[fixed_key]['dimensions'])
             variable_infos[fixed_key]['size'] = dataset[key].size
             variable_infos[fixed_key]['shape'] = list(dataset[key].shape)
         return variable_infos, dataset.attributes
