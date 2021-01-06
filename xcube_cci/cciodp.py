@@ -104,13 +104,9 @@ def _run_with_session(async_function, *params):
     # See https://github.com/aio-libs/aiohttp/blob/master/docs/client_advanced.rst#graceful-shutdown
     loop = asyncio.get_event_loop()
     coro = _run_with_session_executor(async_function, *params)
-    if loop.is_running():
-        future = asyncio.run_coroutine_threadsafe(coro, loop)
-        result = future.result()
-    else:
-        result = loop.run_until_complete(coro)
-        # Zero-sleep to allow underlying connections to close
-        loop.run_until_complete(asyncio.sleep(0))
+    result = loop.run_until_complete(coro)
+    # Zero-sleep to allow underlying connections to close
+    loop.run_until_complete(asyncio.sleep(0))
     return result
 
 
@@ -853,11 +849,11 @@ class CciOdp:
 
     async def _get_opendap_url(self, session, request: Dict):
         request['fileFormat'] = '.nc'
-        async with _FEATURE_LIST_LOCK:
-            feature_list = await self._get_feature_list(session, request)
-            if len(feature_list) == 0:
-                return
-            return feature_list[0][2]
+        # async with _FEATURE_LIST_LOCK:
+        feature_list = await self._get_feature_list(session, request)
+        if len(feature_list) == 0:
+            return
+        return feature_list[0][2]
 
     def get_data_chunk(self, request: Dict, dim_indexes: Tuple) -> Optional[bytes]:
         data_chunk = _run_with_session(self._get_data_chunk, request, dim_indexes)
