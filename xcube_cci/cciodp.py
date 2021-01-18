@@ -889,7 +889,7 @@ class CciOdp:
             dataset = await self._get_opendap_dataset(session, opendap_url)
             if not dataset:
                 return None
-            reporter.will_work(1)
+            will_work(reporter, 10, 1)
             data = await self._get_data_from_opendap_dataset(dataset, session, var_name, dim_indexes)
             variable_data = np.array(data, dtype=dataset[var_name].dtype.type)
             result = variable_data.flatten().tobytes()
