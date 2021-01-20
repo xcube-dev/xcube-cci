@@ -27,7 +27,8 @@ import logging
 import time
 import warnings
 from abc import abstractmethod, ABCMeta
-from collections import MutableMapping
+from collections.abc import MutableMapping
+from numcodecs import Blosc
 from typing import Iterator, Any, List, Dict, Tuple, Callable, Iterable, KeysView, Mapping, Union
 
 import numpy as np
@@ -35,6 +36,10 @@ import pandas as pd
 import re
 
 from .cciodp import CciOdp
+
+_STATIC_ARRAY_COMPRESSOR_PARAMS = dict(cname='zstd', clevel=1, shuffle=Blosc.SHUFFLE, blocksize=0)
+_STATIC_ARRAY_COMPRESSOR_CONFIG = dict(id='blosc', **_STATIC_ARRAY_COMPRESSOR_PARAMS)
+_STATIC_ARRAY_COMPRESSOR = Blosc(**_STATIC_ARRAY_COMPRESSOR_PARAMS)
 
 _LOG = logging.getLogger()
 _TIMESTAMP_FORMAT = "%Y-%m-%dT%H:%M:%S"
@@ -72,11 +77,12 @@ class RemoteChunkStore(MutableMapping, metaclass=ABCMeta):
 
         self._dataset_name = data_id
         self._time_ranges = self.get_time_ranges(data_id, cube_params)
-
+        logging.debug('Determined time ranges')
         if not self._time_ranges:
             raise ValueError('Could not determine any valid time stamps')
 
-        t_array = np.array([s + 0.5 * (e - s) for s, e in self._time_ranges]).astype('datetime64[s]').astype(np.int64)
+        t_array = [s.to_pydatetime() + 0.5 * (e.to_pydatetime() - s.to_pydatetime()) for s, e in self._time_ranges]
+        t_array = np.array(t_array).astype('datetime64[s]').astype(np.int64)
         t_bnds_array = np.array(self._time_ranges).astype('datetime64[s]').astype(np.int64)
         time_coverage_start = self._time_ranges[0][0]
         time_coverage_end = self._time_ranges[-1][1]
@@ -87,10 +93,12 @@ class RemoteChunkStore(MutableMapping, metaclass=ABCMeta):
         }
 
         self._dimension_data = self.get_dimension_data(data_id)
+        logging.debug('Determined dimensionalities')
+        self._dimension_data['time'] = {}
+        self._dimension_data['time']['size'] = len(t_array)
+        self._dimension_data['time']['data'] = t_array
         for dimension_name in self._dimension_data:
             if dimension_name == 'time':
-                self._dimension_data['time']['size'] = len(t_array)
-                self._dimension_data['time']['data'] = t_array
                 continue
             dim_attrs = self.get_attrs(dimension_name)
             dim_attrs['_ARRAY_DIMENSIONS'] = dimension_name
@@ -125,12 +133,6 @@ class RemoteChunkStore(MutableMapping, metaclass=ABCMeta):
             Conventions='CF-1.7',
             coordinates='time_bnds',
             title=f'{data_id} Data Cube',
-            history=[
-                dict(
-                    program=f'{self._class_name}',
-                    cube_params=cube_params
-                )
-            ],
             date_created=pd.Timestamp.now().isoformat(),
             processing_level=self._dataset_name.split('.')[3],
             time_coverage_start=time_coverage_start.isoformat(),
@@ -140,6 +142,7 @@ class RemoteChunkStore(MutableMapping, metaclass=ABCMeta):
 
         self._time_indexes = {}
         remove = []
+        logging.debug('Adding variables to dataset ...')
         for variable_name in self._variable_names:
             if variable_name in self._dimension_data or variable_name == 'time_bnds':
                 remove.append(variable_name)
@@ -152,17 +155,19 @@ class RemoteChunkStore(MutableMapping, metaclass=ABCMeta):
                               f"Will omit it from the dataset.")
                 remove.append(variable_name)
                 continue
-            var_attrs.update(_ARRAY_DIMENSIONS=dimensions)
             chunk_sizes = var_attrs.get('chunk_sizes', [-1] * len(dimensions))
             if isinstance(chunk_sizes, int):
                 chunk_sizes = [chunk_sizes]
+            if 'time' not in dimensions:
+                dimensions.insert(0, 'time')
+                chunk_sizes.insert(0, 1)
+            var_attrs.update(_ARRAY_DIMENSIONS=dimensions)
             sizes = []
             self._time_indexes[variable_name] = -1
             time_dimension = -1
             for i, dimension_name in enumerate(dimensions):
                 sizes.append(self._dimension_data[dimension_name]['size'])
                 if dimension_name == 'time':
-                    chunk_sizes[i] = 1
                     self._time_indexes[variable_name] = i
                     time_dimension = i
                 if chunk_sizes[i] == -1:
@@ -179,38 +184,92 @@ class RemoteChunkStore(MutableMapping, metaclass=ABCMeta):
                                   f"Will omit it from the dataset.")
                 remove.append(variable_name)
                 continue
-            self._adjust_chunk_sizes(chunk_sizes, sizes, time_dimension)
+            chunk_sizes = self._adjust_chunk_sizes(chunk_sizes, sizes, time_dimension)
             var_attrs['chunk_sizes'] = chunk_sizes
+            if len(var_attrs['file_dimensions']) < len(dimensions):
+                var_attrs['file_chunk_sizes'] = chunk_sizes[1:]
+            else:
+                var_attrs['file_chunk_sizes'] = chunk_sizes
             self._add_remote_array(variable_name,
                                    sizes,
                                    chunk_sizes,
                                    var_encoding,
                                    var_attrs)
-            logging.debug(f"Added variable '{variable_name}', total num of variables is {len(self._variable_names)}")
+        logging.debug(f"Added a total of {len(self._variable_names)} variables to the data set")
         for r in remove:
             self._variable_names.remove(r)
         cube_params['variable_names'] = self._variable_names
-        global_attrs['history'] = dict(
+        global_attrs['history'] = [dict(
             program=f'{self._class_name}',
             cube_params=cube_params
-        )
+        )]
         # setup Virtual File System (vfs)
         self._vfs['.zgroup'] = _dict_to_bytes(dict(zarr_format=2))
         self._vfs['.zattrs'] = _dict_to_bytes(global_attrs)
 
     @classmethod
     def _adjust_chunk_sizes(cls, chunks, sizes, time_dimension):
-        while np.product(chunks) < 1000000:
-            min = 1000000
-            argmin = -1
-            for i, chunk in enumerate(chunks):
-                if i != time_dimension and chunk != sizes[i] and min > chunk:
-                    min = chunk
-                    argmin = i
-            if argmin == -1:
-                # chunks are as big as they can be
-                break
-            chunks[argmin] = int(np.min([min * 2, sizes[argmin]]))
+        # check if we can actually read in everything as one big chunk
+        sum_sizes = np.product(sizes)
+        if time_dimension >= 0:
+            sum_sizes = sum_sizes / sizes[time_dimension] * chunks[time_dimension]
+            if sum_sizes < 1000000:
+                best_chunks = sizes.copy()
+                best_chunks[time_dimension] = chunks[time_dimension]
+                return best_chunks
+        if sum_sizes < 1000000:
+            return sizes
+        # determine valid values for a chunk size. A value is valid if the size can be divided by it without remainder
+        valid_chunk_sizes = []
+        for i, chunk, size in zip(range(len(chunks)), chunks, sizes):
+            # do not rechunk time dimension
+            if i == time_dimension:
+                valid_chunk_sizes.append([chunk])
+                continue
+            #handle case that the size cannot be divided evenly by the chunk
+            if size % chunk > 0:
+                if np.product(chunks) / chunk * size < 1000000:
+                    # if the size is small enough to be ingested in single chunk, take it
+                    valid_chunk_sizes.append([size])
+                else:
+                    # otherwise, give in to that we cannot chunk the data evenly
+                    valid_chunk_sizes.append(list(range(chunk, size + 1, chunk)))
+                continue
+            valid_dim_chunk_sizes = []
+            for r in range(chunk, size + 1, chunk):
+                if size % r == 0:
+                    valid_dim_chunk_sizes.append(r)
+            valid_chunk_sizes.append(valid_dim_chunk_sizes)
+        # recursively determine the chunking with the biggest size smaller than 1000000
+        chunks, chunk_size = cls._get_best_chunks(chunks, valid_chunk_sizes, chunks.copy(), 0, 0, time_dimension)
+        return chunks
+
+    @classmethod
+    def _get_best_chunks(cls, chunks, valid_sizes, best_chunks, best_chunk_size, index, time_dimension):
+        for valid_size in valid_sizes[index]:
+            test_chunks = chunks.copy()
+            test_chunks[index] = valid_size
+            if index < len(chunks) - 1:
+                test_chunks, test_chunk_size = \
+                    cls._get_best_chunks(test_chunks, valid_sizes, best_chunks, best_chunk_size, index + 1,
+                                         time_dimension)
+            else:
+                test_chunk_size = np.product(test_chunks)
+                if test_chunk_size > 1000000:
+                    break
+            if test_chunk_size > best_chunk_size:
+                best_chunk_size = test_chunk_size
+                best_chunks = test_chunks.copy()
+            elif test_chunk_size == best_chunk_size:
+                # in case two chunkings have the same size, choose the one where values are more similar
+                where = np.full(len(test_chunks), fill_value=True)
+                where[time_dimension] = False
+                test_min_chunk = np.max(test_chunks, initial=0, where=where)
+                best_min_chunk = np.max(best_chunks, initial=0, where=where)
+                if best_min_chunk > test_min_chunk:
+                    best_chunk_size = test_chunk_size
+                    best_chunks = test_chunks.copy()
+        return best_chunks, best_chunk_size
 
     @classmethod
     def _adjust_size(cls, size: int, tile_size: int) -> int:
@@ -222,6 +281,21 @@ class RemoteChunkStore(MutableMapping, metaclass=ABCMeta):
     @classmethod
     def _safe_int_div(cls, x: int, y: int) -> int:
         return (x + y - 1) // y
+
+    @classmethod
+    def _extract_time_as_string(cls, time: Union[pd.Timestamp, str]) -> str:
+        if isinstance(time, str):
+            time = pd.to_datetime(time, utc=True)
+        return time.tz_localize(None).isoformat()
+
+    @classmethod
+    def _extract_time_range_as_strings(cls, time_range: Union[Tuple, List]) -> (str, str):
+        if isinstance(time_range, tuple):
+            time_start, time_end = time_range
+        else:
+            time_start = time_range[0]
+            time_end = time_range[1]
+        return cls._extract_time_as_string(time_start), cls._extract_time_as_string(time_end)
 
     @abstractmethod
     def get_time_ranges(self, cube_id: str, cube_params: Mapping[str, Any]) -> List[Tuple]:
@@ -294,20 +368,24 @@ class RemoteChunkStore(MutableMapping, metaclass=ABCMeta):
     def _add_static_array(self, name: str, array: np.ndarray, attrs: Dict):
         shape = list(map(int, array.shape))
         dtype = str(array.dtype.str)
+        order = "C"
         array_metadata = {
             "zarr_format": 2,
             "chunks": shape,
             "shape": shape,
             "dtype": dtype,
             "fill_value": None,
-            "compressor": None,
+            "compressor": _STATIC_ARRAY_COMPRESSOR_CONFIG,
             "filters": None,
-            "order": "C",
+            "order": order,
         }
+        chunk_key = '.'.join(['0'] * array.ndim)
         self._vfs[name] = _str_to_bytes('')
         self._vfs[name + '/.zarray'] = _dict_to_bytes(array_metadata)
         self._vfs[name + '/.zattrs'] = _dict_to_bytes(attrs)
-        self._vfs[name + '/' + ('.'.join(['0'] * array.ndim))] = bytes(array)
+        self._vfs[name + '/' + chunk_key] = \
+            _STATIC_ARRAY_COMPRESSOR.encode(array.tobytes(order=order))
+
 
     def _add_remote_array(self,
                           name: str,
@@ -334,7 +412,7 @@ class RemoteChunkStore(MutableMapping, metaclass=ABCMeta):
             self._vfs[name + '/' + filename] = name, index
 
     def _fetch_chunk(self, var_name: str, chunk_index: Tuple[int, ...]) -> bytes:
-        request_time_range = self.request_time_range(self._time_indexes[var_name])
+        request_time_range = self.request_time_range(chunk_index[self._time_indexes[var_name]])
 
         t0 = time.perf_counter()
         try:
@@ -479,21 +557,6 @@ class CciChunkStore(RemoteChunkStore):
                          observer=observer,
                          trace_store_calls=trace_store_calls)
 
-    @classmethod
-    def _extract_time_as_string(cls, time: Union[pd.Timestamp, str]) -> str:
-        if isinstance(time, str):
-            time = pd.to_datetime(time, utc=True)
-        return time.tz_localize(None).isoformat()
-
-    @classmethod
-    def _extract_time_range_as_strings(cls, time_range: Union[Tuple, List]) -> (str, str):
-        if isinstance(time_range, tuple):
-            time_start, time_end = time_range
-        else:
-            time_start = time_range[0]
-            time_end = time_range[1]
-        return cls._extract_time_as_string(time_start), cls._extract_time_as_string(time_end)
-
     def _extract_time_range_as_datetime(self, time_range: Union[Tuple, List]) -> (datetime, datetime, str, str):
         iso_start_time, iso_end_time = self._extract_time_range_as_strings(time_range)
         start_time = datetime.strptime(iso_start_time, _TIMESTAMP_FORMAT)
@@ -517,46 +580,6 @@ class CciChunkStore(RemoteChunkStore):
             start_time = datetime(year=start_time.year, month=1, day=1)
             end_time = datetime(year=end_time.year, month=12, day=31)
             delta = relativedelta(years=1)
-        elif re.compile('[0-9]*-days').search(time_period):
-            num_days = int(time_period.split('-')[0])
-            temp_start_time = datetime(start_time.year, start_time.month, start_time.day)
-            temp_start_time -= relativedelta(days=num_days - 1)
-            temp_start_time = self._cci_odp.get_earliest_start_date(dataset_id,
-                                                                    datetime.strftime(temp_start_time,
-                                                                                      _TIMESTAMP_FORMAT),
-                                                                    iso_end_time,
-                                                                    f'{num_days} days')
-            if temp_start_time:
-                start_time = temp_start_time
-            else:
-                start_time = datetime(start_time.year, start_time.month, start_time.day)
-            start_time_ordinal = start_time.toordinal()
-            end_time_ordinal = end_time.toordinal()
-            end_time_ordinal = start_time_ordinal + int(np.ceil((end_time_ordinal - start_time_ordinal) /
-                                                                float(num_days)) * num_days)
-            end_time = datetime.fromordinal(end_time_ordinal)
-            end_time += relativedelta(days=1)
-            delta = relativedelta(days=num_days)
-        elif re.compile('[0-9]*-yrs').search(time_period):
-            num_years = int(time_period.split('-')[0])
-            temp_start_time = datetime(start_time.year, start_time.month, start_time.day)
-            temp_start_time -= relativedelta(years=num_years - 1)
-            temp_start_time = self._cci_odp.get_earliest_start_date(dataset_id,
-                                                                    datetime.strftime(temp_start_time,
-                                                                                      _TIMESTAMP_FORMAT),
-                                                                    iso_end_time,
-                                                                    f'{num_years} years')
-            if temp_start_time:
-                start_time = temp_start_time
-            else:
-                start_time = datetime(start_time.year, start_time.month, start_time.day)
-            start_time_ordinal = start_time.toordinal()
-            end_time_ordinal = end_time.toordinal()
-            end_time_ordinal = start_time_ordinal + int(np.ceil((end_time_ordinal - start_time_ordinal) /
-                                                                float(num_years)) * num_years)
-            end_time = datetime.fromordinal(end_time_ordinal)
-            end_time += relativedelta(years=1)
-            delta = relativedelta(years=num_years)
         else:
             end_time = end_time.replace(hour=23, minute=59, second=59)
             end_time_str = datetime.strftime(end_time, _TIMESTAMP_FORMAT)
@@ -575,19 +598,19 @@ class CciChunkStore(RemoteChunkStore):
 
     def get_default_time_range(self, ds_id: str):
         temporal_start = self._metadata.get('temporal_coverage_start', None)
-        if not temporal_start:
-            time_frequency = self._get_time_frequency(ds_id.split('.')[2])
-            temporal_start = self._cci_odp.get_earliest_start_date(ds_id, '1000-01-01', '3000-12-31', time_frequency)
-            if not temporal_start:
-                raise ValueError("Could not determine temporal start of dataset. Please use 'time_range' parameter.")
-            temporal_start = datetime.strftime(temporal_start, _TIMESTAMP_FORMAT)
         temporal_end = self._metadata.get('temporal_coverage_end', None)
-        if not temporal_end:
-            time_frequency = self._get_time_frequency(ds_id.split('.')[2])
-            temporal_end = self._cci_odp.get_latest_end_date(ds_id, '1000-01-01', '3000-12-31', time_frequency)
+        if not temporal_start or not temporal_end:
+            time_ranges = self._cci_odp.get_time_ranges_from_data(ds_id, '1000-01-01', '3000-12-31')
+            if not temporal_start:
+                if len(time_ranges) == 0:
+                    raise ValueError(
+                        "Could not determine temporal start of dataset. Please use 'time_range' parameter.")
+                temporal_start = time_ranges[0][0]
             if not temporal_end:
-                raise ValueError("Could not determine temporal end of dataset. Please use 'time_range' parameter.")
-            temporal_end = datetime.strftime(temporal_end, _TIMESTAMP_FORMAT)
+                if len(time_ranges) == 0:
+                    raise ValueError(
+                        "Could not determine temporal end of dataset. Please use 'time_range' parameter.")
+                temporal_end = time_ranges[-1][1]
         return (temporal_start, temporal_end)
 
     def _get_time_frequency(self, time_period: str):
@@ -609,10 +632,17 @@ class CciChunkStore(RemoteChunkStore):
 
     def get_dimension_data(self, dataset_id: str):
         dimensions = self._metadata['dimensions']
-        return self.get_variable_data(dataset_id, dimensions)
+        dimension_data = self.get_variable_data(dataset_id, dimensions)
+        if len(dimension_data) == 0:
+            # no valid data found in indicated time range, let's set this broader
+            dimension_data = self._cci_odp.get_variable_data(dataset_id, dimensions)
+        return dimension_data
 
     def get_variable_data(self, dataset_id: str, variables: Dict[str, int]):
-        return self._cci_odp.get_variable_data(dataset_id, variables)
+        return self._cci_odp.get_variable_data(dataset_id,
+                                               variables,
+                                               self._time_ranges[0][0].strftime(_TIMESTAMP_FORMAT),
+                                               self._time_ranges[0][1].strftime(_TIMESTAMP_FORMAT))
 
     def get_encoding(self, var_name: str) -> Dict[str, Any]:
         encoding_dict = {}
@@ -650,12 +680,17 @@ class CciChunkStore(RemoteChunkStore):
             dtype = np.dtype(self._SAMPLE_TYPE_TO_DTYPE[var_info['data_type']])
             var_array = np.full(shape=length, fill_value=var_info['fill_value'], dtype=dtype)
             data += var_array.tobytes()
+        _LOG.info(f'Fetched chunk for ({chunk_index})"{var_name}"')
         return data
 
     def _get_dimension_indexes_for_chunk(self, var_name: str, chunk_index: Tuple[int, ...]) -> tuple:
         dim_indexes = []
-        var_dimensions = self._metadata.get('variable_infos', {}).get(var_name, {}).get('dimensions', [])
-        chunk_sizes = self.get_attrs(var_name).get('chunk_sizes', [])
+        var_dimensions = self.get_attrs(var_name).get('file_dimensions', [])
+        chunk_sizes = self.get_attrs(var_name).get('file_chunk_sizes', [])
+        offset = 0
+        # dealing with the case that time has been added as additional first dimension
+        if len(chunk_index) > len(chunk_sizes):
+            offset = 1
         for i, var_dimension in enumerate(var_dimensions):
             if var_dimension == 'time':
                 dim_indexes.append(slice(None, None, None))
@@ -663,7 +698,7 @@ class CciChunkStore(RemoteChunkStore):
             dim_size = self._metadata.get('dimensions', {}).get(var_dimension, -1)
             if dim_size < 0:
                 raise ValueError(f'Could not determine size of dimension {var_dimension}')
-            start = chunk_index[i] * chunk_sizes[i]
+            start = chunk_index[i + offset] * chunk_sizes[i]
             end = min(start + chunk_sizes[i], dim_size)
             dim_indexes.append(slice(start, end))
         return tuple(dim_indexes)

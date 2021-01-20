@@ -23,20 +23,22 @@ from xcube.constants import EXTENSION_POINT_CLI_COMMANDS
 from xcube.constants import EXTENSION_POINT_DATA_OPENERS
 from xcube.constants import EXTENSION_POINT_DATA_STORES
 from xcube_cci.constants import DATA_STORE_ID
-from xcube_cci.constants import DATA_OPENER_ID
+from xcube_cci.constants import CUBE_OPENER_ID
+from xcube_cci.constants import DATASET_OPENER_ID
 from xcube.util import extension
 
 
 def init_plugin(ext_registry: extension.ExtensionRegistry):
     """xcube CCI ODP extensions"""
-    ext_registry.add_extension(loader=extension.import_component('xcube_cci.main:cli'),
-                               point=EXTENSION_POINT_CLI_COMMANDS,
-                               name='cci_cli')
     ext_registry.add_extension(loader=extension.import_component('xcube_cci.dataaccess:CciOdpDataStore'),
                                point=EXTENSION_POINT_DATA_STORES,
                                name=DATA_STORE_ID,
                                description='ESA CCI Open Data Portal')
-    ext_registry.add_extension(loader=extension.import_component('xcube_cci.dataaccess:CciOdpDataOpener'),
+    ext_registry.add_extension(loader=extension.import_component('xcube_cci.dataaccess:CciOdpCubeOpener'),
                                point=EXTENSION_POINT_DATA_OPENERS,
-                               name=DATA_OPENER_ID,
+                               name=CUBE_OPENER_ID,
+                               description='xarray.Dataset cubes in Zarr format from ESA CCI Open Data Portal')
+    ext_registry.add_extension(loader=extension.import_component('xcube_cci.dataaccess:CciOdpDatasetOpener'),
+                               point=EXTENSION_POINT_DATA_OPENERS,
+                               name=DATASET_OPENER_ID,
                                description='xarray.Dataset in Zarr format from ESA CCI Open Data Portal')

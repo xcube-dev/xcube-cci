@@ -24,7 +24,7 @@ import pandas as pd
 import xarray as xr
 import warnings
 
-from typing import Optional
+from typing import List, Optional
 
 from xcube_cci.timeutil import get_timestamps_from_string
 
@@ -51,9 +51,19 @@ def _normalize_zonal_lat_lon(ds: xr.Dataset) -> xr.Dataset:
     ds_zonal = ds_zonal.assign_coords(lon=[i + (resolution / 2) for i in np.arange(-180.0, 180.0, resolution)])
 
     for var in ds_zonal.data_vars:
-        if sorted([dim for dim in ds_zonal[var].dims]) == sorted([coord for coord in ds.coords]):
+        if 'latitude_centers' in ds_zonal[var].dims:
             ds_zonal[var] = xr.concat([ds_zonal[var] for _ in ds_zonal.lon], 'lon')
             ds_zonal[var]['lon'] = ds_zonal.lon
+            var_dims = ds_zonal[var].attrs.get('dimensions', [])
+            lat_center_index = var_dims.index('latitude_centers')
+            var_dims.remove('latitude_centers')
+            var_dims.append('lat')
+            var_dims.append('lon')
+            var_chunk_sizes = ds_zonal[var].attrs.get('chunk_sizes', [])
+            lat_chunk_size = var_chunk_sizes[lat_center_index]
+            del var_chunk_sizes[lat_center_index]
+            var_chunk_sizes.append(lat_chunk_size)
+            var_chunk_sizes.append(ds_zonal.lon.size)
     ds_zonal = ds_zonal.rename_dims({'latitude_centers': 'lat'})
     ds_zonal = ds_zonal.assign_coords(lat=ds.latitude_centers.values)
     ds_zonal = ds_zonal.drop('latitude_centers')
@@ -168,24 +178,25 @@ def _normalize_missing_time(ds: xr.Dataset) -> xr.Dataset:
 
 
 def normalize_dims_description(dims: dict) -> dict:
-    if 'latitude' in dims:
-        dims['lat'] = dims.pop('latitude')
-    if 'longitude' in dims:
-        dims['lon'] = dims.pop('longitude')
-    if 'latitude_centers' in dims:
-        dims['lat'] = dims.pop('latitude_centers')
-        dims['lon'] = dims['lat'] * 2
-    return dims
+    new_dims = dims.copy()
+    if 'latitude' in new_dims:
+        new_dims['lat'] = new_dims.pop('latitude')
+    if 'longitude' in new_dims:
+        new_dims['lon'] = new_dims.pop('longitude')
+    if 'latitude_centers' in new_dims:
+        new_dims['lat'] = new_dims.pop('latitude_centers')
+        new_dims['lon'] = new_dims['lat'] * 2
+    return new_dims
 
 
-def normalize_variable_dims_description(var_dims: tuple) -> Optional[tuple]:
+def normalize_variable_dims_description(var_dims: List[str]) -> Optional[List[str]]:
     if ('lat' in var_dims and 'lon' in var_dims) or \
             ('latitude' in var_dims and 'longitude' in var_dims) or \
             ('latitude_centers' in var_dims):
         # dataset cannot be normalized
         # return None
         default_dims = ['time', 'lat', 'lon', 'latitude', 'longitude', 'latitude_centers']
-        if var_dims != ('time', 'lat', 'lon'):
+        if var_dims != ['time', 'lat', 'lon']:
             other_dims = []
             for dim in var_dims:
                 if dim not in default_dims:
@@ -193,5 +204,5 @@ def normalize_variable_dims_description(var_dims: tuple) -> Optional[tuple]:
             new_dims = ['time', 'lat', 'lon']
             for i in range(len(other_dims)):
                 new_dims.insert(i + 1, other_dims[i])
-            var_dims = tuple(new_dims)
+            var_dims = new_dims
         return var_dims

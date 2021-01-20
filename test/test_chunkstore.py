@@ -59,6 +59,18 @@ class CciChunkStoreTest(unittest.TestCase):
                           ('2002-07-24T20:56:21', '2002-07-24T20:56:21'),
                           ('2002-07-24T22:36:57', '2002-07-24T22:36:57')],
                          [(tr[0].isoformat(), tr[1].isoformat()) for tr in time_ranges])
+        # get_time_range test for data with days-period
+        time_range = (pd.to_datetime('2002-07-04', utc=True), pd.to_datetime('2002-07-27', utc=True))
+        cube_params = dict(time_range=time_range)
+        time_ranges = self._store.get_time_ranges(
+            'esacci.OC.5-days.L3S.OC_PRODUCTS.multi-sensor.multi-platform.MERGED.4-2.sinusoidal', cube_params)
+        self.assertEqual([('2002-06-30T00:00:00', '2002-07-04T23:59:00'),
+                          ('2002-07-05T00:00:00', '2002-07-09T23:59:00'),
+                          ('2002-07-10T00:00:00', '2002-07-14T23:59:00'),
+                          ('2002-07-15T00:00:00', '2002-07-19T23:59:00'),
+                          ('2002-07-20T00:00:00', '2002-07-24T23:59:00'),
+                          ('2002-07-25T00:00:00', '2002-07-29T23:59:00')],
+                         [(tr[0].isoformat(), tr[1].isoformat()) for tr in time_ranges])
 
     @skipIf(os.environ.get('XCUBE_DISABLE_WEB_TESTS', None) == '1', 'XCUBE_DISABLE_WEB_TESTS = 1')
     def test_get_dimension_indexes_for_chunk(self):
@@ -67,7 +79,7 @@ class CciChunkStoreTest(unittest.TestCase):
         self.assertEqual(slice(None, None, None), dim_indexes[0])
         self.assertEqual(slice(0, 17), dim_indexes[1])
         self.assertEqual(slice(0, 180), dim_indexes[2])
-        self.assertEqual(slice(0, 360), dim_indexes[3])
+        self.assertEqual(slice(0, 180), dim_indexes[3])
 
     @skipIf(os.environ.get('XCUBE_DISABLE_WEB_TESTS', None) == '1', 'XCUBE_DISABLE_WEB_TESTS = 1')
     def test_get_encoding(self):
@@ -99,17 +111,21 @@ class CciChunkStoreTest(unittest.TestCase):
 
     def test_adjust_chunk_sizes(self):
         chunk_sizes = [1, 128, 128]
-        self._store._adjust_chunk_sizes(chunk_sizes, [2024, 2048, 2048], 0)
-        self.assertEqual([1, 1024, 1024], chunk_sizes)
+        chunk_sizes = self._store._adjust_chunk_sizes(chunk_sizes, [2024, 2048, 2048], 0)
+        self.assertEqual([1, 512, 1024], chunk_sizes)
 
         chunk_sizes = [128, 128, 1]
-        self._store._adjust_chunk_sizes(chunk_sizes, [2048, 2048, 2048], 2)
-        self.assertEqual([1024, 1024, 1], chunk_sizes)
+        chunk_sizes = self._store._adjust_chunk_sizes(chunk_sizes, [2048, 2048, 2048], 2)
+        self.assertEqual([512, 1024, 1], chunk_sizes)
 
         chunk_sizes = [1, 128, 128]
-        self._store._adjust_chunk_sizes(chunk_sizes, [2024, 128, 2048], 0)
+        chunk_sizes = self._store._adjust_chunk_sizes(chunk_sizes, [2024, 128, 2048], 0)
         self.assertEqual([1, 128, 2048], chunk_sizes)
 
         chunk_sizes = [1, 64, 128, 32]
-        self._store._adjust_chunk_sizes(chunk_sizes, [2048, 1024, 2048, 1024], 0)
-        self.assertEqual([1, 128, 128, 64], chunk_sizes)
+        chunk_sizes = self._store._adjust_chunk_sizes(chunk_sizes, [2048, 1024, 2048, 1024], 0)
+        self.assertEqual([1, 64, 128, 64], chunk_sizes)
+
+        chunk_sizes = [1, 90, 180]
+        chunk_sizes = self._store._adjust_chunk_sizes(chunk_sizes, [1, 3600, 7200], 0)
+        self.assertEqual([1, 900, 900], chunk_sizes)

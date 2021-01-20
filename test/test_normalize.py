@@ -15,14 +15,43 @@ class TestNormalize(TestCase):
         lat_size = 3
         lat_coords = np.arange(0, 30, resolution)
         lon_coords = [i + 5. for i in np.arange(-180.0, 180.0, resolution)]
+        lon_size = len(lon_coords)
+        one_more_dim_size = 2
+        one_more_dim_coords = np.random.random(2)
 
-        var_values_1d = xr.DataArray(np.random.random(lat_size), coords=[('latitude_centers', lat_coords)])
-        var_values_2d = xr.DataArray(np.array([var_values_1d.values for _ in lon_coords]).T,
-                                     coords={'lat': lat_coords, 'lon': lon_coords},
-                                     dims=['lat', 'lon'])
+        var_values_1_1d = xr.DataArray(np.random.random(lat_size),
+                                       coords=[('latitude_centers', lat_coords)],
+                                       dims=['latitude_centers'],
+                                       attrs=dict(chunk_sizes=[lat_size],
+                                                  dimensions=['latitude_centers']))
+        var_values_1_1d.encoding = {'chunks': (lat_size)}
+        var_values_1_2d = xr.DataArray(np.array([var_values_1_1d.values for _ in lon_coords]).T,
+                                       coords={'lat': lat_coords, 'lon': lon_coords},
+                                       dims=['lat', 'lon'],
+                                       attrs=dict(chunk_sizes=[lat_size, lon_size],
+                                                  dimensions=['lat', 'lon']))
+        var_values_1_2d.encoding = {'chunks':  (lat_size, lon_size)}
+        var_values_2_2d = xr.DataArray(np.random.random(lat_size * one_more_dim_size).
+                                       reshape(lat_size, one_more_dim_size),
+                                       coords={'latitude_centers': lat_coords,
+                                               'one_more_dim': one_more_dim_coords},
+                                       dims=['latitude_centers', 'one_more_dim'],
+                                       attrs=dict(chunk_sizes=[lat_size, one_more_dim_size],
+                                                  dimensions=['latitude_centers', 'one_more_dim']))
+        var_values_2_2d.encoding = {'chunks': (lat_size, one_more_dim_size)}
+        var_values_2_3d = xr.DataArray(np.array([var_values_2_2d.values for _ in lon_coords]).T,
+                                       coords={'one_more_dim': one_more_dim_coords,
+                                               'lat': lat_coords,
+                                               'lon': lon_coords,},
+                                       dims=['one_more_dim', 'lat', 'lon',],
+                                       attrs=dict(chunk_sizes=[one_more_dim_size,
+                                                               lat_size,
+                                                               lon_size],
+                                                  dimensions=['one_more_dim', 'lat', 'lon']))
+        var_values_2_3d.encoding = {'chunks':  (one_more_dim_size, lat_size, lon_size)}
 
-        dataset = xr.Dataset({'first': var_values_1d})
-        expected = xr.Dataset({'first': var_values_2d})
+        dataset = xr.Dataset({'first': var_values_1_1d, 'second': var_values_2_2d})
+        expected = xr.Dataset({'first': var_values_1_2d, 'second': var_values_2_3d})
         expected = expected.assign_coords(
             lon_bnds=xr.DataArray([[i - (resolution / 2), i + (resolution / 2)] for i in expected.lon.values],
                                   dims=['lon', 'bnds']))
@@ -32,6 +61,8 @@ class TestNormalize(TestCase):
         actual = normalize_cci_dataset(dataset)
 
         xr.testing.assert_equal(actual, expected)
+        self.assertEqual(actual.first.chunk_sizes, expected.first.chunk_sizes)
+        self.assertEqual(actual.second.chunk_sizes, expected.second.chunk_sizes)
 
     def test_normalize_with_missing_time_dim(self):
         ds = xr.Dataset({'first': (['lat', 'lon'], np.zeros([90, 180])),
@@ -96,26 +127,28 @@ class TestNormalize(TestCase):
         self.assertEqual(dict(lat=1, dhft=2, time=4), normalize_dims_description(dims_6))
 
     def test_normalize_variable_dims_description(self):
-        dims_1 = ('time', 'lat', 'lon')
+        dims_1 = ['time', 'lat', 'lon']
         self.assertEqual(dims_1, normalize_variable_dims_description(dims_1))
 
-        dims_2 = ('lat', 'lon')
+        dims_2 =['lat', 'lon']
         self.assertEqual(dims_1, normalize_variable_dims_description(dims_2))
 
-        dims_3 = ('latitude', 'longitude')
+        dims_3 = ['latitude', 'longitude']
         self.assertEqual(dims_1, normalize_variable_dims_description(dims_3))
 
-        dims_4 = ('latitude_centers', )
+        dims_4 = ['latitude_centers']
         self.assertEqual(dims_1, normalize_variable_dims_description(dims_4))
 
-        dims_5 = ('lat', 'lon', 'draeftgyhesj')
-        self.assertEqual(('time', 'draeftgyhesj', 'lat', 'lon'), normalize_variable_dims_description(dims_5))
+        dims_5 = ['lat', 'lon', 'draeftgyhesj']
+        self.assertEqual(['time', 'draeftgyhesj', 'lat', 'lon'],
+                         normalize_variable_dims_description(dims_5))
 
-        dims_6 = ('latitude_centers', 'draeftgyhesj')
-        self.assertEqual(('time', 'draeftgyhesj', 'lat', 'lon'), normalize_variable_dims_description(dims_6))
+        dims_6 = ['latitude_centers', 'draeftgyhesj']
+        self.assertEqual(['time', 'draeftgyhesj', 'lat', 'lon'],
+                         normalize_variable_dims_description(dims_6))
 
-        dims_7 = ('lat', 'gyfdvtz', 'time')
+        dims_7 = ['lat', 'gyfdvtz', 'time']
         self.assertIsNone(normalize_variable_dims_description(dims_7))
 
-        dims_8 = ('gyfdvtz', )
+        dims_8 = ['gyfdvtz']
         self.assertIsNone(normalize_variable_dims_description(dims_8))

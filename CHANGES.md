@@ -1,4 +1,19 @@
+## Changes in 0.6.1. (under development)
+* * Fixed problem with the encoding of a dataset's coordinate variables that occurs 
+  when using `xcube_cci` with xcube 0.6.0. (#27)
+* Removed CLI
+
 ## Changes in 0.6.0.
+* Support type specifiers [#18](https://github.com/dcs4cop/xcube-cci/issues/18). 
+The CCI Store supports type specifiers `dataset` and `dataset[cube]`
+* Descriptions of variables and dimensions are different for the same dataset, 
+depending on what type specifier is set.
+* There are now two DataOpeners: The CciOdpDatasetOpener and the CciOdpCubeOpener.
+Both openers are used by the CciOdpDataStore, with the CciOdpDatasetOpener being the default.
+The CciOdpDatasetOpener will open any data sets from the CCI Open Data Portal without changing their dimensions.
+The CciOdpCubeOpener will normalize datasets to have dimensions `lat`, `lon`, `time` (and possibly others).
+Subsetting is only supported for data cubes. 
+As not all datasets can be normalized to cubes, the CciOdpCubeOpener supports a subset of the datasets that can be accessed with the CciOdpDatasetOpener.
 * Establish common data store conventions ([#10](https://github.com/dcs4cop/xcube-cci/issues/10)
 * xcube-cci can now get the time ranges for satellite-orbit-frequency datasets available via opensearch 
 * Introduced new optional parameters to CciStore:
@@ -6,13 +21,10 @@
     - num_retries
     - _retry_backoff_max
     - _retry_backoff_base
-* Descriptions of variables and dimensions are different when data is normalized. 
-* In case the CciOdpDataStore or the CciOdpDataOpener is initialized with `normalize_data` set to True, 
-dimensions will be normalized to `lat`, `lon`, `time` and possibly additional dimensions. 
-Variables that cannot be normalized to use these dimensions will not be shown.
-If `normalize_data` is False, dimensions will not be changed and all data variables will be shown 
-(i.e., all variables that are not dimensionns, that are numeric and that have more than one dimension).
-* Updated setup.py [#16]()https://github.com/dcs4cop/xcube-cci/issues/16)
+* Updated setup.py [#16](https://github.com/dcs4cop/xcube-cci/issues/16)
+* Added opener parameters `time_range` and `spatial_res`
+* String-encoded variables are added to datasets as metadata
+* Updated example notebooks
 
 ## Changes in 0.5.0.
  
