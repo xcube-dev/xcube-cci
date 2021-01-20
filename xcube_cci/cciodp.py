@@ -36,7 +36,7 @@ import urllib.parse
 import warnings
 from datetime import datetime
 from dateutil.relativedelta import relativedelta
-from typing import List, Dict, Tuple, Optional, Union, Sequence
+from typing import Any, List, Dict, Tuple, Optional, Union, Sequence
 from urllib.parse import quote
 from xcube_cci.constants import CCI_ODD_URL
 from xcube_cci.constants import DEFAULT_NUM_RETRIES

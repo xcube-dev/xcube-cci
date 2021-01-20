@@ -1,7 +1,7 @@
 import numpy as np
 import os
 import unittest
-from unittest import skipIf
+from unittest import skip, skipIf
 
 from xcube_cci.cciodp import find_datetime_format, _get_res, CciOdp, _run_with_session
 from xcube_cci.constants import OPENSEARCH_CEDA_URL
