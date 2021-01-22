@@ -11,7 +11,8 @@ class CciOdpTest(unittest.TestCase):
     @skipIf(os.environ.get('XCUBE_DISABLE_WEB_TESTS', None) == '1', 'XCUBE_DISABLE_WEB_TESTS = 1')
     def test_get_data_chunk(self):
         cci_odp = CciOdp()
-        request = dict(parentIdentifier='4eb4e801424a47f7b77434291921f889',
+        id = cci_odp.get_dataset_id('esacci.OZONE.mon.L3.NP.multi-sensor.multi-platform.MERGED.fv0002.r1')
+        request = dict(parentIdentifier=id,
                        startDate='1997-05-01T00:00:00',
                        endDate='1997-05-01T00:00:00',
                        varNames=['surface_pressure'],
@@ -134,18 +135,20 @@ class CciOdpTest(unittest.TestCase):
         self.assertIsNotNone(data_source_list)
         self.assertEqual(1, len(data_source_list))
         self.assertTrue('12d6f4bdabe144d7836b0807e65aa0e2' in data_source_list)
-        self.assertEqual(5, len(data_source_list['12d6f4bdabe144d7836b0807e65aa0e2'].items()))
+        self.assertEqual(6, len(data_source_list['12d6f4bdabe144d7836b0807e65aa0e2'].items()))
         self.assertEqual('12d6f4bdabe144d7836b0807e65aa0e2', data_source_list['12d6f4bdabe144d7836b0807e65aa0e2'].get('uuid', ''))
         self.assertEqual('ESA Ocean Colour Climate Change Initiative (Ocean_Colour_cci): '
                          'Global chlorophyll-a data products gridded on a geographic projection, Version 3.1',
                          data_source_list['12d6f4bdabe144d7836b0807e65aa0e2'].get('title', ''))
         self.assertTrue('variables' in data_source_list['12d6f4bdabe144d7836b0807e65aa0e2'])
-        self.assertEqual('http://opensearch-test.ceda.ac.uk/opensearch/description.xml?parentIdentifier=12d6f4bdabe144d7836b0807e65aa0e2',
-                         data_source_list['12d6f4bdabe144d7836b0807e65aa0e2'].get('odd_url', ''))
+        self.assertTrue('odd_url' in data_source_list['12d6f4bdabe144d7836b0807e65aa0e2'])
         self.assertEqual('https://catalogue.ceda.ac.uk/export/xml/12d6f4bdabe144d7836b0807e65aa0e2.xml',
                          data_source_list['12d6f4bdabe144d7836b0807e65aa0e2'].get('metadata_url', ''))
+        self.assertEqual('https://catalogue.ceda.ac.uk/uuid/12d6f4bdabe144d7836b0807e65aa0e2',
+                         data_source_list['12d6f4bdabe144d7836b0807e65aa0e2'].get('catalog_url', ''))
 
     @skipIf(os.environ.get('XCUBE_DISABLE_WEB_TESTS', None) == '1', 'XCUBE_DISABLE_WEB_TESTS = 1')
+    @skip('Disabled while old archive is set up')
     def test_get_datasets_metadata(self):
         cci_odp = CciOdp()
         datasets = ['esacci.OC.day.L3S.CHLOR_A.multi-sensor.multi-platform.MERGED.3-1.geographic',
@@ -234,12 +237,16 @@ class CciOdpTest(unittest.TestCase):
                          datasets_metadata[1]['variables'])
 
     @skipIf(os.environ.get('XCUBE_DISABLE_WEB_TESTS', None) == '1', 'XCUBE_DISABLE_WEB_TESTS = 1')
-    def test_get_variables_for_fid(self):
+    @skip('Disabled while old archive is set up')
+    def test_get_drs_metadata(self):
         cci_odp = CciOdp()
         fid = '12d6f4bdabe144d7836b0807e65aa0e2'
-        async def get_variables_for_fid(session):
-            return await cci_odp._get_variables_for_fid(session, fid)
-        variables_dict = _run_with_session(get_variables_for_fid)
+        metadata = {}
+        async def set_drs_metadata(session):
+            return await cci_odp._set_drs_metadata(session, fid, metadata)
+        _run_with_session(set_drs_metadata)
+        variables_dict = metadata['variables']
+        drs_uuids = metadata['uuids']
         self.assertIsNotNone(variables_dict)
         self.assertEqual(4, len(variables_dict.items()))
         self.assertTrue('esacci.OC.day.L3S.CHLOR_A.multi-sensor.multi-platform.MERGED.3-1.geographic' in variables_dict)
@@ -253,28 +260,19 @@ class CciOdpTest(unittest.TestCase):
         self.assertEqual(
             ['chlor_a_log10_bias', 'chlor_a', 'MERIS_nobs_sum', 'MODISA_nobs_sum', 'SeaWiFS_nobs_sum', 'VIIRS_nobs_sum',
              'total_nobs_sum', 'chlor_a_log10_rmsd', 'lat', 'lon', 'time', 'crs'], variable_names)
-
-    @skipIf(os.environ.get('XCUBE_DISABLE_WEB_TESTS', None) == '1', 'XCUBE_DISABLE_WEB_TESTS = 1')
-    @skip('Test takes long')
-    def test_description(self):
-        cci_odp = CciOdp()
-        description = cci_odp.description
-        self.assertIsNotNone(description)
-        self.assertEqual('cciodp', description['id'])
-        self.assertEqual('ESA CCI Open Data Portal', description['name'])
-        import json
-        with open('cci_datasets.json', 'w') as fp:
-            json.dump(description, fp, indent=4)
-
-    def test_shorten_dataset_name(self):
-        cci_odp = CciOdp()
-        self.assertEqual('gdrvtzsw', cci_odp._shorten_dataset_name('gdrvtzsw'))
-        self.assertEqual('Ozone CCI: Level3 Nadir Ozone Profile Merged Data Product version 2',
-                         cci_odp._shorten_dataset_name('ESA Ozone Climate Change Initiative (Ozone CCI): '
-                                                       'Level3 Nadir Ozone Profile Merged Data Product version 2'))
-        self.assertEqual('Ozone CCI: L3 Nadir Ozone Profile Merged Data Product v2',
-                         cci_odp._shorten_dataset_name('ESA Ozone Climate Change Initiative (Ozone CCI): '
-                                                       'Level 3 Nadir Ozone Profile Merged Data Product, version 2'))
+        self.assertEqual(4, len(drs_uuids.items()))
+        self.assertTrue('esacci.OC.day.L3S.CHLOR_A.multi-sensor.multi-platform.MERGED.3-1.geographic' in drs_uuids)
+        self.assertEqual('f13668e057c736410676fcf51983ca9d018108c3',
+                         drs_uuids['esacci.OC.day.L3S.CHLOR_A.multi-sensor.multi-platform.MERGED.3-1.geographic'])
+        self.assertTrue('esacci.OC.5-days.L3S.CHLOR_A.multi-sensor.multi-platform.MERGED.3-1.geographic' in drs_uuids)
+        self.assertEqual('d43b5fa4c4e0d7edc89f794798aa07824671105b',
+                         drs_uuids['esacci.OC.5-days.L3S.CHLOR_A.multi-sensor.multi-platform.MERGED.3-1.geographic'])
+        self.assertTrue('esacci.OC.8-days.L3S.CHLOR_A.multi-sensor.multi-platform.MERGED.3-1.geographic' in drs_uuids)
+        self.assertEqual('5082ae00d82255c2389a74593b71ebe686fc1314',
+                         drs_uuids['esacci.OC.8-days.L3S.CHLOR_A.multi-sensor.multi-platform.MERGED.3-1.geographic'])
+        self.assertTrue('esacci.OC.mon.L3S.CHLOR_A.multi-sensor.multi-platform.MERGED.3-1.geographic' in drs_uuids)
+        self.assertEqual('e7f59d6547d610fdd04ae05cca77ddfee15e3a5a',
+                         drs_uuids['esacci.OC.mon.L3S.CHLOR_A.multi-sensor.multi-platform.MERGED.3-1.geographic'])
 
     @skipIf(os.environ.get('XCUBE_DISABLE_WEB_TESTS', None) == '1', 'XCUBE_DISABLE_WEB_TESTS = 1')
     def test_get_opendap_dataset(self):

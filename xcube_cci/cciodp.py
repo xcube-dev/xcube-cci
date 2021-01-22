@@ -472,6 +472,9 @@ class CciOdp:
             drs_meta_info.update(json_dict)
             if drs_variables:
                 drs_meta_info['variables'] = drs_variables
+            drs_uuid = drs_meta_info.get('uuids', {}).get(drs_id, None)
+            if drs_uuid:
+                drs_meta_info['uuid'] = drs_uuid
             self._adjust_json_dict(drs_meta_info, drs_id)
             for variable in drs_meta_info.get('variables', []):
                 variable['name'] = variable['name'].replace('.', '_')
@@ -511,7 +514,7 @@ class CciOdp:
 
     def var_names(self, dataset_name: str) -> List:
         _run_with_session(self._ensure_all_info_in_data_sources, [dataset_name])
-        return self._get_data_var_names(self._data_sources[dataset_name]['variable_infos'])
+        return self._get_data_var_names(self._data_sources[dataset_name])
 
     async def _ensure_all_info_in_data_sources(self, session, dataset_names: List[str]):
         await self._ensure_in_data_sources(session, dataset_names)
@@ -526,24 +529,15 @@ class CciOdp:
                 and 'variable_infos' in data_source \
                 and 'attributes' in data_source:
             return
-        data_fid = await self._get_fid_for_dataset(session, dataset_name)
+        data_fid = await self._get_dataset_id(session, dataset_name)
         await self._set_variable_infos(self._opensearch_url, data_fid, dataset_name, session,
                                        data_source)
 
     @staticmethod
-    def _get_data_var_names(variable_infos) -> List:
+    def _get_data_var_names(data_source) -> List:
+        names_of_dims = list(data_source['dimensions'].keys())
+        variable_infos = data_source['variable_infos']
         variables = []
-        names_of_dims = ['period', 'hist1d_cla_vis006_bin_centre', 'lon_bnds', 'air_pressure',
-                         'field_name_length', 'lon', 'view', 'hist2d_cot_bin_centre',
-                         'hist1d_cer_bin_border', 'altitude', 'vegetation_class',
-                         'hist1d_cla_vis006_bin_border', 'time_bnds', 'hist1d_ctp_bin_border',
-                         'hist1d_cot_bin_centre', 'hist1d_cot_bin_border',
-                         'hist1d_cla_vis008_bin_centre', 'lat_bnds', 'hist1d_cwp_bin_border',
-                         'layers', 'hist1d_cer_bin_centre', 'aerosol_type',
-                         'hist1d_ctt_bin_border', 'hist1d_ctp_bin_centre', 'fieldsp1', 'time',
-                         'hist_phase', 'hist1d_cwp_bin_centre', 'hist2d_ctp_bin_border', 'lat',
-                         'fields', 'hist2d_cot_bin_border', 'hist2d_ctp_bin_centre',
-                         'hist1d_ctt_bin_centre', 'hist1d_cla_vis008_bin_border', 'crs']
         for variable in variable_infos:
             if variable in names_of_dims:
                 continue
@@ -695,8 +689,8 @@ class CciOdp:
 
     async def _get_var_data(self, session, dataset_name: str, variable_names: Dict[str, int],
                             start_time: str, end_time: str):
-        fid = await self._get_fid_for_dataset(session, dataset_name)
-        request = dict(parentIdentifier=fid,
+        id = await self._get_dataset_id(session, dataset_name)
+        request = dict(parentIdentifier=id,
                        startDate=start_time,
                        endDate=end_time,
                        drsId=dataset_name
@@ -821,8 +815,8 @@ class CciOdp:
 
     async def _get_time_ranges_from_data(self, session, dataset_name: str, start_time: str,
                                          end_time: str) -> List[Tuple[datetime, datetime]]:
-        fid = await self._get_fid_for_dataset(session, dataset_name)
-        request = dict(parentIdentifier=fid,
+        id = await self._get_dataset_id(session, dataset_name)
+        request = dict(parentIdentifier=id,
                        startDate=start_time,
                        endDate=end_time,
                        drsId=dataset_name,
@@ -836,8 +830,8 @@ class CciOdp:
         return _run_with_session(self._get_file_list, dataset_name)
 
     async def _get_file_list(self, session, dataset_name):
-        fid = await self._get_fid_for_dataset(session, dataset_name)
-        request = dict(parentIdentifier=fid,
+        id = await self._get_dataset_id(session, dataset_name)
+        request = dict(parentIdentifier=id,
                        drsId=dataset_name,
                        startDate='1900-01-01T00:00:00',
                        endDate='3001-12-31T00:00:00',
@@ -846,12 +840,12 @@ class CciOdp:
         file_list = [feature[2] for feature in feature_list]
         return file_list
 
-    def get_fid_for_dataset(self, dataset_name: str) -> str:
-        return _run_with_session(self._get_fid_for_dataset, dataset_name)
+    def get_dataset_id(self, dataset_name: str) -> str:
+        return _run_with_session(self._get_dataset_id, dataset_name)
 
-    async def _get_fid_for_dataset(self, session, dataset_name: str) -> str:
+    async def _get_dataset_id(self, session, dataset_name: str) -> str:
         await self._ensure_in_data_sources(session, [dataset_name])
-        return self._data_sources[dataset_name]['fid']
+        return self._data_sources[dataset_name].get('uuid', self._data_sources[dataset_name]['fid'])
 
     async def _get_opendap_url(self, session, request: Dict):
         request['fileFormat'] = '.nc'
@@ -986,7 +980,9 @@ class CciOdp:
                                                           dict(parentIdentifier=dataset_id,
                                                                drsId=dataset_name),
                                                           1)
-        time_dimension_size = data_source['num_files']
+        # we need to do this to determine whether we are using the old or the new version of the odp
+        if 'uuid' not in data_source or data_source['uuid'] == data_source['fid']:
+            time_dimension_size = data_source['num_files']
         if feature is not None:
             variable_infos, attributes = \
                 await self._get_variable_infos_from_feature(feature, session)
@@ -1031,7 +1027,7 @@ class CciOdp:
             for item in desc_metadata:
                 if not item in meta_info_dict:
                     meta_info_dict[item] = desc_metadata[item]
-        meta_info_dict['variables'] = await self._get_variables_for_fid(session, datasource_id)
+        await self._set_drs_metadata(session, datasource_id, meta_info_dict)
         _harmonize_info_field_names(meta_info_dict, 'file_format', 'file_formats')
         _harmonize_info_field_names(meta_info_dict, 'platform_id', 'platform_ids')
         _harmonize_info_field_names(meta_info_dict, 'sensor_id', 'sensor_ids')
@@ -1039,16 +1035,22 @@ class CciOdp:
         _harmonize_info_field_names(meta_info_dict, 'time_frequency', 'time_frequencies')
         return meta_info_dict
 
-    async def _get_variables_for_fid(self, session, datasource_id) -> Dict[str, Any]:
-        variable_dict = {}
+    async def _set_drs_metadata(self, session, datasource_id, metainfo_dict):
         data_source_list = await self._fetch_data_source_list_json(session, OPENSEARCH_CEDA_URL,
                                                              {'parentIdentifier': datasource_id})
         for data_source_key, data_source_value in data_source_list.items():
             drs_id = data_source_value.get('title', 'All Files')
             variables = data_source_value.get('variables', None)
-            if drs_id != 'All Files' and variables:
-                variable_dict[drs_id] = variables
-        return variable_dict
+            uuid = data_source_value.get('uuid', None)
+            if drs_id != 'All Files':
+                if variables:
+                    if 'variables' not in metainfo_dict:
+                        metainfo_dict['variables'] = {}
+                    metainfo_dict['variables'][drs_id] = variables
+                if uuid:
+                    if 'uuids' not in metainfo_dict:
+                        metainfo_dict['uuids'] = {}
+                    metainfo_dict['uuids'][drs_id] = uuid
 
     async def _extract_metadata_from_descxml_url(self, session, descxml_url: str = None) -> dict:
         if not descxml_url:
