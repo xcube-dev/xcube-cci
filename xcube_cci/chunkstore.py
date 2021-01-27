@@ -21,6 +21,7 @@
 
 from datetime import datetime
 from dateutil.relativedelta import relativedelta
+import bisect
 import itertools
 import json
 import logging
@@ -81,7 +82,8 @@ class RemoteChunkStore(MutableMapping, metaclass=ABCMeta):
         if not self._time_ranges:
             raise ValueError('Could not determine any valid time stamps')
 
-        t_array = [s.to_pydatetime() + 0.5 * (e.to_pydatetime() - s.to_pydatetime()) for s, e in self._time_ranges]
+        t_array = [s.to_pydatetime() + 0.5 * (e.to_pydatetime() - s.to_pydatetime())
+                   for s, e in self._time_ranges]
         t_array = np.array(t_array).astype('datetime64[s]').astype(np.int64)
         t_bnds_array = np.array(self._time_ranges).astype('datetime64[s]').astype(np.int64)
         time_coverage_start = self._time_ranges[0][0]
@@ -92,6 +94,10 @@ class RemoteChunkStore(MutableMapping, metaclass=ABCMeta):
         self._vfs = {
         }
 
+        bbox = cube_params.get('bbox', None)
+        lon_size = -1
+        lat_size = -1
+        self._dimension_chunk_offsets = {}
         self._dimension_data = self.get_dimension_data(data_id)
         logging.debug('Determined dimensionalities')
         self._dimension_data['time'] = {}
@@ -103,6 +109,22 @@ class RemoteChunkStore(MutableMapping, metaclass=ABCMeta):
             dim_attrs = self.get_attrs(dimension_name)
             dim_attrs['_ARRAY_DIMENSIONS'] = dimension_name
             dimension_data = self._dimension_data[dimension_name]['data']
+            if bbox and dimension_name == 'lon' or dimension_name == 'longitude':
+                if dimension_data[0] < dimension_data[-1]:
+                    min_lat_offset = bisect.bisect_left(dimension_data, bbox[0])
+                    max_lat_offset = bisect.bisect_right(dimension_data, bbox[2])
+                else:
+                    min_lat_offset = bisect.bisect_left(dimension_data, bbox[2])
+                    max_lat_offset = bisect.bisect_right(dimension_data, bbox[0])
+                dimension_data = self._adjust_dimension_data(dimension_name, min_lat_offset,
+                                                             max_lat_offset, dimension_data,
+                                                             dim_attrs)
+            elif bbox and dimension_name == 'lat' or dimension_name == 'latitude':
+                min_lat_offset = bisect.bisect_left(dimension_data, bbox[1])
+                max_lat_offset = bisect.bisect_right(dimension_data, bbox[3])
+                dimension_data = self._adjust_dimension_data(dimension_name, min_lat_offset,
+                                                             max_lat_offset, dimension_data,
+                                                             dim_attrs)
             if len(dimension_data) > 0:
                 dim_array = np.array(dimension_data)
                 self._add_static_array(dimension_name, dim_array, dim_attrs)
@@ -155,6 +177,7 @@ class RemoteChunkStore(MutableMapping, metaclass=ABCMeta):
                               f"Will omit it from the dataset.")
                 remove.append(variable_name)
                 continue
+            self._maybe_adjust_attrs(lon_size, lat_size, var_attrs)
             chunk_sizes = var_attrs.get('chunk_sizes', [-1] * len(dimensions))
             if isinstance(chunk_sizes, int):
                 chunk_sizes = [chunk_sizes]
@@ -178,7 +201,8 @@ class RemoteChunkStore(MutableMapping, metaclass=ABCMeta):
                               f"Will convert it to metadata.")
                     variable = {variable_name: sizes[0]}
                     var_data = self.get_variable_data(data_id, variable)
-                    global_attrs[variable_name] = [var.decode('utf-8') for var in var_data[variable_name]['data']]
+                    global_attrs[variable_name] = \
+                        [var.decode('utf-8') for var in var_data[variable_name]['data']]
                 else:
                     warnings.warn(f"Variable '{variable_name}' is encoded as string. "
                                   f"Will omit it from the dataset.")
@@ -206,6 +230,48 @@ class RemoteChunkStore(MutableMapping, metaclass=ABCMeta):
         # setup Virtual File System (vfs)
         self._vfs['.zgroup'] = _dict_to_bytes(dict(zarr_format=2))
         self._vfs['.zattrs'] = _dict_to_bytes(global_attrs)
+
+    def _adjust_dimension_data(self, dimension_name: str, min_offset:int, max_offset: int,
+                               dimension_data, dim_attrs: dict):
+        self._dimension_chunk_offsets[dimension_name] = min_offset
+        dimension_data = dimension_data[min_offset:max_offset]
+        lon_size = len(dimension_data)
+        dim_attrs['chunk_sizes'] = min(dim_attrs.get('chunk_sizes', 1000000), lon_size)
+        dim_attrs['file_chunk_sizes'] = \
+            min(dim_attrs.get('file_chunk_sizes', 1000000), lon_size)
+        dim_attrs['size'] = lon_size
+        if 'shape' in dim_attrs:
+            dim_attrs['shape'][0] = lon_size
+        self._metadata['dimensions'][dimension_name] = lon_size
+        self._dimension_data[dimension_name]['size'] = lon_size
+        self._dimension_data[dimension_name]['chunkSize'] = \
+            min(dim_attrs['chunk_sizes'], lon_size)
+        self._dimension_data[dimension_name]['data'] = dimension_data
+        return dimension_data
+
+    @classmethod
+    def _maybe_adjust_attrs(cls, lon_size, lat_size, var_attrs):
+        cls._maybe_adjust_to('lat', 'latitude', lat_size, var_attrs)
+        cls._maybe_adjust_to('lon', 'longitude', lon_size, var_attrs)
+
+    @classmethod
+    def _maybe_adjust_to(cls, first_name, second_name, adjusted_size, var_attrs):
+        if adjusted_size == -1:
+            return
+        try:
+            index = var_attrs['dimensions'].index(first_name)
+        except ValueError:
+            try:
+                index = var_attrs['dimensions'].index(second_name)
+            except ValueError:
+                index = -1
+        if index > 0:
+            var_attrs['shape'][index] = adjusted_size
+            if 'chunk_sizes' in var_attrs:
+                var_attrs['chunk_sizes'][index] = \
+                    min(var_attrs['chunk_sizes'][index], adjusted_size)
+                var_attrs['file_chunk_sizes'][index] = \
+                    min(var_attrs['file_chunk_sizes'][index], adjusted_size)
 
     @classmethod
     def _adjust_chunk_sizes(cls, chunks, sizes, time_dimension):
@@ -565,7 +631,8 @@ class CciChunkStore(RemoteChunkStore):
 
     def get_time_ranges(self, dataset_id: str, cube_params: Mapping[str, Any]) -> List[Tuple]:
         start_time, end_time, iso_start_time, iso_end_time = \
-            self._extract_time_range_as_datetime(cube_params.get('time_range', self.get_default_time_range(dataset_id)))
+            self._extract_time_range_as_datetime(
+                cube_params.get('time_range', self.get_default_time_range(dataset_id)))
         time_period = dataset_id.split('.')[2]
         if time_period == 'day':
             start_time = datetime(year=start_time.year, month=start_time.month, day=start_time.day)
@@ -698,7 +765,8 @@ class CciChunkStore(RemoteChunkStore):
             dim_size = self._metadata.get('dimensions', {}).get(var_dimension, -1)
             if dim_size < 0:
                 raise ValueError(f'Could not determine size of dimension {var_dimension}')
-            start = chunk_index[i + offset] * chunk_sizes[i]
-            end = min(start + chunk_sizes[i], dim_size)
+            data_offset = self._dimension_chunk_offsets.get(var_dimension, 0)
+            start = data_offset + chunk_index[i + offset] * chunk_sizes[i]
+            end = min(start + chunk_sizes[i], data_offset + dim_size)
             dim_indexes.append(slice(start, end))
         return tuple(dim_indexes)

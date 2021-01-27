@@ -11,16 +11,16 @@ from xcube_cci.chunkstore import CciChunkStore
 
 class CciChunkStoreTest(unittest.TestCase):
 
-    @skipIf(os.environ.get('XCUBE_DISABLE_WEB_TESTS', None) == '1', 'XCUBE_DISABLE_WEB_TESTS = 1')
-    def setUp(self) -> None:
+    def _get_test_store(self):
         cci_odp = CciOdp()
         dataset_id = 'esacci.OZONE.mon.L3.NP.multi-sensor.multi-platform.MERGED.fv0002.r1'
-        time_range = (pd.to_datetime('2010-02-10', utc=True), pd.to_datetime('2010-05-20', utc=True))
+        time_range = (pd.to_datetime('2010-02-10', utc=True),
+                      pd.to_datetime('2010-05-20', utc=True))
         cube_params = dict(
             time_range=time_range,
             variable_names=['O3_vmr']
         )
-        self._store = CciChunkStore(cci_odp, dataset_id, cube_params)
+        return CciChunkStore(cci_odp, dataset_id, cube_params)
 
     @skipIf(os.environ.get('XCUBE_DISABLE_WEB_TESTS', None) == '1', 'XCUBE_DISABLE_WEB_TESTS = 1')
     def test_unconstrained_chunk_store(self):
@@ -36,10 +36,26 @@ class CciChunkStoreTest(unittest.TestCase):
                          store._variable_names)
 
     @skipIf(os.environ.get('XCUBE_DISABLE_WEB_TESTS', None) == '1', 'XCUBE_DISABLE_WEB_TESTS = 1')
+    def test_chunk_store_with_region_constraint(self):
+        cci_odp = CciOdp()
+        dataset_id = 'esacci.OZONE.mon.L3.NP.multi-sensor.multi-platform.MERGED.fv0002.r1'
+        cube_params = dict(bbox=[-10, 5, 0, 10])
+        store = CciChunkStore(cci_odp, dataset_id, cube_params=cube_params)
+        self.assertIsNotNone(store)
+        self.assertEqual(10, store._dimension_data['lon']['size'])
+        self.assertEqual(10, store._dimension_data['lon']['chunkSize'])
+        self.assertListEqual([-9.5, -8.5, -7.5, -6.5, -5.5, -4.5, -3.5, -2.5, -1.5, -0.5],
+                             list(store._dimension_data['lon']['data']))
+        self.assertEqual(5, store._dimension_data['lat']['size'])
+        self.assertEqual(5, store._dimension_data['lat']['chunkSize'])
+        self.assertListEqual([5.5, 6.5, 7.5, 8.5, 9.5], list(store._dimension_data['lat']['data']))
+
+    @skipIf(os.environ.get('XCUBE_DISABLE_WEB_TESTS', None) == '1', 'XCUBE_DISABLE_WEB_TESTS = 1')
     def test_get_time_ranges(self):
+        store = self._get_test_store()
         time_range = (pd.to_datetime('2010-02-10', utc=True), pd.to_datetime('2010-05-20', utc=True))
         cube_params = dict(time_range=time_range)
-        time_ranges = self._store.get_time_ranges(
+        time_ranges = store.get_time_ranges(
             'esacci.OZONE.mon.L3.NP.multi-sensor.multi-platform.MERGED.fv0002.r1', cube_params)
         self.assertEqual([('2010-02-01T00:00:00', '2010-03-01T00:00:00'),
                           ('2010-03-01T00:00:00', '2010-04-01T00:00:00'),
@@ -49,7 +65,7 @@ class CciChunkStoreTest(unittest.TestCase):
         # get_time_range test for satellite-orbit-frequency data
         time_range = (pd.to_datetime('2002-07-24', utc=True), pd.to_datetime('2002-07-24', utc=True))
         cube_params = dict(time_range=time_range)
-        time_ranges = self._store.get_time_ranges(
+        time_ranges = store.get_time_ranges(
             'esacci.SST.satellite-orbit-frequency.L3U.SSTskin.AATSR.Envisat.AATSR.2-1.r1', cube_params)
         self.assertEqual([('2002-07-24T12:33:21', '2002-07-24T12:33:21'),
                           ('2002-07-24T14:13:57', '2002-07-24T14:13:57'),
@@ -62,7 +78,7 @@ class CciChunkStoreTest(unittest.TestCase):
         # get_time_range test for data with days-period
         time_range = (pd.to_datetime('2002-07-04', utc=True), pd.to_datetime('2002-07-27', utc=True))
         cube_params = dict(time_range=time_range)
-        time_ranges = self._store.get_time_ranges(
+        time_ranges = store.get_time_ranges(
             'esacci.OC.5-days.L3S.OC_PRODUCTS.multi-sensor.multi-platform.MERGED.4-2.sinusoidal', cube_params)
         self.assertEqual([('2002-06-30T00:00:00', '2002-07-04T23:59:00'),
                           ('2002-07-05T00:00:00', '2002-07-09T23:59:00'),
@@ -74,7 +90,8 @@ class CciChunkStoreTest(unittest.TestCase):
 
     @skipIf(os.environ.get('XCUBE_DISABLE_WEB_TESTS', None) == '1', 'XCUBE_DISABLE_WEB_TESTS = 1')
     def test_get_dimension_indexes_for_chunk(self):
-        dim_indexes = self._store._get_dimension_indexes_for_chunk('O3_vmr', (5, 0, 0, 0))
+        store = self._get_test_store()
+        dim_indexes = store._get_dimension_indexes_for_chunk('O3_vmr', (5, 0, 0, 0))
         self.assertIsNotNone(dim_indexes)
         self.assertEqual(slice(None, None, None), dim_indexes[0])
         self.assertEqual(slice(0, 17), dim_indexes[1])
@@ -83,7 +100,8 @@ class CciChunkStoreTest(unittest.TestCase):
 
     @skipIf(os.environ.get('XCUBE_DISABLE_WEB_TESTS', None) == '1', 'XCUBE_DISABLE_WEB_TESTS = 1')
     def test_get_encoding(self):
-        encoding_dict = self._store.get_encoding('surface_pressure')
+        store = self._get_test_store()
+        encoding_dict = store.get_encoding('surface_pressure')
         self.assertTrue('fill_value' in encoding_dict)
         self.assertTrue('dtype' in encoding_dict)
         self.assertFalse('compressor' in encoding_dict)
@@ -93,7 +111,8 @@ class CciChunkStoreTest(unittest.TestCase):
 
     @skipIf(os.environ.get('XCUBE_DISABLE_WEB_TESTS', None) == '1', 'XCUBE_DISABLE_WEB_TESTS = 1')
     def test_get_attrs(self):
-        attrs = self._store.get_attrs('surface_pressure')
+        store = self._get_test_store()
+        attrs = store.get_attrs('surface_pressure')
         self.assertTrue('standard_name' in attrs)
         self.assertTrue('long_name' in attrs)
         self.assertTrue('units' in attrs)
@@ -110,22 +129,23 @@ class CciChunkStoreTest(unittest.TestCase):
         self.assertEqual(['time', 'lat', 'lon'], attrs['dimensions'])
 
     def test_adjust_chunk_sizes(self):
+        store = self._get_test_store()
         chunk_sizes = [1, 128, 128]
-        chunk_sizes = self._store._adjust_chunk_sizes(chunk_sizes, [2024, 2048, 2048], 0)
+        chunk_sizes = store._adjust_chunk_sizes(chunk_sizes, [2024, 2048, 2048], 0)
         self.assertEqual([1, 512, 1024], chunk_sizes)
 
         chunk_sizes = [128, 128, 1]
-        chunk_sizes = self._store._adjust_chunk_sizes(chunk_sizes, [2048, 2048, 2048], 2)
+        chunk_sizes = store._adjust_chunk_sizes(chunk_sizes, [2048, 2048, 2048], 2)
         self.assertEqual([512, 1024, 1], chunk_sizes)
 
         chunk_sizes = [1, 128, 128]
-        chunk_sizes = self._store._adjust_chunk_sizes(chunk_sizes, [2024, 128, 2048], 0)
+        chunk_sizes = store._adjust_chunk_sizes(chunk_sizes, [2024, 128, 2048], 0)
         self.assertEqual([1, 128, 2048], chunk_sizes)
 
         chunk_sizes = [1, 64, 128, 32]
-        chunk_sizes = self._store._adjust_chunk_sizes(chunk_sizes, [2048, 1024, 2048, 1024], 0)
+        chunk_sizes = store._adjust_chunk_sizes(chunk_sizes, [2048, 1024, 2048, 1024], 0)
         self.assertEqual([1, 64, 128, 64], chunk_sizes)
 
         chunk_sizes = [1, 90, 180]
-        chunk_sizes = self._store._adjust_chunk_sizes(chunk_sizes, [1, 3600, 7200], 0)
+        chunk_sizes = store._adjust_chunk_sizes(chunk_sizes, [1, 3600, 7200], 0)
         self.assertEqual([1, 900, 900], chunk_sizes)
