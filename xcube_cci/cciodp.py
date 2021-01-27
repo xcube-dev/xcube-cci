@@ -505,7 +505,7 @@ class CciOdp:
 
     def var_names(self, dataset_name: str) -> List:
         _run_with_session(self._ensure_all_info_in_data_sources, [dataset_name])
-        return self._get_data_var_names(self._data_sources[dataset_name]['variable_infos'])
+        return self._get_data_var_names(self._data_sources[dataset_name])
 
     async def _ensure_all_info_in_data_sources(self, session, dataset_names: List[str]):
         await self._ensure_in_data_sources(session, dataset_names)
@@ -525,23 +525,15 @@ class CciOdp:
                                        data_source)
 
     @staticmethod
-    def _get_data_var_names(variable_infos) -> List:
+    def _get_data_var_names(data_source) -> List:
+        names_of_dims = list(data_source['dimensions'].keys())
+        variable_infos = data_source['variable_infos']
         variables = []
-        names_of_dims = ['period', 'hist1d_cla_vis006_bin_centre', 'lon_bnds', 'air_pressure',
-                         'field_name_length', 'lon', 'view', 'hist2d_cot_bin_centre',
-                         'hist1d_cer_bin_border', 'altitude', 'vegetation_class',
-                         'hist1d_cla_vis006_bin_border', 'time_bnds', 'hist1d_ctp_bin_border',
-                         'hist1d_cot_bin_centre', 'hist1d_cot_bin_border',
-                         'hist1d_cla_vis008_bin_centre', 'lat_bnds', 'hist1d_cwp_bin_border',
-                         'layers', 'hist1d_cer_bin_centre', 'aerosol_type',
-                         'hist1d_ctt_bin_border', 'hist1d_ctp_bin_centre', 'fieldsp1', 'time',
-                         'hist_phase', 'hist1d_cwp_bin_centre', 'hist2d_ctp_bin_border', 'lat',
-                         'fields', 'hist2d_cot_bin_border', 'hist2d_ctp_bin_centre',
-                         'hist1d_ctt_bin_centre', 'hist1d_cla_vis008_bin_border', 'crs']
         for variable in variable_infos:
             if variable in names_of_dims:
                 continue
-            if len(variable_infos[variable]['dimensions']) == 0:
+            if len(variable_infos[variable]['dimensions']) == 0 or \
+                    variable_infos[variable]['size'] < 2:
                 continue
             if variable_infos[variable].get('data_type', '') not in \
                     ['uint8', 'uint16', 'uint32', 'int8', 'int16', 'int32', 'float32', 'float64']:
