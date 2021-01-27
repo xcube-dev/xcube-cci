@@ -541,7 +541,8 @@ class CciOdp:
         for variable in variable_infos:
             if variable in names_of_dims:
                 continue
-            if len(variable_infos[variable]['dimensions']) == 0:
+            if len(variable_infos[variable]['dimensions']) == 0 or \
+                    variable_infos[variable]['size'] < 2:
                 continue
             if variable_infos[variable].get('data_type', '') not in \
                     ['uint8', 'uint16', 'uint32', 'int8', 'int16', 'int32', 'float32', 'float64']:
