@@ -34,8 +34,10 @@ class DataAccessTest(unittest.TestCase):
                          _get_temporal_resolution_from_id('esacci.OZONE.year.L3.NP.sensor.platform.MERGED.fv0002.r1'))
         self.assertEqual('13Y',
                          _get_temporal_resolution_from_id('esacci.OZONE.13-yrs.L3.NP.sensor.platform.MERGED.fv0002.r1'))
+        self.assertEqual('1M',
+                         _get_temporal_resolution_from_id('esacci.OZONE.climatology.L3.NP.sensor.platform.MERGED.fv0002.r1'))
         self.assertIsNone(
-            _get_temporal_resolution_from_id('esacci.OZONE.climatology.L3.NP.sensor.platform.MERGED.fv0002.r1'))
+            _get_temporal_resolution_from_id('esacci.OZONE.satellite-orbit-frequency.L3.NP.sensor.platform.MERGED.fv0002.r1'))
 
 class CciOdpDatasetOpenerTest(unittest.TestCase):
 

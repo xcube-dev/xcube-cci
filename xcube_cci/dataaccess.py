@@ -84,10 +84,10 @@ def _normalize_dataset(ds: xr.Dataset) -> xr.Dataset:
     return ds
 
 
-def _get_temporal_resolution_from_id(data_id: str) -> str:
+def _get_temporal_resolution_from_id(data_id: str) -> Optional[str]:
     data_time_res = data_id.split('.')[2]
     time_res_items = dict(D=['days', 'day'],
-                          M=['months', 'mon'],
+                          M=['months', 'mon', 'climatology'],
                           Y=['yrs', 'yr', 'year'])
     for time_res_pandas_id, time_res_ids_list in time_res_items.items():
         for i, time_res_id in enumerate(time_res_ids_list):
