@@ -411,16 +411,13 @@ class RemoteChunkStore(MutableMapping, metaclass=ABCMeta):
             # noinspection PyTypeChecker
             self._vfs[name + '/' + filename] = name, index
 
-    def _fetch_chunk(self, var_name: str, chunk_index: Tuple[int, ...]) -> bytes:
+    def _fetch_chunk(self, key: str, var_name: str, chunk_index: Tuple[int, ...]) -> bytes:
         request_time_range = self.request_time_range(chunk_index[self._time_indexes[var_name]])
 
         t0 = time.perf_counter()
         try:
             exception = None
-            chunk_data = self.fetch_chunk(var_name,
-                                          chunk_index,
-                                          # bbox=request_bbox,
-                                          time_range=request_time_range)
+            chunk_data = self.fetch_chunk(key, var_name, chunk_index, request_time_range)
         except Exception as e:
             exception = e
             chunk_data = None
@@ -441,6 +438,7 @@ class RemoteChunkStore(MutableMapping, metaclass=ABCMeta):
 
     @abstractmethod
     def fetch_chunk(self,
+                    key: str,
                     var_name: str,
                     chunk_index: Tuple[int, ...],
                     time_range: Tuple[pd.Timestamp, pd.Timestamp]
@@ -448,9 +446,9 @@ class RemoteChunkStore(MutableMapping, metaclass=ABCMeta):
         """
         Fetch chunk data from remote.
 
+        :param key: The original chunk key being retrieved.
         :param var_name: Variable name
-        :param chunk_index: 3D chunk index (time, y, x)
-        :param bbox: Requested bounding box in coordinate units of the CRS
+        :param chunk_index: chunk index
         :param time_range: Requested time range
         :return: chunk data as raw bytes
         """
@@ -504,7 +502,7 @@ class RemoteChunkStore(MutableMapping, metaclass=ABCMeta):
             print(f'{self._class_name}.__getitem__(key={key!r})')
         value = self._vfs[key]
         if isinstance(value, tuple):
-            return self._fetch_chunk(*value)
+            return self._fetch_chunk(key, *value)
         return value
 
     def __setitem__(self, key: str, value: bytes) -> None:
@@ -641,6 +639,7 @@ class CciChunkStore(RemoteChunkStore):
         return self._metadata.get('variable_infos', {}).get(var_name, {})
 
     def fetch_chunk(self,
+                    key: str,
                     var_name: str,
                     chunk_index: Tuple[int, ...],
                     time_range: Tuple[pd.Timestamp, pd.Timestamp]) -> bytes:
@@ -659,14 +658,8 @@ class CciChunkStore(RemoteChunkStore):
                        )
         data = self._cci_odp.get_data_chunk(request, dim_indexes)
         if not data:
-            data = bytearray()
-            var_info = self._metadata.get('variable_infos', {}).get(var_name, {})
-            length = 1
-            for chunk_size in var_info.get('chunk_sizes', {}):
-                length *= chunk_size
-            dtype = np.dtype(self._SAMPLE_TYPE_TO_DTYPE[var_info['data_type']])
-            var_array = np.full(shape=length, fill_value=var_info['fill_value'], dtype=dtype)
-            data += var_array.tobytes()
+            raise KeyError(f'{key}: cannot fetch chunk for variable {var_name!r} '
+                           f'and time_range {time_range!r}.')
         _LOG.info(f'Fetched chunk for ({chunk_index})"{var_name}"')
         return data
 
