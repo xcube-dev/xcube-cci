@@ -134,6 +134,8 @@ class CciOdpDataOpener(DataOpener):
         temporal_resolution = _get_temporal_resolution_from_id(data_id)
         dataset_info = self._cci_odp.get_dataset_info(data_id, ds_metadata)
         spatial_resolution = dataset_info['lat_res']
+        if spatial_resolution <= 0:
+            spatial_resolution = None
         bbox = dataset_info['bbox']
         # only use date parts of times
         temporal_coverage = (dataset_info['temporal_coverage_start'].split('T')[0],
@@ -157,9 +159,10 @@ class CciOdpDataOpener(DataOpener):
         ds_metadata.pop('attributes')
         attrs = ds_metadata.get('attributes', {}).get('NC_GLOBAL', {})
         attrs.update(ds_metadata)
-        descriptor = DatasetDescriptor(data_id=data_id, type_specifier=self._type_specifier, dims=dims,
-                                       data_vars=var_descriptors, attrs=attrs, bbox=bbox,
-                                       spatial_res=spatial_resolution, time_range=temporal_coverage,
+        descriptor = DatasetDescriptor(data_id=data_id, type_specifier=self._type_specifier,
+                                       dims=dims, data_vars=var_descriptors, attrs=attrs,
+                                       bbox=bbox, spatial_res=spatial_resolution,
+                                       time_range=temporal_coverage,
                                        time_period=temporal_resolution)
         data_schema = self._get_open_data_params_schema(descriptor)
         descriptor.open_params_schema = data_schema
