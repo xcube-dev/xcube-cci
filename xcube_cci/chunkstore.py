@@ -569,7 +569,8 @@ class CciChunkStore(RemoteChunkStore):
         time_period = dataset_id.split('.')[2]
         if time_period == 'day':
             start_time = datetime(year=start_time.year, month=start_time.month, day=start_time.day)
-            end_time = datetime(year=end_time.year, month=end_time.month, day=end_time.day)
+            end_time = datetime(year=end_time.year, month=end_time.month, day=end_time.day,
+                                hour=23, minute=59, second=59)
             delta = relativedelta(days=1)
         elif time_period == 'month' or time_period == 'mon':
             start_time = datetime(year=start_time.year, month=start_time.month, day=1)
@@ -612,20 +613,6 @@ class CciChunkStore(RemoteChunkStore):
                         "Could not determine temporal end of dataset. Please use 'time_range' parameter.")
                 temporal_end = time_ranges[-1][1]
         return (temporal_start, temporal_end)
-
-    def _get_time_frequency(self, time_period: str):
-        if time_period == 'mon':
-            return 'month'
-        elif time_period == 'yr':
-            return 'year'
-        elif re.compile('[0-9]*-days').search(time_period):
-            num_days = int(time_period.split('-')[0])
-            return f'{num_days} days'
-        elif re.compile('[0-9]*-yrs').search(time_period):
-            num_years = int(time_period.split('-')[0])
-            return f'{num_years} years'
-        else:
-            return time_period
 
     def get_all_variable_names(self) -> List[str]:
         return [variable['name'] for variable in self._metadata['variables']]
