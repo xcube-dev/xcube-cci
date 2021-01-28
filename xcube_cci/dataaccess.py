@@ -181,24 +181,32 @@ class CciOdpDataOpener(DataOpener):
     def _get_open_data_params_schema(dsd: DataDescriptor=None):
         min_date = dsd.time_range[0] if dsd and dsd.time_range else None
         max_date = dsd.time_range[1] if dsd and dsd.time_range else None
-        # noinspection PyUnresolvedReferences
-        cube_params = dict(
-            variable_names=JsonArraySchema(items=JsonStringSchema(
-                enum=[v.name for v in dsd.data_vars] if dsd and dsd.data_vars else None)),
-            time_range=JsonDateSchema.new_range(min_date, max_date)
-        )
         min_lon = dsd.bbox[0] if dsd and dsd.bbox else -180
         min_lat = dsd.bbox[1] if dsd and dsd.bbox else -90
         max_lon = dsd.bbox[2] if dsd and dsd.bbox else 180
         max_lat = dsd.bbox[3] if dsd and dsd.bbox else 90
-        subsetting_params = dict(
-            bbox=JsonArraySchema(items=(
+        if dsd and (('lat' in dsd.dims and 'lon' in dsd.dims) or
+                    ('latitude' in dsd.dims and 'longitude' in dsd.dims)):
+            bbox = JsonArraySchema(items=(
                 JsonNumberSchema(minimum=min_lon, maximum=max_lon),
                 JsonNumberSchema(minimum=min_lat, maximum=max_lat),
                 JsonNumberSchema(minimum=min_lon, maximum=max_lon),
-                JsonNumberSchema(minimum=min_lat, maximum=max_lat))),
+                JsonNumberSchema(minimum=min_lat, maximum=max_lat)))
+        else:
+            bbox = JsonArraySchema(items=(
+                JsonNumberSchema(minimum=min_lon, maximum=min_lon),
+                JsonNumberSchema(minimum=min_lat, maximum=min_lat),
+                JsonNumberSchema(minimum=max_lon, maximum=max_lon),
+                JsonNumberSchema(minimum=max_lat, maximum=max_lat)))
+        # noinspection PyUnresolvedReferences
+        cube_params = dict(
+            variable_names=JsonArraySchema(items=JsonStringSchema(
+                enum=[v.name for v in dsd.data_vars] if dsd and dsd.data_vars else None)),
+            time_range=JsonDateSchema.new_range(min_date, max_date),
+            bbox=bbox
         )
-        # constant params is a listing of parameters that may not be changed, but are included here for information
+        # constant params is a listing of parameters that may not be changed,
+        # but are included here for information
         constant_params = dict(
             spatial_res=JsonNumberSchema(const=dsd.spatial_res if dsd and dsd.spatial_res else 0.0),
             time_period=JsonStringSchema(const=dsd.time_period if dsd and dsd.time_period else ''),
@@ -206,7 +214,6 @@ class CciOdpDataOpener(DataOpener):
         )
         cci_schema = JsonObjectSchema(
             properties=dict(**cube_params,
-                            **subsetting_params,
                             **constant_params
                             ),
             required=[
@@ -220,7 +227,8 @@ class CciOdpDataOpener(DataOpener):
         cci_schema.validate_instance(open_params)
         cube_kwargs, open_params = cci_schema.process_kwargs_subset(open_params, (
             'variable_names',
-            'time_range'
+            'time_range',
+            'bbox'
         ))
         max_cache_size: int = 2 ** 30
         chunk_store = CciChunkStore(self._cci_odp, data_id, cube_kwargs)
@@ -234,10 +242,6 @@ class CciOdpDataOpener(DataOpener):
         if data_id not in self.dataset_names:
             raise DataStoreError(f'Cannot describe metadata of data resource "{data_id}", '
                                  f'as it cannot be accessed by data accessor "{self._id}".')
-
-    @abstractmethod
-    def _get_subsetting_params(self, min_lon:float, min_lat:float, max_lon:float, max_lat:float):
-        pass
 
     @abstractmethod
     def _normalize_dataset(self, ds: xr.Dataset, cci_schema: JsonObjectSchema, **open_params) -> xr.Dataset:
@@ -257,16 +261,6 @@ class CciOdpDatasetOpener(CciOdpDataOpener):
     def __init__(self, **store_params):
         super().__init__(CciOdp(only_consider_cube_ready=False, **store_params), DATASET_OPENER_ID, TYPE_SPECIFIER_DATASET)
 
-    def _get_subsetting_params(self, min_lon:float, min_lat:float, max_lon:float, max_lat:float):
-        # no subsetting allowed on non-cubes
-        return dict(
-            bbox=JsonArraySchema(items=(
-                JsonNumberSchema(minimum=min_lon, maximum=min_lon),
-                JsonNumberSchema(minimum=min_lat, maximum=min_lat),
-                JsonNumberSchema(minimum=max_lon, maximum=max_lon),
-                JsonNumberSchema(minimum=max_lat, maximum=max_lat)))
-        )
-
     def _normalize_dataset(self, ds: xr.Dataset, cci_schema: JsonObjectSchema, **open_params) -> xr.Dataset:
         return ds
 
@@ -284,15 +278,6 @@ class CciOdpCubeOpener(CciOdpDataOpener):
 
     def __init__(self, **store_params):
         super().__init__(CciOdp(only_consider_cube_ready=True, **store_params), CUBE_OPENER_ID, TYPE_SPECIFIER_CUBE)
-
-    def _get_subsetting_params(self, min_lon:float, min_lat:float, max_lon:float, max_lat:float):
-        return dict(
-            bbox=JsonArraySchema(items=(
-                JsonNumberSchema(minimum=min_lon, maximum=max_lon),
-                JsonNumberSchema(minimum=min_lat, maximum=max_lat),
-                JsonNumberSchema(minimum=min_lon, maximum=max_lon),
-                JsonNumberSchema(minimum=min_lat, maximum=max_lat)))
-        )
 
     def _normalize_dataset(self, ds: xr.Dataset, cci_schema: JsonObjectSchema, **open_params) -> xr.Dataset:
         ds = normalize_cci_dataset(ds)
