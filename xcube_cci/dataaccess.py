@@ -54,7 +54,6 @@ from xcube_cci.constants import OPENSEARCH_CEDA_URL
 from xcube_cci.normalize import normalize_cci_dataset
 from xcube_cci.normalize import normalize_dims_description
 from xcube_cci.normalize import normalize_variable_dims_description
-from xcube_cci.subsetting import subset_spatial
 
 CCI_ID_PATTERN = 'esacci\..+\..+\..+\..+\..+\..+\..+\..+\..+'
 CRS_PATTERN = 'http://www.opengis.net/def/crs/EPSG/0/[0-9]{4,5}'
@@ -282,11 +281,6 @@ class CciOdpCubeOpener(CciOdpDataOpener):
     def _normalize_dataset(self, ds: xr.Dataset, cci_schema: JsonObjectSchema, **open_params) -> xr.Dataset:
         ds = normalize_cci_dataset(ds)
         ds = normalize_dataset(ds)
-        subsetting_kwargs, open_params = cci_schema.process_kwargs_subset(open_params, (
-            'bbox',
-        ))
-        if 'bbox' in subsetting_kwargs:
-            ds = subset_spatial(ds, **subsetting_kwargs)
         return ds
 
     def _normalize_dims(self, dims: dict) -> dict:
