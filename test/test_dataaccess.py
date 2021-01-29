@@ -34,8 +34,10 @@ class DataAccessTest(unittest.TestCase):
                          _get_temporal_resolution_from_id('esacci.OZONE.year.L3.NP.sensor.platform.MERGED.fv0002.r1'))
         self.assertEqual('13Y',
                          _get_temporal_resolution_from_id('esacci.OZONE.13-yrs.L3.NP.sensor.platform.MERGED.fv0002.r1'))
+        self.assertEqual('1M',
+                         _get_temporal_resolution_from_id('esacci.OZONE.climatology.L3.NP.sensor.platform.MERGED.fv0002.r1'))
         self.assertIsNone(
-            _get_temporal_resolution_from_id('esacci.OZONE.climatology.L3.NP.sensor.platform.MERGED.fv0002.r1'))
+            _get_temporal_resolution_from_id('esacci.OZONE.satellite-orbit-frequency.L3.NP.sensor.platform.MERGED.fv0002.r1'))
 
 class CciOdpDatasetOpenerTest(unittest.TestCase):
 
@@ -78,8 +80,8 @@ class CciOdpDatasetOpenerTest(unittest.TestCase):
         self.assertEqual(360, descriptor.dims['longitude'])
         self.assertEqual(180, descriptor.dims['latitude'])
         self.assertEqual(12644, descriptor.dims['time'])
-        self.assertEqual(3, len(descriptor.data_vars))
-        self.assertEqual('absorbing_aerosol_index', descriptor.data_vars[0].name)
+        self.assertEqual(5, len(descriptor.data_vars))
+        self.assertEqual('absorbing_aerosol_index', descriptor.data_vars[2].name)
         self.assertEqual(3, descriptor.data_vars[2].ndim)
         self.assertEqual(('latitude', 'longitude', 'time'), descriptor.data_vars[2].dims)
         self.assertEqual('float32', descriptor.data_vars[2].dtype)
@@ -367,8 +369,8 @@ class CciOdpDataStoreTest(unittest.TestCase):
         self.assertEqual(360, descriptor.dims['longitude'])
         self.assertEqual(180, descriptor.dims['latitude'])
         self.assertEqual(12644, descriptor.dims['time'])
-        self.assertEqual(3, len(descriptor.data_vars))
-        self.assertEqual('absorbing_aerosol_index', descriptor.data_vars[0].name)
+        self.assertEqual(5, len(descriptor.data_vars))
+        self.assertEqual('absorbing_aerosol_index', descriptor.data_vars[2].name)
         self.assertEqual(3, descriptor.data_vars[2].ndim)
         self.assertEqual(('latitude', 'longitude', 'time'), descriptor.data_vars[2].dims)
         self.assertEqual('float32', descriptor.data_vars[2].dtype)

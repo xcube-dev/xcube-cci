@@ -71,6 +71,19 @@ class CciChunkStoreTest(unittest.TestCase):
                           ('2002-07-20T00:00:00', '2002-07-24T23:59:00'),
                           ('2002-07-25T00:00:00', '2002-07-29T23:59:00')],
                          [(tr[0].isoformat(), tr[1].isoformat()) for tr in time_ranges])
+        # get_time_range test for data with day-period
+        time_range = (pd.to_datetime('2002-07-04', utc=True), pd.to_datetime('2002-07-09', utc=True))
+        cube_params = dict(time_range=time_range)
+        time_ranges = self._store.get_time_ranges(
+            'esacci.SEAICE.day.L4.SICONC.multi-sensor.multi-platform.AMSR_50kmEASE2.2-1.NH',
+            cube_params)
+        self.assertEqual([('2002-07-04T00:00:00', '2002-07-05T00:00:00'),
+                          ('2002-07-05T00:00:00', '2002-07-06T00:00:00'),
+                          ('2002-07-06T00:00:00', '2002-07-07T00:00:00'),
+                          ('2002-07-07T00:00:00', '2002-07-08T00:00:00'),
+                          ('2002-07-08T00:00:00', '2002-07-09T00:00:00'),
+                          ('2002-07-09T00:00:00', '2002-07-10T00:00:00')],
+                         [(tr[0].isoformat(), tr[1].isoformat()) for tr in time_ranges])
 
     @skipIf(os.environ.get('XCUBE_DISABLE_WEB_TESTS', None) == '1', 'XCUBE_DISABLE_WEB_TESTS = 1')
     def test_get_dimension_indexes_for_chunk(self):
