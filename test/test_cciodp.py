@@ -395,7 +395,7 @@ class CciOdpTest(unittest.TestCase):
              'view': 2,
              'aerosol_type': 10},
             '2002-08-01T00:00:00',
-            '2002-08-01T00:00:00')
+            '2002-08-02T00:00:00')
         self.assertIsNotNone(dimension_data)
         self.assertEqual(dimension_data['latitude']['size'], 180)
         self.assertEqual(dimension_data['latitude']['chunkSize'], 180)
@@ -434,7 +434,7 @@ class CciOdpTest(unittest.TestCase):
             bbox=(-20, 30, 20, 50),
             ecv='AEROSOL'
         )
-        self.assertTrue(len(aerosol_sources) > 15)
+        self.assertTrue(len(aerosol_sources) > 13)
 
     @skipIf(os.environ.get('XCUBE_DISABLE_WEB_TESTS', None) == '1', 'XCUBE_DISABLE_WEB_TESTS = 1')
     def test_search_frequency(self):
@@ -456,7 +456,7 @@ class CciOdpTest(unittest.TestCase):
             bbox=(-20, 30, 20, 50),
             processing_level='L2P'
         )
-        self.assertTrue(len(l2p_sources) > 30)
+        self.assertTrue(len(l2p_sources) > 28)
 
     @skipIf(os.environ.get('XCUBE_DISABLE_WEB_TESTS', None) == '1', 'XCUBE_DISABLE_WEB_TESTS = 1')
     def test_search_product_string(self):

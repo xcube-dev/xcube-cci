@@ -128,12 +128,12 @@ class CciOdpDatasetOpenerTest(unittest.TestCase):
     @skipIf(os.environ.get('XCUBE_DISABLE_WEB_TESTS', None) == '1', 'XCUBE_DISABLE_WEB_TESTS = 1')
     def test_open_data(self):
         dataset = self.opener.open_data(
-            'esacci.AEROSOL.day.L3C.AER_PRODUCTS.AATSR.Envisat.ATSR2-ENVISAT-ENS_DAILY.v2-6.r1',
-            variable_names=['AOD550', 'NMEAS'],
+            'esacci.AEROSOL.day.L3C.AOD.MERIS.Envisat.MERIS_ENVISAT.2-2.r1',
+            variable_names=['AOD550', 'R_eff'],
             time_range=['2009-07-02', '2009-07-05'],
             bbox=[-10.0, 40.0, 10.0, 60.0])
         self.assertIsNotNone(dataset)
-        self.assertEqual({'AOD550', 'NMEAS'}, set(dataset.data_vars))
+        self.assertEqual({'AOD550', 'R_eff'}, set(dataset.data_vars))
         self.assertEqual({'latitude', 'longitude', 'time'}, set(dataset.AOD550.dims))
         self.assertEqual({180, 360, 1}, set(dataset.AOD550.chunk_sizes))
 
@@ -516,25 +516,25 @@ class CciOdpDataStoreTest(unittest.TestCase):
     @skipIf(os.environ.get('XCUBE_DISABLE_WEB_TESTS', None) == '1', 'XCUBE_DISABLE_WEB_TESTS = 1')
     def test_open_data(self):
         dataset = self.store.open_data(
-            'esacci.AEROSOL.day.L3C.AER_PRODUCTS.AATSR.Envisat.ATSR2-ENVISAT-ENS_DAILY.v2-6.r1',
+            'esacci.AEROSOL.day.L3C.AOD.MERIS.Envisat.MERIS_ENVISAT.2-2.r1',
             'dataset:zarr:cciodp',
-            variable_names=['AOD550', 'NMEAS'],
+            variable_names=['AOD550', 'R_eff'],
             time_range=['2009-07-02', '2009-07-05'],
             bbox=[-10.0, 40.0, 10.0, 60.0])
-        self.assertEqual({'AOD550', 'NMEAS'}, set(dataset.data_vars))
+        self.assertEqual({'AOD550', 'R_eff'}, set(dataset.data_vars))
         self.assertEqual({'latitude', 'longitude', 'time'}, set(dataset.AOD550.dims))
         self.assertEqual({180, 360, 1}, set(dataset.AOD550.chunk_sizes))
 
         with self.assertRaises(DataStoreError) as dse:
-            self.store.open_data('esacci.AEROSOL.day.L3C.AER_PRODUCTS.AATSR.Envisat.ATSR2-ENVISAT-ENS_DAILY.v2-6.r1',
+            self.store.open_data('esacci.AEROSOL.day.L3C.AOD.MERIS.Envisat.MERIS_ENVISAT.2-2.r1',
                                  'dataset[cube]:zarr:cciodp',
-                                  variable_names=['AOD550', 'NMEAS'],
+                                  variable_names=['AOD550', 'R_eff'],
                                   time_range=['2009-07-02', '2009-07-05'],
                                   bbox=[-10.0, 40.0, 10.0, 60.0])
         self.assertEqual('Cannot describe metadata of data resource '
-                         '"esacci.AEROSOL.day.L3C.AER_PRODUCTS.AATSR.Envisat.ATSR2-ENVISAT-ENS_DAILY.v2-6.r1", '
-                         'as it cannot be accessed by data accessor "dataset[cube]:zarr:cciodp".', f'{dse.exception}')
-
+                         '"esacci.AEROSOL.day.L3C.AOD.MERIS.Envisat.MERIS_ENVISAT.2-2.r1", '
+                         'as it cannot be accessed by data accessor "dataset[cube]:zarr:cciodp".',
+                         f'{dse.exception}')
 
     @skipIf(os.environ.get('XCUBE_DISABLE_WEB_TESTS', None) == '1', 'XCUBE_DISABLE_WEB_TESTS = 1')
     @skip('Disabled while time series are not supported')
