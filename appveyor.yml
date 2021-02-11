@@ -49,4 +49,4 @@ build_script:
   - python setup.py install
 
   # Run the test suite.
-  - pytest
+  - py.test
