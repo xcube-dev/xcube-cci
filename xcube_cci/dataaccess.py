@@ -180,30 +180,24 @@ class CciOdpDataOpener(DataOpener):
     def _get_open_data_params_schema(dsd: DataDescriptor=None):
         min_date = dsd.time_range[0] if dsd and dsd.time_range else None
         max_date = dsd.time_range[1] if dsd and dsd.time_range else None
-        min_lon = dsd.bbox[0] if dsd and dsd.bbox else -180
-        min_lat = dsd.bbox[1] if dsd and dsd.bbox else -90
-        max_lon = dsd.bbox[2] if dsd and dsd.bbox else 180
-        max_lat = dsd.bbox[3] if dsd and dsd.bbox else 90
+        # noinspection PyUnresolvedReferences
+        cube_params = dict(
+            variable_names=JsonArraySchema(items=JsonStringSchema(
+                enum=[v.name for v in dsd.data_vars] if dsd and dsd.data_vars else None)),
+            time_range=JsonDateSchema.new_range(min_date, max_date)
+        )
         if dsd and (('lat' in dsd.dims and 'lon' in dsd.dims) or
                     ('latitude' in dsd.dims and 'longitude' in dsd.dims)):
+            min_lon = dsd.bbox[0] if dsd and dsd.bbox else -180
+            min_lat = dsd.bbox[1] if dsd and dsd.bbox else -90
+            max_lon = dsd.bbox[2] if dsd and dsd.bbox else 180
+            max_lat = dsd.bbox[3] if dsd and dsd.bbox else 90
             bbox = JsonArraySchema(items=(
                 JsonNumberSchema(minimum=min_lon, maximum=max_lon),
                 JsonNumberSchema(minimum=min_lat, maximum=max_lat),
                 JsonNumberSchema(minimum=min_lon, maximum=max_lon),
                 JsonNumberSchema(minimum=min_lat, maximum=max_lat)))
-        else:
-            bbox = JsonArraySchema(items=(
-                JsonNumberSchema(minimum=min_lon, maximum=min_lon),
-                JsonNumberSchema(minimum=min_lat, maximum=min_lat),
-                JsonNumberSchema(minimum=max_lon, maximum=max_lon),
-                JsonNumberSchema(minimum=max_lat, maximum=max_lat)))
-        # noinspection PyUnresolvedReferences
-        cube_params = dict(
-            variable_names=JsonArraySchema(items=JsonStringSchema(
-                enum=[v.name for v in dsd.data_vars] if dsd and dsd.data_vars else None)),
-            time_range=JsonDateSchema.new_range(min_date, max_date),
-            bbox=bbox
-        )
+            cube_params['bbox'] = bbox
         # constant params is a listing of parameters that may not be changed,
         # but are included here for information
         constant_params = dict(
