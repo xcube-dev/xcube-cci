@@ -714,7 +714,7 @@ class CciChunkStore(RemoteChunkStore):
                     time_range: Tuple[pd.Timestamp, pd.Timestamp]) -> bytes:
 
         start_time, end_time = time_range
-        identifier = self._cci_odp.get_fid_for_dataset(self._dataset_name)
+        identifier = self._cci_odp.get_dataset_id(self._dataset_name)
         iso_start_date = start_time.tz_localize(None).isoformat()
         iso_end_date = end_time.tz_localize(None).isoformat()
         dim_indexes = self._get_dimension_indexes_for_chunk(var_name, chunk_index)

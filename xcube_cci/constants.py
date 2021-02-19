@@ -26,6 +26,9 @@ DATA_ARRAY_NAME = 'var_data'
 
 OPENSEARCH_CEDA_URL = "https://archive.opensearch.ceda.ac.uk/opensearch/request"
 CCI_ODD_URL = 'https://archive.opensearch.ceda.ac.uk/opensearch/description.xml?parentIdentifier=cci'
+# to test with opensearch test, use the following two lines instead the upper two
+# OPENSEARCH_CEDA_URL = "http://opensearch-test.ceda.ac.uk/opensearch/request"
+# CCI_ODD_URL = 'http://opensearch-test.ceda.ac.uk/opensearch/description.xml?parentIdentifier=cci'
 
 DEFAULT_CRS = 'http://www.opengis.net/def/crs/EPSG/0/4326'
 DEFAULT_TILE_SIZE = 1000
