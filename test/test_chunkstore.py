@@ -90,7 +90,7 @@ class CciChunkStoreTest(unittest.TestCase):
         # get_time_range test for data with day-period
         time_range = (pd.to_datetime('2002-07-04', utc=True), pd.to_datetime('2002-07-09', utc=True))
         cube_params = dict(time_range=time_range)
-        time_ranges = self._store.get_time_ranges(
+        time_ranges = store.get_time_ranges(
             'esacci.SEAICE.day.L4.SICONC.multi-sensor.multi-platform.AMSR_50kmEASE2.2-1.NH',
             cube_params)
         self.assertEqual([('2002-07-04T00:00:00', '2002-07-05T00:00:00'),
