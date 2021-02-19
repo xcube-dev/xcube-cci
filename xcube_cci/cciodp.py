@@ -361,22 +361,22 @@ class CciOdp:
     """
     Represents the ESA CCI Open Data Portal
 
-    :param opensearch_url: The base URL to the opensearch service
-    :param opensearch_description_url: The URL to a document describing
+    :param endpoint_url: The base URL to the opensearch service
+    :param endpoint_description_url: The URL to a document describing
     the capabilities of the opensearch service
     """
 
     def __init__(self,
-                 opensearch_url: str = OPENSEARCH_CEDA_URL,
-                 opensearch_description_url: str = CCI_ODD_URL,
+                 endpoint_url: str = OPENSEARCH_CEDA_URL,
+                 endpoint_description_url: str = CCI_ODD_URL,
                  enable_warnings: bool = False,
                  num_retries: int = DEFAULT_NUM_RETRIES,
                  retry_backoff_max: int = DEFAULT_RETRY_BACKOFF_MAX,
                  retry_backoff_base: float = DEFAULT_RETRY_BACKOFF_BASE,
                  only_consider_cube_ready = False
                  ):
-        self._opensearch_url = opensearch_url
-        self._opensearch_description_url = opensearch_description_url
+        self._opensearch_url = endpoint_url
+        self._opensearch_description_url = endpoint_description_url
         self._enable_warnings = enable_warnings
         self._num_retries = num_retries
         self._retry_backoff_max = retry_backoff_max
