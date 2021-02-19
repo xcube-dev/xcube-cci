@@ -217,7 +217,6 @@ class CciOdpDataOpener(DataOpener):
                 JsonNumberSchema(minimum=min_lon, maximum=max_lon),
                 JsonNumberSchema(minimum=min_lat, maximum=max_lat)))
             cube_params['bbox'] = bbox
-        )
         cci_schema = JsonObjectSchema(
             properties=dict(**cube_params),
             required=[
