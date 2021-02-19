@@ -75,6 +75,11 @@ _FREQUENCY_TO_ADJECTIVE = {
     'yr': 'year',
     'unspecified': ''
 }
+_RELEVANT_METADATA_ATTRIBUTES = ['ecv', 'institute', 'processing_level', 'product_string',
+                                 'product_version', 'data_type', 'abstract', 'title', 'licences',
+                                 'publication_date', 'catalog_url', 'sensor_id', 'platform_id',
+                                 'cci_project', 'description', 'project', 'references', 'source',
+                                 'history', 'comment']
 
 
 def _normalize_dataset(ds: xr.Dataset) -> xr.Dataset:
@@ -83,10 +88,10 @@ def _normalize_dataset(ds: xr.Dataset) -> xr.Dataset:
     return ds
 
 
-def _get_temporal_resolution_from_id(data_id: str) -> str:
+def _get_temporal_resolution_from_id(data_id: str) -> Optional[str]:
     data_time_res = data_id.split('.')[2]
     time_res_items = dict(D=['days', 'day'],
-                          M=['months', 'mon'],
+                          M=['months', 'mon', 'climatology'],
                           Y=['yrs', 'yr', 'year'])
     for time_res_pandas_id, time_res_ids_list in time_res_items.items():
         for i, time_res_id in enumerate(time_res_ids_list):
@@ -133,6 +138,8 @@ class CciOdpDataOpener(DataOpener):
         temporal_resolution = _get_temporal_resolution_from_id(data_id)
         dataset_info = self._cci_odp.get_dataset_info(data_id, ds_metadata)
         spatial_resolution = dataset_info['lat_res']
+        if spatial_resolution <= 0:
+            spatial_resolution = None
         bbox = dataset_info['bbox']
         # only use date parts of times
         temporal_coverage = (dataset_info['temporal_coverage_start'].split('T')[0],
@@ -153,16 +160,27 @@ class CciOdpDataOpener(DataOpener):
             ds_metadata.pop('variables')
         ds_metadata.pop('dimensions')
         ds_metadata.pop('variable_infos')
-        ds_metadata.pop('attributes')
         attrs = ds_metadata.get('attributes', {}).get('NC_GLOBAL', {})
+        ds_metadata.pop('attributes')
         attrs.update(ds_metadata)
-        descriptor = DatasetDescriptor(data_id=data_id, type_specifier=self._type_specifier, dims=dims,
-                                       data_vars=var_descriptors, attrs=attrs, bbox=bbox,
-                                       spatial_res=spatial_resolution, time_range=temporal_coverage,
+        self._remove_irrelevant_metadata_attributes(attrs)
+        descriptor = DatasetDescriptor(data_id=data_id, type_specifier=self._type_specifier,
+                                       dims=dims, data_vars=var_descriptors, attrs=attrs,
+                                       bbox=bbox, spatial_res=spatial_resolution,
+                                       time_range=temporal_coverage,
                                        time_period=temporal_resolution)
         data_schema = self._get_open_data_params_schema(descriptor)
         descriptor.open_params_schema = data_schema
         return descriptor
+
+    @staticmethod
+    def _remove_irrelevant_metadata_attributes(attrs: dict):
+        to_remove_list = []
+        for attribute in attrs:
+            if attribute not in _RELEVANT_METADATA_ATTRIBUTES:
+                to_remove_list.append(attribute)
+        for to_remove in to_remove_list:
+            attrs.pop(to_remove)
 
     def search_data(self, **search_params) -> Iterator[DatasetDescriptor]:
         search_result = self._cci_odp.search(**search_params)

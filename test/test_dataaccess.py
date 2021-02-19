@@ -34,8 +34,10 @@ class DataAccessTest(unittest.TestCase):
                          _get_temporal_resolution_from_id('esacci.OZONE.year.L3.NP.sensor.platform.MERGED.fv0002.r1'))
         self.assertEqual('13Y',
                          _get_temporal_resolution_from_id('esacci.OZONE.13-yrs.L3.NP.sensor.platform.MERGED.fv0002.r1'))
+        self.assertEqual('1M',
+                         _get_temporal_resolution_from_id('esacci.OZONE.climatology.L3.NP.sensor.platform.MERGED.fv0002.r1'))
         self.assertIsNone(
-            _get_temporal_resolution_from_id('esacci.OZONE.climatology.L3.NP.sensor.platform.MERGED.fv0002.r1'))
+            _get_temporal_resolution_from_id('esacci.OZONE.satellite-orbit-frequency.L3.NP.sensor.platform.MERGED.fv0002.r1'))
 
 class CciOdpDatasetOpenerTest(unittest.TestCase):
 
@@ -78,8 +80,8 @@ class CciOdpDatasetOpenerTest(unittest.TestCase):
         self.assertEqual(360, descriptor.dims['longitude'])
         self.assertEqual(180, descriptor.dims['latitude'])
         self.assertEqual(12644, descriptor.dims['time'])
-        self.assertEqual(3, len(descriptor.data_vars))
-        self.assertEqual('absorbing_aerosol_index', descriptor.data_vars[0].name)
+        self.assertEqual(5, len(descriptor.data_vars))
+        self.assertEqual('absorbing_aerosol_index', descriptor.data_vars[2].name)
         self.assertEqual(3, descriptor.data_vars[2].ndim)
         self.assertEqual(('latitude', 'longitude', 'time'), descriptor.data_vars[2].dims)
         self.assertEqual('float32', descriptor.data_vars[2].dtype)
@@ -130,7 +132,7 @@ class CciOdpDatasetOpenerTest(unittest.TestCase):
             time_range=['2002-07-02', '2002-07-05'],
             bbox=[-10.0, 40.0, 10.0, 60.0])
         self.assertIsNotNone(dataset)
-        self.assertEqual({'AOD550', 'NMEAS'}, set(dataset.data_vars))
+        self.assertEqual({'AOD550', 'R_eff'}, set(dataset.data_vars))
         self.assertEqual({'latitude', 'longitude', 'time'}, set(dataset.AOD550.dims))
         self.assertEqual({20, 20, 1}, set(dataset.AOD550.chunk_sizes))
 
@@ -511,25 +513,25 @@ class CciOdpDataStoreTest(unittest.TestCase):
     @skipIf(os.environ.get('XCUBE_DISABLE_WEB_TESTS', None) == '1', 'XCUBE_DISABLE_WEB_TESTS = 1')
     def test_open_data(self):
         dataset = self.store.open_data(
-            'esacci.AEROSOL.day.L3C.AER_PRODUCTS.ATSR-2.Envisat.AATSR-ENVISAT-ENS_DAILY.v2-6.r1',
+            'esacci.AEROSOL.day.L3C.AOD.MERIS.Envisat.MERIS_ENVISAT.2-2.r1',
             'dataset:zarr:cciodp',
-            variable_names=['AOD550', 'NMEAS'],
+            variable_names=['AOD550', 'R_eff'],
             time_range=['2009-07-02', '2009-07-05'],
             bbox=[-10.0, 40.0, 10.0, 60.0])
-        self.assertEqual({'AOD550', 'NMEAS'}, set(dataset.data_vars))
+        self.assertEqual({'AOD550', 'R_eff'}, set(dataset.data_vars))
         self.assertEqual({'latitude', 'longitude', 'time'}, set(dataset.AOD550.dims))
         self.assertEqual({20, 20, 1}, set(dataset.AOD550.chunk_sizes))
 
         with self.assertRaises(DataStoreError) as dse:
-            self.store.open_data('esacci.AEROSOL.day.L3C.AER_PRODUCTS.AATSR.Envisat.ATSR2-ENVISAT-ENS_DAILY.v2-6.r1',
+            self.store.open_data('esacci.AEROSOL.day.L3C.AOD.MERIS.Envisat.MERIS_ENVISAT.2-2.r1',
                                  'dataset[cube]:zarr:cciodp',
-                                  variable_names=['AOD550', 'NMEAS'],
+                                  variable_names=['AOD550', 'R_eff'],
                                   time_range=['2009-07-02', '2009-07-05'],
                                   bbox=[-10.0, 40.0, 10.0, 60.0])
         self.assertEqual('Cannot describe metadata of data resource '
-                         '"esacci.AEROSOL.day.L3C.AER_PRODUCTS.AATSR.Envisat.ATSR2-ENVISAT-ENS_DAILY.v2-6.r1", '
-                         'as it cannot be accessed by data accessor "dataset[cube]:zarr:cciodp".', f'{dse.exception}')
-
+                         '"esacci.AEROSOL.day.L3C.AOD.MERIS.Envisat.MERIS_ENVISAT.2-2.r1", '
+                         'as it cannot be accessed by data accessor "dataset[cube]:zarr:cciodp".',
+                         f'{dse.exception}')
 
     @skipIf(os.environ.get('XCUBE_DISABLE_WEB_TESTS', None) == '1', 'XCUBE_DISABLE_WEB_TESTS = 1')
     @skip('Disabled while time series are not supported')

@@ -477,16 +477,13 @@ class RemoteChunkStore(MutableMapping, metaclass=ABCMeta):
             # noinspection PyTypeChecker
             self._vfs[name + '/' + filename] = name, index
 
-    def _fetch_chunk(self, var_name: str, chunk_index: Tuple[int, ...]) -> bytes:
+    def _fetch_chunk(self, key: str, var_name: str, chunk_index: Tuple[int, ...]) -> bytes:
         request_time_range = self.request_time_range(chunk_index[self._time_indexes[var_name]])
 
         t0 = time.perf_counter()
         try:
             exception = None
-            chunk_data = self.fetch_chunk(var_name,
-                                          chunk_index,
-                                          # bbox=request_bbox,
-                                          time_range=request_time_range)
+            chunk_data = self.fetch_chunk(key, var_name, chunk_index, request_time_range)
         except Exception as e:
             exception = e
             chunk_data = None
@@ -507,6 +504,7 @@ class RemoteChunkStore(MutableMapping, metaclass=ABCMeta):
 
     @abstractmethod
     def fetch_chunk(self,
+                    key: str,
                     var_name: str,
                     chunk_index: Tuple[int, ...],
                     time_range: Tuple[pd.Timestamp, pd.Timestamp]
@@ -514,9 +512,9 @@ class RemoteChunkStore(MutableMapping, metaclass=ABCMeta):
         """
         Fetch chunk data from remote.
 
+        :param key: The original chunk key being retrieved.
         :param var_name: Variable name
-        :param chunk_index: 3D chunk index (time, y, x)
-        :param bbox: Requested bounding box in coordinate units of the CRS
+        :param chunk_index: chunk index
         :param time_range: Requested time range
         :return: chunk data as raw bytes
         """
@@ -570,7 +568,7 @@ class RemoteChunkStore(MutableMapping, metaclass=ABCMeta):
             print(f'{self._class_name}.__getitem__(key={key!r})')
         value = self._vfs[key]
         if isinstance(value, tuple):
-            return self._fetch_chunk(*value)
+            return self._fetch_chunk(key, *value)
         return value
 
     def __setitem__(self, key: str, value: bytes) -> None:
@@ -636,7 +634,8 @@ class CciChunkStore(RemoteChunkStore):
         time_period = dataset_id.split('.')[2]
         if time_period == 'day':
             start_time = datetime(year=start_time.year, month=start_time.month, day=start_time.day)
-            end_time = datetime(year=end_time.year, month=end_time.month, day=end_time.day)
+            end_time = datetime(year=end_time.year, month=end_time.month, day=end_time.day,
+                                hour=23, minute=59, second=59)
             delta = relativedelta(days=1)
         elif time_period == 'month' or time_period == 'mon':
             start_time = datetime(year=start_time.year, month=start_time.month, day=1)
@@ -680,20 +679,6 @@ class CciChunkStore(RemoteChunkStore):
                 temporal_end = time_ranges[-1][1]
         return (temporal_start, temporal_end)
 
-    def _get_time_frequency(self, time_period: str):
-        if time_period == 'mon':
-            return 'month'
-        elif time_period == 'yr':
-            return 'year'
-        elif re.compile('[0-9]*-days').search(time_period):
-            num_days = int(time_period.split('-')[0])
-            return f'{num_days} days'
-        elif re.compile('[0-9]*-yrs').search(time_period):
-            num_years = int(time_period.split('-')[0])
-            return f'{num_years} years'
-        else:
-            return time_period
-
     def get_all_variable_names(self) -> List[str]:
         return [variable['name'] for variable in self._metadata['variables']]
 
@@ -721,6 +706,7 @@ class CciChunkStore(RemoteChunkStore):
         return self._metadata.get('variable_infos', {}).get(var_name, {})
 
     def fetch_chunk(self,
+                    key: str,
                     var_name: str,
                     chunk_index: Tuple[int, ...],
                     time_range: Tuple[pd.Timestamp, pd.Timestamp]) -> bytes:
@@ -739,14 +725,8 @@ class CciChunkStore(RemoteChunkStore):
                        )
         data = self._cci_odp.get_data_chunk(request, dim_indexes)
         if not data:
-            data = bytearray()
-            var_info = self._metadata.get('variable_infos', {}).get(var_name, {})
-            length = 1
-            for chunk_size in var_info.get('chunk_sizes', {}):
-                length *= chunk_size
-            dtype = np.dtype(self._SAMPLE_TYPE_TO_DTYPE[var_info['data_type']])
-            var_array = np.full(shape=length, fill_value=var_info['fill_value'], dtype=dtype)
-            data += var_array.tobytes()
+            raise KeyError(f'{key}: cannot fetch chunk for variable {var_name!r} '
+                           f'and time_range {time_range!r}.')
         _LOG.info(f'Fetched chunk for ({chunk_index})"{var_name}"')
         return data
 
