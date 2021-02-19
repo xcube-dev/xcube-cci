@@ -111,21 +111,21 @@ class RemoteChunkStore(MutableMapping, metaclass=ABCMeta):
             dimension_data = self._dimension_data[dimension_name]['data']
             if bbox and dimension_name == 'lat' or dimension_name == 'latitude':
                 if dimension_data[0] < dimension_data[-1]:
-                    min_lat_offset = bisect.bisect_left(dimension_data, bbox[1])
-                    max_lat_offset = bisect.bisect_right(dimension_data, bbox[3])
+                    min_offset = bisect.bisect_left(dimension_data, bbox[1])
+                    max_offset = bisect.bisect_right(dimension_data, bbox[3])
                 else:
-                    min_lat_offset = len(dimension_data) - \
-                                     bisect.bisect_left(dimension_data[::-1], bbox[3])
-                    max_lat_offset = len(dimension_data) - \
-                                     bisect.bisect_right(dimension_data[::-1], bbox[1])
-                dimension_data = self._adjust_dimension_data(dimension_name, min_lat_offset,
-                                                             max_lat_offset, dimension_data,
+                    min_offset = len(dimension_data) - \
+                                 bisect.bisect_left(dimension_data[::-1], bbox[3])
+                    max_offset = len(dimension_data) - \
+                                 bisect.bisect_right(dimension_data[::-1], bbox[1])
+                dimension_data = self._adjust_dimension_data(dimension_name, min_offset,
+                                                             max_offset, dimension_data,
                                                              dim_attrs)
             elif bbox and dimension_name == 'lon' or dimension_name == 'longitude':
-                min_lat_offset = bisect.bisect_left(dimension_data, bbox[0])
-                max_lat_offset = bisect.bisect_right(dimension_data, bbox[2])
-                dimension_data = self._adjust_dimension_data(dimension_name, min_lat_offset,
-                                                             max_lat_offset, dimension_data,
+                min_offset = bisect.bisect_left(dimension_data, bbox[0])
+                max_offset = bisect.bisect_right(dimension_data, bbox[2])
+                dimension_data = self._adjust_dimension_data(dimension_name, min_offset,
+                                                             max_offset, dimension_data,
                                                              dim_attrs)
             if len(dimension_data) > 0:
                 dim_array = np.array(dimension_data)
