@@ -2,6 +2,7 @@ import datetime as dt
 import os
 import unittest
 
+from typing import Sequence
 from unittest import skip
 from unittest import skipIf
 
@@ -13,7 +14,8 @@ from xcube.core.normalize import normalize_dataset
 from xcube.core.store.descriptor import DatasetDescriptor
 from xcube.core.store import DataStoreError
 from xcube.core.verify import assert_cube
-
+from xcube.util.progress import ProgressObserver
+from xcube.util.progress import ProgressState
 
 class DataAccessTest(unittest.TestCase):
 
@@ -617,3 +619,159 @@ class CciDataNormalizationTest(unittest.TestCase):
         print(f'Datasets that could not be opened (#{len(datasets_that_could_not_be_opened)}): '
               f'{datasets_that_could_not_be_opened}')
         print(f'Datasets that were verified (#{len(good_datasets)}): {good_datasets}')
+
+class MyProgressObserver(ProgressObserver):
+
+    def __init__(self, record_errors=False):
+        self.record_errors = record_errors
+        self.calls = []
+
+    def on_begin(self, state_stack: Sequence[ProgressState]):
+        self.calls.append(('begin', self._serialize_stack(state_stack)))
+
+    def on_update(self, state_stack: Sequence[ProgressState]):
+        self.calls.append(('update', self._serialize_stack(state_stack)))
+
+    def on_end(self, state_stack: Sequence[ProgressState]):
+        self.calls.append(('end', self._serialize_stack(state_stack)))
+
+    def _serialize_stack(self, state_stack):
+        if self.record_errors:
+            return [(s.label, s.progress, s.finished, s.exc_info_text) for s in state_stack]
+        else:
+            return [(s.label, s.progress, s.finished) for s in state_stack]
+
+class CciProgressMonitorTest(unittest.TestCase):
+
+    def setUp(self):
+        self.store = CciOdpDataStore()
+        self.observer = MyProgressObserver()
+        self.observer.activate()
+
+    @skipIf(os.environ.get('XCUBE_DISABLE_WEB_TESTS', None) == '1', 'XCUBE_DISABLE_WEB_TESTS = 1')
+    def test_open_data(self):
+        self.store.open_data(
+            'esacci.AEROSOL.day.L3C.AER_PRODUCTS.AATSR.Envisat.ATSR2-ENVISAT-ENS_DAILY.v2-6.r1',
+            variable_names=['AOD550', 'NMEAS'],
+            time_range=['2009-07-02', '2009-07-05'],
+            bbox=[-10.0, 40.0, 10.0, 60.0])
+
+        self.assertEqual(
+            [('begin', [('Opening data', 0.0, False)]),
+             ('begin', [('Opening data', 0.0, False), ('Building Dataset', 0.0, False)]),
+             ('update', [('Opening data', 0.1111111111111111, False),
+                         ('Building Dataset', 0.6666666666666666, False)]),
+             ('update', [('Opening data', 0.16666666666666666, False),
+                         ('Building Dataset', 1.0, False)]),
+             ('end', [('Opening data', 0.16666666666666666, False),
+                      ('Building Dataset', 1.0, True)]),
+             ('begin', [('Opening data', 0.16666666666666666, False),
+                        ('Setting up CCI Chunk Store', 0.0, False)]),
+             ('begin', [('Opening data', 0.16666666666666666, False),
+                        ('Setting up CCI Chunk Store', 0.0, False),
+                        ('Setting up remote chunk store', 0.0, False)]),
+             ('begin', [('Opening data', 0.16666666666666666, False),
+                        ('Setting up CCI Chunk Store', 0.0, False),
+                        ('Setting up remote chunk store', 0.0, False),
+                        ('Getting dimension data', 0.0, False)]),
+             ('begin', [('Opening data', 0.16666666666666666, False),
+                        ('Setting up CCI Chunk Store', 0.0, False),
+                        ('Setting up remote chunk store', 0.0, False),
+                        ('Getting dimension data', 0.0, False),
+                        ('Getting variable data', 0.0, False)]),
+             ('begin', [('Opening data', 0.16666666666666666, False),
+                        ('Setting up CCI Chunk Store', 0.0, False),
+                        ('Setting up remote chunk store', 0.0, False),
+                        ('Getting dimension data', 0.0, False),
+                        ('Getting variable data', 0.0, False),
+                        ('Fetching feature list', 0.0, False)]),
+             ('update', [('Opening data', 0.27777777777777773, False),
+                         ('Setting up CCI Chunk Store', 0.22222222222222218, False),
+                         ('Setting up remote chunk store', 0.2222222222222222, False),
+                         ('Getting dimension data', 0.3333333333333333, False),
+                         ('Getting variable data', 0.6666666666666666, False),
+                         ('Fetching feature list', 1.0, False)]),
+             ('end', [('Opening data', 0.27777777777777773, False),
+                      ('Setting up CCI Chunk Store', 0.22222222222222218, False),
+                      ('Setting up remote chunk store', 0.2222222222222222, False),
+                      ('Getting dimension data', 0.3333333333333333, False),
+                      ('Getting variable data', 0.6666666666666666, False),
+                      ('Fetching feature list', 1.0, True)]),
+             ('update', [('Opening data', 0.3333333333333333, False),
+                         ('Setting up CCI Chunk Store', 0.3333333333333333, False),
+                         ('Setting up remote chunk store', 0.3333333333333333, False),
+                         ('Getting dimension data', 0.5, False),
+                         ('Getting variable data', 1.0, False)]),
+             ('end', [('Opening data', 0.3333333333333333, False),
+                      ('Setting up CCI Chunk Store', 0.3333333333333333, False),
+                      ('Setting up remote chunk store', 0.3333333333333333, False),
+                      ('Getting dimension data', 0.5, False),
+                      ('Getting variable data', 1.0, True)]),
+             ('begin', [('Opening data', 0.3333333333333333, False),
+                        ('Setting up CCI Chunk Store', 0.3333333333333333, False),
+                        ('Setting up remote chunk store', 0.3333333333333333, False),
+                        ('Getting dimension data', 0.5, False),
+                        ('Getting variable data', 0.0, False)]),
+             ('begin', [('Opening data', 0.3333333333333333, False),
+                        ('Setting up CCI Chunk Store', 0.3333333333333333, False),
+                        ('Setting up remote chunk store', 0.3333333333333333, False),
+                        ('Getting dimension data', 0.5, False),
+                        ('Getting variable data', 0.0, False),
+                        ('Building Dataset', 0.0, False)]),
+             ('update', [('Opening data', 0.4166666666666667, False),
+                         ('Setting up CCI Chunk Store', 0.5, False),
+                         ('Setting up remote chunk store', 0.5, False),
+                         ('Getting dimension data', 0.75, False),
+                         ('Getting variable data', 0.5, False),
+                         ('Building Dataset', 0.6666666666666666, False)]),
+             ('update', [('Opening data', 0.4583333333333333, False),
+                         ('Setting up CCI Chunk Store', 0.5833333333333333, False),
+                         ('Setting up remote chunk store', 0.5833333333333334, False),
+                         ('Getting dimension data', 0.875, False),
+                         ('Getting variable data', 0.75, False),
+                         ('Building Dataset', 1.0, False)]),
+             ('end', [('Opening data', 0.4583333333333333, False),
+                      ('Setting up CCI Chunk Store', 0.5833333333333333, False),
+                      ('Setting up remote chunk store', 0.5833333333333334, False),
+                      ('Getting dimension data', 0.875, False),
+                      ('Getting variable data', 0.75, False),
+                      ('Building Dataset', 1.0, True)]),
+             ('update', [('Opening data', 0.47222222222222227, False),
+                         ('Setting up CCI Chunk Store', 0.611111111111111, False),
+                         ('Setting up remote chunk store', 0.611111111111111, False),
+                         ('Getting dimension data', 0.9166666666666666, False),
+                         ('Getting variable data', 0.8333333333333334, False)]),
+             ('update', [('Opening data', 0.48611111111111116, False),
+                         ('Setting up CCI Chunk Store', 0.6388888888888888, False),
+                         ('Setting up remote chunk store', 0.6388888888888888, False),
+                         ('Getting dimension data', 0.9583333333333333, False),
+                         ('Getting variable data', 0.9166666666666666, False)]),
+             ('update', [('Opening data', 0.5000000000000001, False),
+                         ('Setting up CCI Chunk Store', 0.6666666666666666, False),
+                         ('Setting up remote chunk store', 0.6666666666666666, False),
+                         ('Getting dimension data', 0.9999999999999999, False),
+                         ('Getting variable data', 1.0, False)]),
+             ('end', [('Opening data', 0.5000000000000001, False),
+                      ('Setting up CCI Chunk Store', 0.6666666666666666, False),
+                      ('Setting up remote chunk store', 0.6666666666666666, False),
+                      ('Getting dimension data', 0.9999999999999999, False),
+                      ('Getting variable data', 1.0, True)]),
+             ('end', [('Opening data', 0.5000000000000001, False),
+                      ('Setting up CCI Chunk Store', 0.6666666666666666, False),
+                      ('Setting up remote chunk store', 0.6666666666666666, False),
+                      ('Getting dimension data', 0.9999999999999999, True)]),
+             ('update', [('Opening data', 0.5833333333333334, False),
+                         ('Setting up CCI Chunk Store', 0.8333333333333333, False),
+                         ('Setting up remote chunk store', 0.8333333333333334, False)]),
+             ('update', [('Opening data', 0.6666666666666666, False),
+                         ('Setting up CCI Chunk Store', 0.9999999999999998, False),
+                         ('Setting up remote chunk store', 1.0, False)]),
+             ('end', [('Opening data', 0.6666666666666666, False),
+                      ('Setting up CCI Chunk Store', 0.9999999999999998, False),
+                      ('Setting up remote chunk store', 1.0, True)]),
+             ('end', [('Opening data', 0.6666666666666666, False),
+                      ('Setting up CCI Chunk Store', 0.9999999999999998, True)]),
+             ('update', [('Opening data', 0.8333333333333334, False)]),
+             ('update', [('Opening data', 1.0, False)]),
+             ('end', [('Opening data', 1.0, True)])],
+            self.observer.calls)

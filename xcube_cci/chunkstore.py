@@ -30,6 +30,8 @@ from abc import abstractmethod, ABCMeta
 from collections.abc import MutableMapping
 from numcodecs import Blosc
 from typing import Iterator, Any, List, Dict, Tuple, Callable, Iterable, KeysView, Mapping, Union
+from xcube.util.progress import observe_progress
+from xcube_cci.observeutil import will_work
 
 import numpy as np
 import pandas as pd
@@ -74,138 +76,152 @@ class RemoteChunkStore(MutableMapping, metaclass=ABCMeta):
         self._variable_names = cube_params.get('variable_names', self.get_all_variable_names())
         self._observers = [observer] if observer is not None else []
         self._trace_store_calls = trace_store_calls
-
         self._dataset_name = data_id
-        self._time_ranges = self.get_time_ranges(data_id, cube_params)
-        logging.debug('Determined time ranges')
-        if not self._time_ranges:
-            raise ValueError('Could not determine any valid time stamps')
 
-        t_array = [s.to_pydatetime() + 0.5 * (e.to_pydatetime() - s.to_pydatetime()) for s, e in self._time_ranges]
-        t_array = np.array(t_array).astype('datetime64[s]').astype(np.int64)
-        t_bnds_array = np.array(self._time_ranges).astype('datetime64[s]').astype(np.int64)
-        time_coverage_start = self._time_ranges[0][0]
-        time_coverage_end = self._time_ranges[-1][1]
-        cube_params['time_range'] = (self._extract_time_range_as_strings(
-            cube_params.get('time_range', self.get_default_time_range(data_id))))
+        sum_of_tasks = max(2, 3 * len(self._variable_names))
+        sum_third_of_tasks = max(1, len(self._variable_names))
 
-        self._vfs = {
-        }
+        with observe_progress('Setting up remote chunk store', sum_of_tasks) as reporter:
+            reporter.will_work(1.5 * sum_third_of_tasks)
+            self._time_ranges = self.get_time_ranges(data_id, cube_params)
+            logging.debug('Determined time ranges')
+            if not self._time_ranges:
+                raise ValueError('Could not determine any valid time stamps')
 
-        self._dimension_data = self.get_dimension_data(data_id)
-        logging.debug('Determined dimensionalities')
-        self._dimension_data['time'] = {}
-        self._dimension_data['time']['size'] = len(t_array)
-        self._dimension_data['time']['data'] = t_array
-        for dimension_name in self._dimension_data:
-            if dimension_name == 'time':
-                continue
-            dim_attrs = self.get_attrs(dimension_name)
-            dim_attrs['_ARRAY_DIMENSIONS'] = dimension_name
-            dimension_data = self._dimension_data[dimension_name]['data']
-            if len(dimension_data) > 0:
-                dim_array = np.array(dimension_data)
-                self._add_static_array(dimension_name, dim_array, dim_attrs)
-            else:
-                size = self._dimension_data[dimension_name]['size']
-                chunk_size = self._dimension_data[dimension_name]['chunkSize']
-                encoding = self.get_encoding(dimension_name)
-                self._add_remote_array(dimension_name, [size], [chunk_size], encoding, dim_attrs)
+            t_array = [s.to_pydatetime() + 0.5 * (e.to_pydatetime() - s.to_pydatetime())
+                       for s, e in self._time_ranges]
+            t_array = np.array(t_array).astype('datetime64[s]').astype(np.int64)
+            t_bnds_array = np.array(self._time_ranges).astype('datetime64[s]').astype(np.int64)
+            time_coverage_start = self._time_ranges[0][0]
+            time_coverage_end = self._time_ranges[-1][1]
+            cube_params['time_range'] = (self._extract_time_range_as_strings(
+                cube_params.get('time_range', self.get_default_time_range(data_id))))
 
-        time_attrs = {
-            "_ARRAY_DIMENSIONS": ['time'],
-            "units": "seconds since 1970-01-01T00:00:00Z",
-            "calendar": "proleptic_gregorian",
-            "standard_name": "time",
-            "bounds": "time_bnds",
-        }
-        time_bnds_attrs = {
-            "_ARRAY_DIMENSIONS": ['time', 'bnds'],
-            "units": "seconds since 1970-01-01T00:00:00Z",
-            "calendar": "proleptic_gregorian",
-            "standard_name": "time",
-        }
+            self._vfs = {
+            }
 
-        self._add_static_array('time', t_array, time_attrs)
-        self._add_static_array('time_bnds', t_bnds_array, time_bnds_attrs)
-
-        global_attrs = dict(
-            Conventions='CF-1.7',
-            coordinates='time_bnds',
-            title=f'{data_id} Data Cube',
-            date_created=pd.Timestamp.now().isoformat(),
-            processing_level=self._dataset_name.split('.')[3],
-            time_coverage_start=time_coverage_start.isoformat(),
-            time_coverage_end=time_coverage_end.isoformat(),
-            time_coverage_duration=(time_coverage_end - time_coverage_start).isoformat(),
-        )
-
-        self._time_indexes = {}
-        remove = []
-        logging.debug('Adding variables to dataset ...')
-        for variable_name in self._variable_names:
-            if variable_name in self._dimension_data or variable_name == 'time_bnds':
-                remove.append(variable_name)
-                continue
-            var_encoding = self.get_encoding(variable_name)
-            var_attrs = self.get_attrs(variable_name)
-            dimensions = var_attrs.get('dimensions', None)
-            if not dimensions:
-                warnings.warn(f"Could not find dimensions of variable '{variable_name}'. "
-                              f"Will omit it from the dataset.")
-                remove.append(variable_name)
-                continue
-            chunk_sizes = var_attrs.get('chunk_sizes', [-1] * len(dimensions))
-            if isinstance(chunk_sizes, int):
-                chunk_sizes = [chunk_sizes]
-            if 'time' not in dimensions:
-                dimensions.insert(0, 'time')
-                chunk_sizes.insert(0, 1)
-            var_attrs.update(_ARRAY_DIMENSIONS=dimensions)
-            sizes = []
-            self._time_indexes[variable_name] = -1
-            time_dimension = -1
-            for i, dimension_name in enumerate(dimensions):
-                sizes.append(self._dimension_data[dimension_name]['size'])
+            will_work(reporter, sum_third_of_tasks * 2, sum_third_of_tasks * 0.5)
+            self._dimension_data = self.get_dimension_data(data_id)
+            logging.debug('Determined dimensionalities')
+            self._dimension_data['time'] = {}
+            self._dimension_data['time']['size'] = len(t_array)
+            self._dimension_data['time']['data'] = t_array
+            for dimension_name in self._dimension_data:
                 if dimension_name == 'time':
-                    self._time_indexes[variable_name] = i
-                    time_dimension = i
-                if chunk_sizes[i] == -1:
-                    chunk_sizes[i] = sizes[i]
-            if var_encoding.get('dtype', '') == 'bytes1024':
-                if len(dimensions) == 1 and sizes[0] < 512 * 512:
-                    _LOG.info(f"Variable '{variable_name}' is encoded as string. "
-                              f"Will convert it to metadata.")
-                    variable = {variable_name: sizes[0]}
-                    var_data = self.get_variable_data(data_id, variable)
-                    global_attrs[variable_name] = [var.decode('utf-8') for var in var_data[variable_name]['data']]
+                    continue
+                dim_attrs = self.get_attrs(dimension_name)
+                dim_attrs['_ARRAY_DIMENSIONS'] = dimension_name
+                dimension_data = self._dimension_data[dimension_name]['data']
+                if len(dimension_data) > 0:
+                    dim_array = np.array(dimension_data)
+                    self._add_static_array(dimension_name, dim_array, dim_attrs)
                 else:
-                    warnings.warn(f"Variable '{variable_name}' is encoded as string. "
+                    size = self._dimension_data[dimension_name]['size']
+                    chunk_size = self._dimension_data[dimension_name]['chunkSize']
+                    encoding = self.get_encoding(dimension_name)
+                    self._add_remote_array(dimension_name, [size], [chunk_size], encoding,
+                                           dim_attrs)
+
+            time_attrs = {
+                "_ARRAY_DIMENSIONS": ['time'],
+                "units": "seconds since 1970-01-01T00:00:00Z",
+                "calendar": "proleptic_gregorian",
+                "standard_name": "time",
+                "bounds": "time_bnds",
+            }
+            time_bnds_attrs = {
+                "_ARRAY_DIMENSIONS": ['time', 'bnds'],
+                "units": "seconds since 1970-01-01T00:00:00Z",
+                "calendar": "proleptic_gregorian",
+                "standard_name": "time",
+            }
+
+            self._add_static_array('time', t_array, time_attrs)
+            self._add_static_array('time_bnds', t_bnds_array, time_bnds_attrs)
+
+            global_attrs = dict(
+                Conventions='CF-1.7',
+                coordinates='time_bnds',
+                title=f'{data_id} Data Cube',
+                date_created=pd.Timestamp.now().isoformat(),
+                processing_level=self._dataset_name.split('.')[3],
+                time_coverage_start=time_coverage_start.isoformat(),
+                time_coverage_end=time_coverage_end.isoformat(),
+                time_coverage_duration=(time_coverage_end - time_coverage_start).isoformat(),
+            )
+
+            self._time_indexes = {}
+            remove = []
+            logging.debug('Adding variables to dataset ...')
+            for variable_name in self._variable_names:
+                if variable_name in self._dimension_data or variable_name == 'time_bnds':
+                    remove.append(variable_name)
+                    reporter.worked(1)
+                    continue
+                var_encoding = self.get_encoding(variable_name)
+                var_attrs = self.get_attrs(variable_name)
+                dimensions = var_attrs.get('dimensions', None)
+                if not dimensions:
+                    warnings.warn(f"Could not find dimensions of variable '{variable_name}'. "
                                   f"Will omit it from the dataset.")
-                remove.append(variable_name)
-                continue
-            chunk_sizes = self._adjust_chunk_sizes(chunk_sizes, sizes, time_dimension)
-            var_attrs['chunk_sizes'] = chunk_sizes
-            if len(var_attrs['file_dimensions']) < len(dimensions):
-                var_attrs['file_chunk_sizes'] = chunk_sizes[1:]
-            else:
-                var_attrs['file_chunk_sizes'] = chunk_sizes
-            self._add_remote_array(variable_name,
-                                   sizes,
-                                   chunk_sizes,
-                                   var_encoding,
-                                   var_attrs)
-        logging.debug(f"Added a total of {len(self._variable_names)} variables to the data set")
-        for r in remove:
-            self._variable_names.remove(r)
-        cube_params['variable_names'] = self._variable_names
-        global_attrs['history'] = [dict(
-            program=f'{self._class_name}',
-            cube_params=cube_params
-        )]
-        # setup Virtual File System (vfs)
-        self._vfs['.zgroup'] = _dict_to_bytes(dict(zarr_format=2))
-        self._vfs['.zattrs'] = _dict_to_bytes(global_attrs)
+                    remove.append(variable_name)
+                    reporter.worked(1)
+                    continue
+                chunk_sizes = var_attrs.get('chunk_sizes', [-1] * len(dimensions))
+                if isinstance(chunk_sizes, int):
+                    chunk_sizes = [chunk_sizes]
+                if 'time' not in dimensions:
+                    dimensions.insert(0, 'time')
+                    chunk_sizes.insert(0, 1)
+                var_attrs.update(_ARRAY_DIMENSIONS=dimensions)
+                sizes = []
+                self._time_indexes[variable_name] = -1
+                time_dimension = -1
+                for i, dimension_name in enumerate(dimensions):
+                    sizes.append(self._dimension_data[dimension_name]['size'])
+                    if dimension_name == 'time':
+                        self._time_indexes[variable_name] = i
+                        time_dimension = i
+                    if chunk_sizes[i] == -1:
+                        chunk_sizes[i] = sizes[i]
+                if var_encoding.get('dtype', '') == 'bytes1024':
+                    if len(dimensions) == 1 and sizes[0] < 512 * 512:
+                        _LOG.info(f"Variable '{variable_name}' is encoded as string. "
+                                  f"Will convert it to metadata.")
+                        variable = {variable_name: sizes[0]}
+                        var_data = self.get_variable_data(data_id, variable)
+                        global_attrs[variable_name] = [var.decode('utf-8')
+                                                       for var in var_data[variable_name]['data']]
+                    else:
+                        warnings.warn(f"Variable '{variable_name}' is encoded as string. "
+                                      f"Will omit it from the dataset.")
+                    remove.append(variable_name)
+                    reporter.worked(1)
+                    continue
+                chunk_sizes = self._adjust_chunk_sizes(chunk_sizes, sizes, time_dimension)
+                var_attrs['chunk_sizes'] = chunk_sizes
+                if len(var_attrs['file_dimensions']) < len(dimensions):
+                    var_attrs['file_chunk_sizes'] = chunk_sizes[1:]
+                else:
+                    var_attrs['file_chunk_sizes'] = chunk_sizes
+                self._add_remote_array(variable_name,
+                                       sizes,
+                                       chunk_sizes,
+                                       var_encoding,
+                                       var_attrs)
+                reporter.worked(1)
+            logging.debug(f"Added a total of {len(self._variable_names)} "
+                          f"variables to the data set")
+            for r in remove:
+                self._variable_names.remove(r)
+            cube_params['variable_names'] = self._variable_names
+            global_attrs['history'] = [dict(
+                program=f'{self._class_name}',
+                cube_params=cube_params
+            )]
+            # setup Virtual File System (vfs)
+            self._vfs['.zgroup'] = _dict_to_bytes(dict(zarr_format=2))
+            self._vfs['.zattrs'] = _dict_to_bytes(global_attrs)
 
     @classmethod
     def _adjust_chunk_sizes(cls, chunks, sizes, time_dimension):
@@ -549,11 +565,14 @@ class CciChunkStore(RemoteChunkStore):
         self._cci_odp = cci_odp
         if dataset_id not in self._cci_odp.dataset_names:
             raise ValueError(f'Data ID {dataset_id} not provided by ODP.')
-        self._metadata = self._cci_odp.get_dataset_metadata(dataset_id)
-        super().__init__(dataset_id,
-                         cube_params,
-                         observer=observer,
-                         trace_store_calls=trace_store_calls)
+        with observe_progress('Setting up CCI Chunk Store', 10) as reporter:
+            reporter.will_work(1)
+            self._metadata = self._cci_odp.get_dataset_metadata(dataset_id)
+            will_work(reporter, 10, 9)
+            super().__init__(dataset_id,
+                             cube_params,
+                             observer=observer,
+                             trace_store_calls=trace_store_calls)
 
     def _extract_time_range_as_datetime(self, time_range: Union[Tuple, List]) -> (datetime, datetime, str, str):
         iso_start_time, iso_end_time = self._extract_time_range_as_strings(time_range)
@@ -563,7 +582,8 @@ class CciChunkStore(RemoteChunkStore):
 
     def get_time_ranges(self, dataset_id: str, cube_params: Mapping[str, Any]) -> List[Tuple]:
         start_time, end_time, iso_start_time, iso_end_time = \
-            self._extract_time_range_as_datetime(cube_params.get('time_range', self.get_default_time_range(dataset_id)))
+            self._extract_time_range_as_datetime(
+                cube_params.get('time_range', self.get_default_time_range(dataset_id)))
         time_period = dataset_id.split('.')[2]
         if time_period == 'day':
             start_time = datetime(year=start_time.year, month=start_time.month, day=start_time.day)
@@ -583,7 +603,9 @@ class CciChunkStore(RemoteChunkStore):
             end_time = end_time.replace(hour=23, minute=59, second=59)
             end_time_str = datetime.strftime(end_time, _TIMESTAMP_FORMAT)
             iso_end_time = self._extract_time_as_string(end_time_str)
-            request_time_ranges = self._cci_odp.get_time_ranges_from_data(dataset_id, iso_start_time, iso_end_time)
+            request_time_ranges = self._cci_odp.get_time_ranges_from_data(dataset_id,
+                                                                          iso_start_time,
+                                                                          iso_end_time)
             return request_time_ranges
         request_time_ranges = []
         this = start_time
@@ -617,11 +639,16 @@ class CciChunkStore(RemoteChunkStore):
 
     def get_dimension_data(self, dataset_id: str):
         dimensions = self._metadata['dimensions']
-        dimension_data = self.get_variable_data(dataset_id, dimensions)
-        if len(dimension_data) == 0:
-            # no valid data found in indicated time range, let's set this broader
-            dimension_data = self._cci_odp.get_variable_data(dataset_id, dimensions)
-        return dimension_data
+        with observe_progress('Getting dimension data', 2) as reporter:
+            reporter.will_work(1)
+            dimension_data = self.get_variable_data(dataset_id, dimensions)
+            if len(dimension_data) == 0:
+                reporter.will_work(1)
+                # no valid data found in indicated time range, let's set this broader
+                dimension_data = self._cci_odp.get_variable_data(dataset_id, dimensions)
+            else:
+                reporter.worked(1)
+            return dimension_data
 
     def get_variable_data(self, dataset_id: str, variables: Dict[str, int]):
         return self._cci_odp.get_variable_data(dataset_id,

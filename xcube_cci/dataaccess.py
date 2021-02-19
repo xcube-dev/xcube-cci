@@ -42,6 +42,8 @@ from xcube.util.jsonschema import JsonIntegerSchema
 from xcube.util.jsonschema import JsonNumberSchema
 from xcube.util.jsonschema import JsonObjectSchema
 from xcube.util.jsonschema import JsonStringSchema
+from xcube.util.progress import observe_progress
+from xcube_cci.observeutil import will_work
 from xcube_cci.cciodp import CciOdp
 from xcube_cci.chunkstore import CciChunkStore
 from xcube_cci.constants import CCI_ODD_URL
@@ -234,19 +236,24 @@ class CciOdpDataOpener(DataOpener):
         return cci_schema
 
     def open_data(self, data_id: str, **open_params) -> Any:
-        cci_schema = self.get_open_data_params_schema(data_id)
-        cci_schema.validate_instance(open_params)
-        cube_kwargs, open_params = cci_schema.process_kwargs_subset(open_params, (
-            'variable_names',
-            'time_range'
-        ))
-        max_cache_size: int = 2 ** 30
-        chunk_store = CciChunkStore(self._cci_odp, data_id, cube_kwargs)
-        if max_cache_size:
-            chunk_store = zarr.LRUStoreCache(chunk_store, max_cache_size)
-        ds = xr.open_zarr(chunk_store)
-        ds = self._normalize_dataset(ds, cci_schema, **open_params)
-        return ds
+        with observe_progress('Opening data', 6) as reporter:
+            reporter.will_work(1)
+            cci_schema = self.get_open_data_params_schema(data_id)
+            cci_schema.validate_instance(open_params)
+            cube_kwargs, open_params = cci_schema.process_kwargs_subset(open_params, (
+                'variable_names',
+                'time_range'
+            ))
+            max_cache_size: int = 2 ** 30
+            will_work(reporter, 4, 3)
+            chunk_store = CciChunkStore(self._cci_odp, data_id, cube_kwargs)
+            if max_cache_size:
+                chunk_store = zarr.LRUStoreCache(chunk_store, max_cache_size)
+            ds = xr.open_zarr(chunk_store)
+            reporter.worked(1)
+            ds = self._normalize_dataset(ds, cci_schema, **open_params)
+            reporter.worked(1)
+            return ds
 
     def _assert_valid_data_id(self, data_id: str):
         if data_id not in self.dataset_names:
