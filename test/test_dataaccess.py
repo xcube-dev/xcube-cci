@@ -258,11 +258,10 @@ class CciOdpDataStoreTest(unittest.TestCase):
     def test_get_data_store_params_schema(self):
         cci_store_params_schema = CciOdpDataStore.get_data_store_params_schema().to_dict()
         self.assertIsNotNone(cci_store_params_schema)
-        self.assertTrue('opensearch_url' in cci_store_params_schema['properties'])
-        self.assertTrue('opensearch_description_url' in cci_store_params_schema['properties'])
+        self.assertTrue('endpoint_url' in cci_store_params_schema['properties'])
+        self.assertTrue('endpoint_description_url' in cci_store_params_schema['properties'])
 
     def test_get_type_specifiers(self):
-        # self.assertEqual(('dataset:zarr:cciodp', 'dataset[cube]:zarr:cciodp'), CciOdpDataStore.get_type_specifiers())
         self.assertEqual(('dataset', 'dataset[cube]'), CciOdpDataStore.get_type_specifiers())
 
     def test_get_type_specifiers_for_data(self):

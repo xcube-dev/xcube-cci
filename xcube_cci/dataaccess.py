@@ -336,8 +336,8 @@ class CciOdpDataStore(DataStore):
         cci_schema = self.get_data_store_params_schema()
         cci_schema.validate_instance(store_params)
         store_kwargs, store_params = cci_schema.process_kwargs_subset(store_params, (
-            'opensearch_url',
-            'opensearch_description_url',
+            'endpoint_url',
+            'endpoint_description_url',
             'enable_warnings',
             'num_retries',
             'retry_backoff_max',
@@ -349,8 +349,8 @@ class CciOdpDataStore(DataStore):
     @classmethod
     def get_data_store_params_schema(cls) -> JsonObjectSchema:
         cciodp_params = dict(
-            opensearch_url=JsonStringSchema(default=OPENSEARCH_CEDA_URL),
-            opensearch_description_url=JsonStringSchema(default=CCI_ODD_URL),
+            endpoint_url=JsonStringSchema(default=OPENSEARCH_CEDA_URL),
+            endpoint_description_url=JsonStringSchema(default=CCI_ODD_URL),
             enable_warnings=JsonBooleanSchema(default=False, title='Whether to output warnings'),
             num_retries=JsonIntegerSchema(default=DEFAULT_NUM_RETRIES, minimum=0,
                                             title='Number of retries when requesting data fails'),
