@@ -145,7 +145,7 @@ class CciOdpDataOpener(DataOpener):
         # only use date parts of times
         temporal_coverage = (dataset_info['temporal_coverage_start'].split('T')[0],
                              dataset_info['temporal_coverage_end'].split('T')[0])
-        var_descriptors = []
+        var_descriptors = {}
         var_infos = ds_metadata.get('variable_infos', {})
         var_names = dataset_info['var_names']
         for var_name in var_names:
@@ -154,9 +154,10 @@ class CciOdpDataOpener(DataOpener):
                 var_dtype = var_info['data_type']
                 var_dims = self._normalize_var_dims(var_info['dimensions'])
                 if var_dims:
-                    var_descriptors.append(VariableDescriptor(var_name, var_dtype, var_dims, var_info))
+                    var_descriptors[var_name] = \
+                        VariableDescriptor(var_name, var_dtype, var_dims, var_info)
             else:
-                var_descriptors.append(VariableDescriptor(var_name, '', ''))
+                var_descriptors[var_name] = VariableDescriptor(var_name, '', '')
         if 'variables' in ds_metadata:
             ds_metadata.pop('variables')
         ds_metadata.pop('dimensions')
@@ -202,7 +203,7 @@ class CciOdpDataOpener(DataOpener):
         # noinspection PyUnresolvedReferences
         cube_params = dict(
             variable_names=JsonArraySchema(items=JsonStringSchema(
-                enum=[v.name for v in dsd.data_vars] if dsd and dsd.data_vars else None)),
+                enum=dsd.data_vars.keys() if dsd and dsd.data_vars else None)),
             time_range=JsonDateSchema.new_range(min_date, max_date)
         )
         min_lon = dsd.bbox[0] if dsd and dsd.bbox else -180
