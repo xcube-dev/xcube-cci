@@ -144,7 +144,7 @@ class CciOdpDataOpener(DataOpener):
         # only use date parts of times
         temporal_coverage = (dataset_info['temporal_coverage_start'].split('T')[0],
                              dataset_info['temporal_coverage_end'].split('T')[0])
-        var_descriptors = []
+        var_descriptors = {}
         var_infos = ds_metadata.get('variable_infos', {})
         var_names = dataset_info['var_names']
         for var_name in var_names:
@@ -153,9 +153,10 @@ class CciOdpDataOpener(DataOpener):
                 var_dtype = var_info['data_type']
                 var_dims = self._normalize_var_dims(var_info['dimensions'])
                 if var_dims:
-                    var_descriptors.append(VariableDescriptor(var_name, var_dtype, var_dims, var_info))
+                    var_descriptors[var_name] = \
+                        VariableDescriptor(var_name, var_dtype, var_dims, var_info)
             else:
-                var_descriptors.append(VariableDescriptor(var_name, '', ''))
+                var_descriptors[var_name] = VariableDescriptor(var_name, '', '')
         if 'variables' in ds_metadata:
             ds_metadata.pop('variables')
         ds_metadata.pop('dimensions')
@@ -201,7 +202,7 @@ class CciOdpDataOpener(DataOpener):
         # noinspection PyUnresolvedReferences
         cube_params = dict(
             variable_names=JsonArraySchema(items=JsonStringSchema(
-                enum=[v.name for v in dsd.data_vars] if dsd and dsd.data_vars else None)),
+                enum=dsd.data_vars.keys() if dsd and dsd.data_vars else None)),
             time_range=JsonDateSchema.new_range(min_date, max_date)
         )
         if dsd and (('lat' in dsd.dims and 'lon' in dsd.dims) or
@@ -216,17 +217,8 @@ class CciOdpDataOpener(DataOpener):
                 JsonNumberSchema(minimum=min_lon, maximum=max_lon),
                 JsonNumberSchema(minimum=min_lat, maximum=max_lat)))
             cube_params['bbox'] = bbox
-        # constant params is a listing of parameters that may not be changed,
-        # but are included here for information
-        constant_params = dict(
-            spatial_res=JsonNumberSchema(const=dsd.spatial_res if dsd and dsd.spatial_res else 0.0),
-            time_period=JsonStringSchema(const=dsd.time_period if dsd and dsd.time_period else ''),
-            crs=JsonStringSchema(const=dsd.crs if dsd and dsd.crs else 'WGS84')
-        )
         cci_schema = JsonObjectSchema(
-            properties=dict(**cube_params,
-                            **constant_params
-                            ),
+            properties=dict(**cube_params),
             required=[
             ],
             additional_properties=False
@@ -308,8 +300,8 @@ class CciOdpDataStore(DataStore):
         cci_schema = self.get_data_store_params_schema()
         cci_schema.validate_instance(store_params)
         store_kwargs, store_params = cci_schema.process_kwargs_subset(store_params, (
-            'opensearch_url',
-            'opensearch_description_url',
+            'endpoint_url',
+            'endpoint_description_url',
             'enable_warnings',
             'num_retries',
             'retry_backoff_max',
@@ -321,8 +313,8 @@ class CciOdpDataStore(DataStore):
     @classmethod
     def get_data_store_params_schema(cls) -> JsonObjectSchema:
         cciodp_params = dict(
-            opensearch_url=JsonStringSchema(default=OPENSEARCH_CEDA_URL),
-            opensearch_description_url=JsonStringSchema(default=CCI_ODD_URL),
+            endpoint_url=JsonStringSchema(default=OPENSEARCH_CEDA_URL),
+            endpoint_description_url=JsonStringSchema(default=CCI_ODD_URL),
             enable_warnings=JsonBooleanSchema(default=False, title='Whether to output warnings'),
             num_retries=JsonIntegerSchema(default=DEFAULT_NUM_RETRIES, minimum=0,
                                             title='Number of retries when requesting data fails'),
