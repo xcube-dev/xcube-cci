@@ -97,9 +97,6 @@ class CciOdpDatasetOpenerTest(unittest.TestCase):
         self.assertTrue('variable_names' in schema['properties'])
         self.assertTrue('time_range' in schema['properties'])
         self.assertTrue('bbox' in schema['properties'])
-        self.assertTrue('spatial_res' in schema['properties'])
-        self.assertTrue('time_period' in schema['properties'])
-        self.assertTrue('crs' in schema['properties'])
         self.assertFalse(schema['additionalProperties'])
 
     @skipIf(os.environ.get('XCUBE_DISABLE_WEB_TESTS', None) == '1', 'XCUBE_DISABLE_WEB_TESTS = 1')
@@ -110,9 +107,6 @@ class CciOdpDatasetOpenerTest(unittest.TestCase):
         self.assertTrue('variable_names' in schema['properties'])
         self.assertTrue('time_range' in schema['properties'])
         self.assertTrue('bbox' in schema['properties'])
-        self.assertTrue('spatial_res' in schema['properties'])
-        self.assertTrue('time_period' in schema['properties'])
-        self.assertTrue('crs' in schema['properties'])
         self.assertFalse(schema['additionalProperties'])
 
         schema = self.opener.get_open_data_params_schema(
@@ -121,9 +115,6 @@ class CciOdpDatasetOpenerTest(unittest.TestCase):
         self.assertTrue('variable_names' in schema['properties'])
         self.assertTrue('time_range' in schema['properties'])
         self.assertTrue('bbox' in schema['properties'])
-        self.assertTrue('spatial_res' in schema['properties'])
-        self.assertTrue('time_period' in schema['properties'])
-        self.assertTrue('crs' in schema['properties'])
         self.assertFalse(schema['additionalProperties'])
 
     @skipIf(os.environ.get('XCUBE_DISABLE_WEB_TESTS', None) == '1', 'XCUBE_DISABLE_WEB_TESTS = 1')
@@ -198,9 +189,6 @@ class CciOdpCubeOpenerTest(unittest.TestCase):
         self.assertTrue('variable_names' in schema['properties'])
         self.assertTrue('time_range' in schema['properties'])
         self.assertTrue('bbox' in schema['properties'])
-        self.assertTrue('spatial_res' in schema['properties'])
-        self.assertTrue('time_period' in schema['properties'])
-        self.assertTrue('crs' in schema['properties'])
         self.assertFalse(schema['additionalProperties'])
 
     @skipIf(os.environ.get('XCUBE_DISABLE_WEB_TESTS', None) == '1', 'XCUBE_DISABLE_WEB_TESTS = 1')
@@ -218,9 +206,6 @@ class CciOdpCubeOpenerTest(unittest.TestCase):
         self.assertTrue('variable_names' in schema['properties'])
         self.assertTrue('time_range' in schema['properties'])
         self.assertTrue('bbox' in schema['properties'])
-        self.assertTrue('spatial_res' in schema['properties'])
-        self.assertTrue('time_period' in schema['properties'])
-        self.assertTrue('crs' in schema['properties'])
         self.assertFalse(schema['additionalProperties'])
 
     @skipIf(os.environ.get('XCUBE_DISABLE_WEB_TESTS', None) == '1', 'XCUBE_DISABLE_WEB_TESTS = 1')
@@ -438,9 +423,6 @@ class CciOdpDataStoreTest(unittest.TestCase):
         self.assertTrue('variable_names' in schema['properties'])
         self.assertTrue('time_range' in schema['properties'])
         self.assertTrue('bbox' in schema['properties'])
-        self.assertTrue('spatial_res' in schema['properties'])
-        self.assertTrue('time_period' in schema['properties'])
-        self.assertTrue('crs' in schema['properties'])
         self.assertFalse(schema['additionalProperties'])
 
     @skipIf(os.environ.get('XCUBE_DISABLE_WEB_TESTS', None) == '1', 'XCUBE_DISABLE_WEB_TESTS = 1')
@@ -451,9 +433,6 @@ class CciOdpDataStoreTest(unittest.TestCase):
         self.assertTrue('variable_names' in schema['properties'])
         self.assertTrue('time_range' in schema['properties'])
         self.assertTrue('bbox' in schema['properties'])
-        self.assertTrue('spatial_res' in schema['properties'])
-        self.assertTrue('time_period' in schema['properties'])
-        self.assertTrue('crs' in schema['properties'])
         self.assertFalse(schema['additionalProperties'])
 
         schema = self.store.get_open_data_params_schema(
@@ -462,9 +441,6 @@ class CciOdpDataStoreTest(unittest.TestCase):
         self.assertTrue('variable_names' in schema['properties'])
         self.assertTrue('time_range' in schema['properties'])
         self.assertTrue('bbox' in schema['properties'])
-        self.assertTrue('spatial_res' in schema['properties'])
-        self.assertTrue('time_period' in schema['properties'])
-        self.assertTrue('crs' in schema['properties'])
         self.assertFalse(schema['additionalProperties'])
 
         with self.assertRaises(DataStoreError) as dse:
@@ -481,9 +457,6 @@ class CciOdpDataStoreTest(unittest.TestCase):
         self.assertTrue('variable_names' in schema['properties'])
         self.assertTrue('time_range' in schema['properties'])
         self.assertTrue('bbox' in schema['properties'])
-        self.assertTrue('spatial_res' in schema['properties'])
-        self.assertTrue('time_period' in schema['properties'])
-        self.assertTrue('crs' in schema['properties'])
         self.assertFalse(schema['additionalProperties'])
 
     def test_get_data_opener_ids(self):

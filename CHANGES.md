@@ -1,4 +1,5 @@
 ## Changes in 0.6.1. (under development)
+* Removed constant-valued parameters from opener schema
 * Fixed time range detection for datasets with daily time frequency.
 * Fixed problem with the encoding of a dataset's coordinate variables that occurs 
   when using `xcube_cci` with xcube 0.6.0. (#27)

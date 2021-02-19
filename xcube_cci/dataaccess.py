@@ -217,16 +217,9 @@ class CciOdpDataOpener(DataOpener):
                 JsonNumberSchema(minimum=min_lon, maximum=max_lon),
                 JsonNumberSchema(minimum=min_lat, maximum=max_lat))),
         )
-        # constant params is a listing of parameters that may not be changed, but are included here for information
-        constant_params = dict(
-            spatial_res=JsonNumberSchema(const=dsd.spatial_res if dsd and dsd.spatial_res else 0.0),
-            time_period=JsonStringSchema(const=dsd.time_period if dsd and dsd.time_period else ''),
-            crs=JsonStringSchema(const=dsd.crs if dsd and dsd.crs else 'WGS84')
-        )
         cci_schema = JsonObjectSchema(
             properties=dict(**cube_params,
-                            **subsetting_params,
-                            **constant_params
+                            **subsetting_params
                             ),
             required=[
             ],
