@@ -104,13 +104,9 @@ def _run_with_session(async_function, *params):
     # See https://github.com/aio-libs/aiohttp/blob/master/docs/client_advanced.rst#graceful-shutdown
     loop = asyncio.get_event_loop()
     coro = _run_with_session_executor(async_function, *params)
-    if loop.is_running():
-        future = asyncio.run_coroutine_threadsafe(coro, loop)
-        result = future.result()
-    else:
-        result = loop.run_until_complete(coro)
-        # Zero-sleep to allow underlying connections to close
-        loop.run_until_complete(asyncio.sleep(0))
+    result = loop.run_until_complete(coro)
+    # Zero-sleep to allow underlying connections to close
+    loop.run_until_complete(asyncio.sleep(0))
     return result
 
 
@@ -134,9 +130,15 @@ def _get_feature_dict_from_feature(feature: dict) -> Optional[dict]:
                 feature_dict['odd_url'] = odd_url
         described_by = fc_props_links.get("describedby", None)
         if described_by:
-            metadata_url = described_by[0].get("href", None)
-            if metadata_url:
-                feature_dict['metadata_url'] = metadata_url
+            for entry in described_by:
+                if entry.get('title', '') == 'ISO19115':
+                    metadata_url = entry.get("href", None)
+                    if metadata_url:
+                        feature_dict['metadata_url'] = metadata_url
+                elif entry.get('title', '') == 'Dataset Information':
+                    catalogue_url = entry.get("href", None)
+                    if catalogue_url:
+                        feature_dict['catalog_url'] = catalogue_url
     return feature_dict
 
 
@@ -359,22 +361,22 @@ class CciOdp:
     """
     Represents the ESA CCI Open Data Portal
 
-    :param opensearch_url: The base URL to the opensearch service
-    :param opensearch_description_url: The URL to a document describing
+    :param endpoint_url: The base URL to the opensearch service
+    :param endpoint_description_url: The URL to a document describing
     the capabilities of the opensearch service
     """
 
     def __init__(self,
-                 opensearch_url: str = OPENSEARCH_CEDA_URL,
-                 opensearch_description_url: str = CCI_ODD_URL,
+                 endpoint_url: str = OPENSEARCH_CEDA_URL,
+                 endpoint_description_url: str = CCI_ODD_URL,
                  enable_warnings: bool = False,
                  num_retries: int = DEFAULT_NUM_RETRIES,
                  retry_backoff_max: int = DEFAULT_RETRY_BACKOFF_MAX,
                  retry_backoff_base: float = DEFAULT_RETRY_BACKOFF_BASE,
                  only_consider_cube_ready = False
                  ):
-        self._opensearch_url = opensearch_url
-        self._opensearch_description_url = opensearch_description_url
+        self._opensearch_url = endpoint_url
+        self._opensearch_description_url = endpoint_description_url
         self._enable_warnings = enable_warnings
         self._num_retries = num_retries
         self._retry_backoff_max = retry_backoff_max
@@ -462,7 +464,7 @@ class CciOdp:
             if excluded_data_source in drs_ids:
                     drs_ids.remove(excluded_data_source)
         for drs_id in drs_ids:
-            drs_meta_info = meta_info.copy()
+            drs_meta_info = copy.deepcopy(meta_info)
             drs_meta_info.update(json_dict)
             self._adjust_json_dict(drs_meta_info, drs_id)
             for variable in drs_meta_info.get('variables', []):
@@ -503,7 +505,7 @@ class CciOdp:
 
     def var_names(self, dataset_name: str) -> List:
         _run_with_session(self._ensure_all_info_in_data_sources, [dataset_name])
-        return self._get_data_var_names(self._data_sources[dataset_name]['variable_infos'])
+        return self._get_data_var_names(self._data_sources[dataset_name])
 
     async def _ensure_all_info_in_data_sources(self, session, dataset_names: List[str]):
         await self._ensure_in_data_sources(session, dataset_names)
@@ -519,26 +521,19 @@ class CciOdp:
                 and 'attributes' in data_source:
             return
         data_fid = await self._get_fid_for_dataset(session, dataset_name)
-        await self._set_variable_infos(self._opensearch_url, data_fid, session, data_source)
+        await self._set_variable_infos(self._opensearch_url, data_fid, dataset_name, session,
+                                       data_source)
 
     @staticmethod
-    def _get_data_var_names(variable_infos) -> List:
+    def _get_data_var_names(data_source) -> List:
+        names_of_dims = list(data_source['dimensions'].keys())
+        variable_infos = data_source['variable_infos']
         variables = []
-        names_of_dims = ['period', 'hist1d_cla_vis006_bin_centre', 'lon_bnds', 'air_pressure',
-                         'field_name_length', 'lon', 'view', 'hist2d_cot_bin_centre',
-                         'hist1d_cer_bin_border', 'altitude', 'vegetation_class',
-                         'hist1d_cla_vis006_bin_border', 'time_bnds', 'hist1d_ctp_bin_border',
-                         'hist1d_cot_bin_centre', 'hist1d_cot_bin_border',
-                         'hist1d_cla_vis008_bin_centre', 'lat_bnds', 'hist1d_cwp_bin_border',
-                         'layers', 'hist1d_cer_bin_centre', 'aerosol_type',
-                         'hist1d_ctt_bin_border', 'hist1d_ctp_bin_centre', 'fieldsp1', 'time',
-                         'hist_phase', 'hist1d_cwp_bin_centre', 'hist2d_ctp_bin_border', 'lat',
-                         'fields', 'hist2d_cot_bin_border', 'hist2d_ctp_bin_centre',
-                         'hist1d_ctt_bin_centre', 'hist1d_cla_vis008_bin_border', 'crs']
         for variable in variable_infos:
             if variable in names_of_dims:
                 continue
-            if len(variable_infos[variable]['dimensions']) == 0:
+            if len(variable_infos[variable]['dimensions']) == 0 or \
+                    variable_infos[variable]['size'] < 2:
                 continue
             if variable_infos[variable].get('data_type', '') not in \
                     ['uint8', 'uint16', 'uint32', 'int8', 'int16', 'int32', 'float32', 'float64']:
@@ -739,7 +734,7 @@ class CciOdp:
                                                           feature_list,
                                                           self._extract_times_and_opendap_url,
                                                           request)
-                feature_list.sort(key=lambda x: x[0])
+            feature_list.sort(key=lambda x: x[0])
             self._features[ds_id] = feature_list
         else:
             if start_date < self._features[ds_id][0][0]:
@@ -846,11 +841,11 @@ class CciOdp:
 
     async def _get_opendap_url(self, session, request: Dict):
         request['fileFormat'] = '.nc'
-        async with _FEATURE_LIST_LOCK:
-            feature_list = await self._get_feature_list(session, request)
-            if len(feature_list) == 0:
-                return
-            return feature_list[0][2]
+        # async with _FEATURE_LIST_LOCK:
+        feature_list = await self._get_feature_list(session, request)
+        if len(feature_list) == 0:
+            return
+        return feature_list[0][2]
 
     def get_data_chunk(self, request: Dict, dim_indexes: Tuple) -> Optional[bytes]:
         data_chunk = _run_with_session(self._get_data_chunk, request, dim_indexes)
@@ -889,17 +884,22 @@ class CciOdp:
         :return:
         """
         start_page = 1
+        initial_maximum_records = 1000
         maximum_records = 10000
         total_results = await self._fetch_opensearch_feature_part_list(session, base_url,
                                                                        query_args, start_page,
-                                                                       maximum_records,
+                                                                       initial_maximum_records,
                                                                        extension, extender,
                                                                        None, None)
-        num_results = maximum_records
+        if total_results < initial_maximum_records:
+            return
+        # num_results = maximum_records
+        num_results = 0
+        extension.clear()
         while num_results < total_results:
             if 'startDate' in query_args and 'endDate' in query_args:
-                # we have to clear the extension of any previous values to avoud duplicate values
-                extension.clear()
+                # we have to clear the extension of any previous values to avoid duplicate values
+                # extension.clear()
                 start_time = datetime.strptime(query_args.pop('startDate'), _TIMESTAMP_FORMAT)
                 end_time = datetime.strptime(query_args.pop('endDate'), _TIMESTAMP_FORMAT)
                 num_days_per_delta = \
@@ -923,13 +923,14 @@ class CciOdp:
                 num_results = total_results
             else:
                 tasks = []
+                # do not have more than 4 open connections at the same time
                 while len(tasks) < 4 and num_results < total_results:
-                    start_page += 1
                     tasks.append(self._fetch_opensearch_feature_part_list(session, base_url,
                                                                           query_args, start_page,
                                                                           maximum_records,
                                                                           extension,
                                                                           extender, None, None))
+                    start_page += 1
                     num_results += maximum_records
                 await asyncio.gather(*tasks)
 
@@ -960,15 +961,16 @@ class CciOdp:
             _LOG.debug(f'Did not read page {start_page}')
         return 0
 
-    async def _set_variable_infos(self, opensearch_url: str, dataset_id: str, session,
-                                  data_source):
+    async def _set_variable_infos(self, opensearch_url: str, dataset_id: str,
+                                  dataset_name: str, session, data_source):
         attributes = {}
         dimensions = {}
         variable_infos = {}
         feature, time_dimension_size = \
             await self._fetch_feature_and_num_nc_files_at(session,
                                                           opensearch_url,
-                                                          dict(parentIdentifier=dataset_id),
+                                                          dict(parentIdentifier=dataset_id,
+                                                               drsId=dataset_name),
                                                           1)
         time_dimension_size = data_source['num_files']
         if feature is not None:
@@ -978,17 +980,6 @@ class CciOdp:
                 for index, dimension in enumerate(variable_infos[variable_info]['dimensions']):
                     if not dimension in dimensions:
                         dimensions[dimension] = variable_infos[variable_info]['shape'][index]
-                        # if dimension == 'bin_index':
-                        #     dimensions[dimension] = variable_infos[variable_info]['size']
-                        # elif not dimension in variable_infos and \
-                        #         variable_info.split('_')[-1] == 'bnds':
-                        #     dimensions[dimension] = 2
-                        # else:
-                        #     if dimension not in variable_infos and \
-                        #             len(variable_infos[variable_info]['dimensions']):
-                        #         dimensions[dimension] = variable_infos[variable_info]['size']
-                        #     else:
-                        #         dimensions[dimension] = variable_infos[dimension]['size']
             if 'time' in dimensions:
                 time_dimension_size *= dimensions['time']
         data_source['dimensions'] = dimensions
@@ -1011,8 +1002,10 @@ class CciOdp:
             feature_list = json_dict.get("features", [])
             # we try not to take the first feature, as the last and the first one may have
             # different time chunkings
-            if len(feature_list) > 0:
-                return feature_list[-1], json_dict.get("totalResults", 0)
+            if len(feature_list) > 1:
+                return feature_list[1], json_dict.get("totalResults", 0)
+            elif len(feature_list) > 0:
+                return feature_list[0], json_dict.get("totalResults", 0)
         return None, 0
 
     async def _fetch_meta_info(self, session, odd_url: str, metadata_url: str) -> Dict:
@@ -1064,7 +1057,7 @@ class CciOdp:
         variable_infos = {}
         for key in dataset.keys():
             fixed_key = key.replace('%2E', '_').replace('.', '_')
-            variable_infos[fixed_key] = dataset[key].attributes
+            variable_infos[fixed_key] = copy.deepcopy(dataset[key].attributes)
             if '_FillValue' in variable_infos[fixed_key]:
                 variable_infos[fixed_key]['fill_value'] = variable_infos[fixed_key]['_FillValue']
                 variable_infos[fixed_key].pop('_FillValue')
@@ -1075,12 +1068,12 @@ class CciOdp:
                         variable_infos[fixed_key]['chunk_sizes']
                 else:
                     variable_infos[fixed_key]['file_chunk_sizes'] = \
-                        variable_infos[fixed_key]['chunk_sizes'].copy()
+                        copy.deepcopy(variable_infos[fixed_key]['chunk_sizes'])
                 variable_infos[fixed_key].pop('_ChunkSizes')
             variable_infos[fixed_key]['data_type'] = dataset[key].dtype.name
             variable_infos[fixed_key]['dimensions'] = list(dataset[key].dimensions)
             variable_infos[fixed_key]['file_dimensions'] = \
-                variable_infos[fixed_key]['dimensions'].copy()
+                copy.deepcopy(variable_infos[fixed_key]['dimensions'])
             variable_infos[fixed_key]['size'] = dataset[key].size
             variable_infos[fixed_key]['shape'] = list(dataset[key].shape)
         return variable_infos, dataset.attributes

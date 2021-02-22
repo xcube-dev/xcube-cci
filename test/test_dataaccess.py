@@ -34,8 +34,11 @@ class DataAccessTest(unittest.TestCase):
                          _get_temporal_resolution_from_id('esacci.OZONE.year.L3.NP.sensor.platform.MERGED.fv0002.r1'))
         self.assertEqual('13Y',
                          _get_temporal_resolution_from_id('esacci.OZONE.13-yrs.L3.NP.sensor.platform.MERGED.fv0002.r1'))
+        self.assertEqual('1M',
+                         _get_temporal_resolution_from_id('esacci.OZONE.climatology.L3.NP.sensor.platform.MERGED.fv0002.r1'))
         self.assertIsNone(
-            _get_temporal_resolution_from_id('esacci.OZONE.climatology.L3.NP.sensor.platform.MERGED.fv0002.r1'))
+            _get_temporal_resolution_from_id('esacci.OZONE.satellite-orbit-frequency.L3.NP.sensor.platform.MERGED.fv0002.r1'))
+
 
 class CciOdpDatasetOpenerTest(unittest.TestCase):
 
@@ -60,10 +63,10 @@ class CciOdpDatasetOpenerTest(unittest.TestCase):
         self.assertEqual(17, descriptor.dims['air_pressure'])
         self.assertEqual(36, descriptor.dims['time'])
         self.assertEqual(9, len(descriptor.data_vars))
-        self.assertEqual('surface_pressure', descriptor.data_vars[0].name)
-        self.assertEqual(3, descriptor.data_vars[0].ndim)
-        self.assertEqual(('time', 'lat', 'lon'), descriptor.data_vars[0].dims)
-        self.assertEqual('float32', descriptor.data_vars[0].dtype)
+        self.assertTrue('surface_pressure' in descriptor.data_vars)
+        self.assertEqual(3, descriptor.data_vars['surface_pressure'].ndim)
+        self.assertEqual(('time', 'lat', 'lon'), descriptor.data_vars['surface_pressure'].dims)
+        self.assertEqual('float32', descriptor.data_vars['surface_pressure'].dtype)
         self.assertIsNone(descriptor.crs)
         self.assertEqual(1.0, descriptor.spatial_res)
         self.assertEqual(('1997-01-01', '2008-12-31'), descriptor.time_range)
@@ -78,11 +81,12 @@ class CciOdpDatasetOpenerTest(unittest.TestCase):
         self.assertEqual(360, descriptor.dims['longitude'])
         self.assertEqual(180, descriptor.dims['latitude'])
         self.assertEqual(12644, descriptor.dims['time'])
-        self.assertEqual(7, len(descriptor.data_vars))
-        self.assertEqual('absorbing_aerosol_index', descriptor.data_vars[2].name)
-        self.assertEqual(3, descriptor.data_vars[2].ndim)
-        self.assertEqual(('latitude', 'longitude', 'time'), descriptor.data_vars[2].dims)
-        self.assertEqual('float32', descriptor.data_vars[2].dtype)
+        self.assertEqual(3, len(descriptor.data_vars))
+        self.assertTrue('absorbing_aerosol_index' in descriptor.data_vars)
+        self.assertEqual(3, descriptor.data_vars['absorbing_aerosol_index'].ndim)
+        self.assertEqual(('latitude', 'longitude', 'time'),
+                         descriptor.data_vars['absorbing_aerosol_index'].dims)
+        self.assertEqual('float32', descriptor.data_vars['absorbing_aerosol_index'].dtype)
         self.assertIsNone(descriptor.crs)
         self.assertEqual(1.0, descriptor.spatial_res)
         self.assertEqual(('1978-11-01', '2015-12-31'), descriptor.time_range)
@@ -93,10 +97,6 @@ class CciOdpDatasetOpenerTest(unittest.TestCase):
         self.assertIsNotNone(schema)
         self.assertTrue('variable_names' in schema['properties'])
         self.assertTrue('time_range' in schema['properties'])
-        self.assertTrue('bbox' in schema['properties'])
-        self.assertTrue('spatial_res' in schema['properties'])
-        self.assertTrue('time_period' in schema['properties'])
-        self.assertTrue('crs' in schema['properties'])
         self.assertFalse(schema['additionalProperties'])
 
     @skipIf(os.environ.get('XCUBE_DISABLE_WEB_TESTS', None) == '1', 'XCUBE_DISABLE_WEB_TESTS = 1')
@@ -107,9 +107,6 @@ class CciOdpDatasetOpenerTest(unittest.TestCase):
         self.assertTrue('variable_names' in schema['properties'])
         self.assertTrue('time_range' in schema['properties'])
         self.assertTrue('bbox' in schema['properties'])
-        self.assertTrue('spatial_res' in schema['properties'])
-        self.assertTrue('time_period' in schema['properties'])
-        self.assertTrue('crs' in schema['properties'])
         self.assertFalse(schema['additionalProperties'])
 
         schema = self.opener.get_open_data_params_schema(
@@ -118,22 +115,19 @@ class CciOdpDatasetOpenerTest(unittest.TestCase):
         self.assertTrue('variable_names' in schema['properties'])
         self.assertTrue('time_range' in schema['properties'])
         self.assertTrue('bbox' in schema['properties'])
-        self.assertTrue('spatial_res' in schema['properties'])
-        self.assertTrue('time_period' in schema['properties'])
-        self.assertTrue('crs' in schema['properties'])
         self.assertFalse(schema['additionalProperties'])
 
     @skipIf(os.environ.get('XCUBE_DISABLE_WEB_TESTS', None) == '1', 'XCUBE_DISABLE_WEB_TESTS = 1')
     def test_open_data(self):
         dataset = self.opener.open_data(
-            'esacci.AEROSOL.day.L3C.AER_PRODUCTS.AATSR.Envisat.ATSR2-ENVISAT-ENS_DAILY.v2-6.r1',
-            variable_names=['AOD550', 'NMEAS'],
+            'esacci.AEROSOL.day.L3C.AOD.MERIS.Envisat.MERIS_ENVISAT.2-2.r1',
+            variable_names=['AOD550', 'R_eff'],
             time_range=['2009-07-02', '2009-07-05'],
             bbox=[-10.0, 40.0, 10.0, 60.0])
         self.assertIsNotNone(dataset)
-        self.assertEqual({'AOD550', 'NMEAS'}, set(dataset.data_vars))
+        self.assertEqual({'AOD550', 'R_eff'}, set(dataset.data_vars))
         self.assertEqual({'latitude', 'longitude', 'time'}, set(dataset.AOD550.dims))
-        self.assertEqual({180, 360, 1}, set(dataset.AOD550.chunk_sizes))
+        self.assertEqual({20, 20, 1}, set(dataset.AOD550.chunk_sizes))
 
     @skipIf(os.environ.get('XCUBE_DISABLE_WEB_TESTS', None) == '1', 'XCUBE_DISABLE_WEB_TESTS = 1')
     @skip('Disabled while time series are not supported')
@@ -178,11 +172,12 @@ class CciOdpCubeOpenerTest(unittest.TestCase):
         self.assertEqual(360, descriptor.dims['lon'])
         self.assertEqual(180, descriptor.dims['lat'])
         self.assertEqual(12644, descriptor.dims['time'])
-        self.assertEqual(5, len(descriptor.data_vars))
-        self.assertEqual('absorbing_aerosol_index', descriptor.data_vars[0].name)
-        self.assertEqual(3, descriptor.data_vars[0].ndim)
-        self.assertEqual(('time', 'lat', 'lon'), descriptor.data_vars[0].dims)
-        self.assertEqual('float32', descriptor.data_vars[0].dtype)
+        self.assertEqual(3, len(descriptor.data_vars))
+        self.assertTrue('absorbing_aerosol_index' in descriptor.data_vars)
+        self.assertEqual(3, descriptor.data_vars['absorbing_aerosol_index'].ndim)
+        self.assertEqual(('time', 'lat', 'lon'),
+                         descriptor.data_vars['absorbing_aerosol_index'].dims)
+        self.assertEqual('float32', descriptor.data_vars['absorbing_aerosol_index' ].dtype)
         self.assertIsNone(descriptor.crs)
         self.assertEqual(1.0, descriptor.spatial_res)
         self.assertEqual(('1978-11-01', '2015-12-31'), descriptor.time_range)
@@ -193,10 +188,6 @@ class CciOdpCubeOpenerTest(unittest.TestCase):
         self.assertIsNotNone(schema)
         self.assertTrue('variable_names' in schema['properties'])
         self.assertTrue('time_range' in schema['properties'])
-        self.assertTrue('bbox' in schema['properties'])
-        self.assertTrue('spatial_res' in schema['properties'])
-        self.assertTrue('time_period' in schema['properties'])
-        self.assertTrue('crs' in schema['properties'])
         self.assertFalse(schema['additionalProperties'])
 
     @skipIf(os.environ.get('XCUBE_DISABLE_WEB_TESTS', None) == '1', 'XCUBE_DISABLE_WEB_TESTS = 1')
@@ -214,9 +205,6 @@ class CciOdpCubeOpenerTest(unittest.TestCase):
         self.assertTrue('variable_names' in schema['properties'])
         self.assertTrue('time_range' in schema['properties'])
         self.assertTrue('bbox' in schema['properties'])
-        self.assertTrue('spatial_res' in schema['properties'])
-        self.assertTrue('time_period' in schema['properties'])
-        self.assertTrue('crs' in schema['properties'])
         self.assertFalse(schema['additionalProperties'])
 
     @skipIf(os.environ.get('XCUBE_DISABLE_WEB_TESTS', None) == '1', 'XCUBE_DISABLE_WEB_TESTS = 1')
@@ -254,11 +242,10 @@ class CciOdpDataStoreTest(unittest.TestCase):
     def test_get_data_store_params_schema(self):
         cci_store_params_schema = CciOdpDataStore.get_data_store_params_schema().to_dict()
         self.assertIsNotNone(cci_store_params_schema)
-        self.assertTrue('opensearch_url' in cci_store_params_schema['properties'])
-        self.assertTrue('opensearch_description_url' in cci_store_params_schema['properties'])
+        self.assertTrue('endpoint_url' in cci_store_params_schema['properties'])
+        self.assertTrue('endpoint_description_url' in cci_store_params_schema['properties'])
 
     def test_get_type_specifiers(self):
-        # self.assertEqual(('dataset:zarr:cciodp', 'dataset[cube]:zarr:cciodp'), CciOdpDataStore.get_type_specifiers())
         self.assertEqual(('dataset', 'dataset[cube]'), CciOdpDataStore.get_type_specifiers())
 
     def test_get_type_specifiers_for_data(self):
@@ -349,10 +336,10 @@ class CciOdpDataStoreTest(unittest.TestCase):
         self.assertEqual(17, descriptor.dims['air_pressure'])
         self.assertEqual(36, descriptor.dims['time'])
         self.assertEqual(9, len(descriptor.data_vars))
-        self.assertEqual('surface_pressure', descriptor.data_vars[0].name)
-        self.assertEqual(3, descriptor.data_vars[0].ndim)
-        self.assertEqual(('time', 'lat', 'lon'), descriptor.data_vars[0].dims)
-        self.assertEqual('float32', descriptor.data_vars[0].dtype)
+        self.assertTrue('surface_pressure' in descriptor.data_vars)
+        self.assertEqual(3, descriptor.data_vars['surface_pressure'].ndim)
+        self.assertEqual(('time', 'lat', 'lon'), descriptor.data_vars['surface_pressure'].dims)
+        self.assertEqual('float32', descriptor.data_vars['surface_pressure'].dtype)
         self.assertIsNone(descriptor.crs)
         self.assertEqual(1.0, descriptor.spatial_res)
         self.assertEqual(('1997-01-01', '2008-12-31'), descriptor.time_range)
@@ -367,11 +354,12 @@ class CciOdpDataStoreTest(unittest.TestCase):
         self.assertEqual(360, descriptor.dims['longitude'])
         self.assertEqual(180, descriptor.dims['latitude'])
         self.assertEqual(12644, descriptor.dims['time'])
-        self.assertEqual(7, len(descriptor.data_vars))
-        self.assertEqual('absorbing_aerosol_index', descriptor.data_vars[2].name)
-        self.assertEqual(3, descriptor.data_vars[2].ndim)
-        self.assertEqual(('latitude', 'longitude', 'time'), descriptor.data_vars[2].dims)
-        self.assertEqual('float32', descriptor.data_vars[2].dtype)
+        self.assertEqual(3, len(descriptor.data_vars))
+        self.assertTrue('absorbing_aerosol_index' in descriptor.data_vars)
+        self.assertEqual(3, descriptor.data_vars['absorbing_aerosol_index'].ndim)
+        self.assertEqual(('latitude', 'longitude', 'time'),
+                         descriptor.data_vars['absorbing_aerosol_index'].dims)
+        self.assertEqual('float32', descriptor.data_vars['absorbing_aerosol_index'].dtype)
         self.assertIsNone(descriptor.crs)
         self.assertEqual(1.0, descriptor.spatial_res)
         self.assertEqual(('1978-11-01', '2015-12-31'), descriptor.time_range)
@@ -394,11 +382,12 @@ class CciOdpDataStoreTest(unittest.TestCase):
         self.assertEqual(360, descriptor.dims['lon'])
         self.assertEqual(180, descriptor.dims['lat'])
         self.assertEqual(12644, descriptor.dims['time'])
-        self.assertEqual(5, len(descriptor.data_vars))
-        self.assertEqual('absorbing_aerosol_index', descriptor.data_vars[0].name)
-        self.assertEqual(3, descriptor.data_vars[0].ndim)
-        self.assertEqual(('time', 'lat', 'lon'), descriptor.data_vars[0].dims)
-        self.assertEqual('float32', descriptor.data_vars[0].dtype)
+        self.assertEqual(3, len(descriptor.data_vars))
+        self.assertTrue('absorbing_aerosol_index' in descriptor.data_vars)
+        self.assertEqual(3, descriptor.data_vars['absorbing_aerosol_index'].ndim)
+        self.assertEqual(('time', 'lat', 'lon'),
+                         descriptor.data_vars['absorbing_aerosol_index'].dims)
+        self.assertEqual('float32', descriptor.data_vars['absorbing_aerosol_index'].dtype)
         self.assertIsNone(descriptor.crs)
         self.assertEqual(1.0, descriptor.spatial_res)
         self.assertEqual(('1978-11-01', '2015-12-31'), descriptor.time_range)
@@ -432,10 +421,6 @@ class CciOdpDataStoreTest(unittest.TestCase):
         self.assertIsNotNone(schema)
         self.assertTrue('variable_names' in schema['properties'])
         self.assertTrue('time_range' in schema['properties'])
-        self.assertTrue('bbox' in schema['properties'])
-        self.assertTrue('spatial_res' in schema['properties'])
-        self.assertTrue('time_period' in schema['properties'])
-        self.assertTrue('crs' in schema['properties'])
         self.assertFalse(schema['additionalProperties'])
 
     @skipIf(os.environ.get('XCUBE_DISABLE_WEB_TESTS', None) == '1', 'XCUBE_DISABLE_WEB_TESTS = 1')
@@ -446,9 +431,6 @@ class CciOdpDataStoreTest(unittest.TestCase):
         self.assertTrue('variable_names' in schema['properties'])
         self.assertTrue('time_range' in schema['properties'])
         self.assertTrue('bbox' in schema['properties'])
-        self.assertTrue('spatial_res' in schema['properties'])
-        self.assertTrue('time_period' in schema['properties'])
-        self.assertTrue('crs' in schema['properties'])
         self.assertFalse(schema['additionalProperties'])
 
         schema = self.store.get_open_data_params_schema(
@@ -457,9 +439,6 @@ class CciOdpDataStoreTest(unittest.TestCase):
         self.assertTrue('variable_names' in schema['properties'])
         self.assertTrue('time_range' in schema['properties'])
         self.assertTrue('bbox' in schema['properties'])
-        self.assertTrue('spatial_res' in schema['properties'])
-        self.assertTrue('time_period' in schema['properties'])
-        self.assertTrue('crs' in schema['properties'])
         self.assertFalse(schema['additionalProperties'])
 
         with self.assertRaises(DataStoreError) as dse:
@@ -476,9 +455,6 @@ class CciOdpDataStoreTest(unittest.TestCase):
         self.assertTrue('variable_names' in schema['properties'])
         self.assertTrue('time_range' in schema['properties'])
         self.assertTrue('bbox' in schema['properties'])
-        self.assertTrue('spatial_res' in schema['properties'])
-        self.assertTrue('time_period' in schema['properties'])
-        self.assertTrue('crs' in schema['properties'])
         self.assertFalse(schema['additionalProperties'])
 
     def test_get_data_opener_ids(self):
@@ -514,25 +490,25 @@ class CciOdpDataStoreTest(unittest.TestCase):
     @skipIf(os.environ.get('XCUBE_DISABLE_WEB_TESTS', None) == '1', 'XCUBE_DISABLE_WEB_TESTS = 1')
     def test_open_data(self):
         dataset = self.store.open_data(
-            'esacci.AEROSOL.day.L3C.AER_PRODUCTS.AATSR.Envisat.ATSR2-ENVISAT-ENS_DAILY.v2-6.r1',
+            'esacci.AEROSOL.day.L3C.AOD.MERIS.Envisat.MERIS_ENVISAT.2-2.r1',
             'dataset:zarr:cciodp',
-            variable_names=['AOD550', 'NMEAS'],
+            variable_names=['AOD550', 'R_eff'],
             time_range=['2009-07-02', '2009-07-05'],
             bbox=[-10.0, 40.0, 10.0, 60.0])
-        self.assertEqual({'AOD550', 'NMEAS'}, set(dataset.data_vars))
+        self.assertEqual({'AOD550', 'R_eff'}, set(dataset.data_vars))
         self.assertEqual({'latitude', 'longitude', 'time'}, set(dataset.AOD550.dims))
-        self.assertEqual({180, 360, 1}, set(dataset.AOD550.chunk_sizes))
+        self.assertEqual({20, 20, 1}, set(dataset.AOD550.chunk_sizes))
 
         with self.assertRaises(DataStoreError) as dse:
-            self.store.open_data('esacci.AEROSOL.day.L3C.AER_PRODUCTS.AATSR.Envisat.ATSR2-ENVISAT-ENS_DAILY.v2-6.r1',
+            self.store.open_data('esacci.AEROSOL.day.L3C.AOD.MERIS.Envisat.MERIS_ENVISAT.2-2.r1',
                                  'dataset[cube]:zarr:cciodp',
-                                  variable_names=['AOD550', 'NMEAS'],
+                                  variable_names=['AOD550', 'R_eff'],
                                   time_range=['2009-07-02', '2009-07-05'],
                                   bbox=[-10.0, 40.0, 10.0, 60.0])
         self.assertEqual('Cannot describe metadata of data resource '
-                         '"esacci.AEROSOL.day.L3C.AER_PRODUCTS.AATSR.Envisat.ATSR2-ENVISAT-ENS_DAILY.v2-6.r1", '
-                         'as it cannot be accessed by data accessor "dataset[cube]:zarr:cciodp".', f'{dse.exception}')
-
+                         '"esacci.AEROSOL.day.L3C.AOD.MERIS.Envisat.MERIS_ENVISAT.2-2.r1", '
+                         'as it cannot be accessed by data accessor "dataset[cube]:zarr:cciodp".',
+                         f'{dse.exception}')
 
     @skipIf(os.environ.get('XCUBE_DISABLE_WEB_TESTS', None) == '1', 'XCUBE_DISABLE_WEB_TESTS = 1')
     @skip('Disabled while time series are not supported')

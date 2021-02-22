@@ -54,7 +54,6 @@ from xcube_cci.constants import OPENSEARCH_CEDA_URL
 from xcube_cci.normalize import normalize_cci_dataset
 from xcube_cci.normalize import normalize_dims_description
 from xcube_cci.normalize import normalize_variable_dims_description
-from xcube_cci.subsetting import subset_spatial
 
 CCI_ID_PATTERN = 'esacci\..+\..+\..+\..+\..+\..+\..+\..+\..+'
 CRS_PATTERN = 'http://www.opengis.net/def/crs/EPSG/0/[0-9]{4,5}'
@@ -76,6 +75,11 @@ _FREQUENCY_TO_ADJECTIVE = {
     'yr': 'year',
     'unspecified': ''
 }
+_RELEVANT_METADATA_ATTRIBUTES = ['ecv', 'institute', 'processing_level', 'product_string',
+                                 'product_version', 'data_type', 'abstract', 'title', 'licences',
+                                 'publication_date', 'catalog_url', 'sensor_id', 'platform_id',
+                                 'cci_project', 'description', 'project', 'references', 'source',
+                                 'history', 'comment']
 
 
 def _normalize_dataset(ds: xr.Dataset) -> xr.Dataset:
@@ -84,10 +88,10 @@ def _normalize_dataset(ds: xr.Dataset) -> xr.Dataset:
     return ds
 
 
-def _get_temporal_resolution_from_id(data_id: str) -> str:
+def _get_temporal_resolution_from_id(data_id: str) -> Optional[str]:
     data_time_res = data_id.split('.')[2]
     time_res_items = dict(D=['days', 'day'],
-                          M=['months', 'mon'],
+                          M=['months', 'mon', 'climatology'],
                           Y=['yrs', 'yr', 'year'])
     for time_res_pandas_id, time_res_ids_list in time_res_items.items():
         for i, time_res_id in enumerate(time_res_ids_list):
@@ -134,11 +138,13 @@ class CciOdpDataOpener(DataOpener):
         temporal_resolution = _get_temporal_resolution_from_id(data_id)
         dataset_info = self._cci_odp.get_dataset_info(data_id, ds_metadata)
         spatial_resolution = dataset_info['lat_res']
+        if spatial_resolution <= 0:
+            spatial_resolution = None
         bbox = dataset_info['bbox']
         # only use date parts of times
         temporal_coverage = (dataset_info['temporal_coverage_start'].split('T')[0],
                              dataset_info['temporal_coverage_end'].split('T')[0])
-        var_descriptors = []
+        var_descriptors = {}
         var_infos = ds_metadata.get('variable_infos', {})
         var_names = dataset_info['var_names']
         for var_name in var_names:
@@ -147,23 +153,35 @@ class CciOdpDataOpener(DataOpener):
                 var_dtype = var_info['data_type']
                 var_dims = self._normalize_var_dims(var_info['dimensions'])
                 if var_dims:
-                    var_descriptors.append(VariableDescriptor(var_name, var_dtype, var_dims, var_info))
+                    var_descriptors[var_name] = \
+                        VariableDescriptor(var_name, var_dtype, var_dims, var_info)
             else:
-                var_descriptors.append(VariableDescriptor(var_name, '', ''))
+                var_descriptors[var_name] = VariableDescriptor(var_name, '', '')
         if 'variables' in ds_metadata:
             ds_metadata.pop('variables')
         ds_metadata.pop('dimensions')
         ds_metadata.pop('variable_infos')
-        ds_metadata.pop('attributes')
         attrs = ds_metadata.get('attributes', {}).get('NC_GLOBAL', {})
+        ds_metadata.pop('attributes')
         attrs.update(ds_metadata)
-        descriptor = DatasetDescriptor(data_id=data_id, type_specifier=self._type_specifier, dims=dims,
-                                       data_vars=var_descriptors, attrs=attrs, bbox=bbox,
-                                       spatial_res=spatial_resolution, time_range=temporal_coverage,
+        self._remove_irrelevant_metadata_attributes(attrs)
+        descriptor = DatasetDescriptor(data_id=data_id, type_specifier=self._type_specifier,
+                                       dims=dims, data_vars=var_descriptors, attrs=attrs,
+                                       bbox=bbox, spatial_res=spatial_resolution,
+                                       time_range=temporal_coverage,
                                        time_period=temporal_resolution)
         data_schema = self._get_open_data_params_schema(descriptor)
         descriptor.open_params_schema = data_schema
         return descriptor
+
+    @staticmethod
+    def _remove_irrelevant_metadata_attributes(attrs: dict):
+        to_remove_list = []
+        for attribute in attrs:
+            if attribute not in _RELEVANT_METADATA_ATTRIBUTES:
+                to_remove_list.append(attribute)
+        for to_remove in to_remove_list:
+            attrs.pop(to_remove)
 
     def search_data(self, **search_params) -> Iterator[DatasetDescriptor]:
         search_result = self._cci_odp.search(**search_params)
@@ -184,31 +202,23 @@ class CciOdpDataOpener(DataOpener):
         # noinspection PyUnresolvedReferences
         cube_params = dict(
             variable_names=JsonArraySchema(items=JsonStringSchema(
-                enum=[v.name for v in dsd.data_vars] if dsd and dsd.data_vars else None)),
+                enum=dsd.data_vars.keys() if dsd and dsd.data_vars else None)),
             time_range=JsonDateSchema.new_range(min_date, max_date)
         )
-        min_lon = dsd.bbox[0] if dsd and dsd.bbox else -180
-        min_lat = dsd.bbox[1] if dsd and dsd.bbox else -90
-        max_lon = dsd.bbox[2] if dsd and dsd.bbox else 180
-        max_lat = dsd.bbox[3] if dsd and dsd.bbox else 90
-        subsetting_params = dict(
-            bbox=JsonArraySchema(items=(
+        if dsd and (('lat' in dsd.dims and 'lon' in dsd.dims) or
+                    ('latitude' in dsd.dims and 'longitude' in dsd.dims)):
+            min_lon = dsd.bbox[0] if dsd and dsd.bbox else -180
+            min_lat = dsd.bbox[1] if dsd and dsd.bbox else -90
+            max_lon = dsd.bbox[2] if dsd and dsd.bbox else 180
+            max_lat = dsd.bbox[3] if dsd and dsd.bbox else 90
+            bbox = JsonArraySchema(items=(
                 JsonNumberSchema(minimum=min_lon, maximum=max_lon),
                 JsonNumberSchema(minimum=min_lat, maximum=max_lat),
                 JsonNumberSchema(minimum=min_lon, maximum=max_lon),
-                JsonNumberSchema(minimum=min_lat, maximum=max_lat))),
-        )
-        # constant params is a listing of parameters that may not be changed, but are included here for information
-        constant_params = dict(
-            spatial_res=JsonNumberSchema(const=dsd.spatial_res if dsd and dsd.spatial_res else 0.0),
-            time_period=JsonStringSchema(const=dsd.time_period if dsd and dsd.time_period else ''),
-            crs=JsonStringSchema(const=dsd.crs if dsd and dsd.crs else 'WGS84')
-        )
+                JsonNumberSchema(minimum=min_lat, maximum=max_lat)))
+            cube_params['bbox'] = bbox
         cci_schema = JsonObjectSchema(
-            properties=dict(**cube_params,
-                            **subsetting_params,
-                            **constant_params
-                            ),
+            properties=dict(**cube_params),
             required=[
             ],
             additional_properties=False
@@ -220,7 +230,8 @@ class CciOdpDataOpener(DataOpener):
         cci_schema.validate_instance(open_params)
         cube_kwargs, open_params = cci_schema.process_kwargs_subset(open_params, (
             'variable_names',
-            'time_range'
+            'time_range',
+            'bbox'
         ))
         max_cache_size: int = 2 ** 30
         chunk_store = CciChunkStore(self._cci_odp, data_id, cube_kwargs)
@@ -234,10 +245,6 @@ class CciOdpDataOpener(DataOpener):
         if data_id not in self.dataset_names:
             raise DataStoreError(f'Cannot describe metadata of data resource "{data_id}", '
                                  f'as it cannot be accessed by data accessor "{self._id}".')
-
-    @abstractmethod
-    def _get_subsetting_params(self, min_lon:float, min_lat:float, max_lon:float, max_lat:float):
-        pass
 
     @abstractmethod
     def _normalize_dataset(self, ds: xr.Dataset, cci_schema: JsonObjectSchema, **open_params) -> xr.Dataset:
@@ -257,16 +264,6 @@ class CciOdpDatasetOpener(CciOdpDataOpener):
     def __init__(self, **store_params):
         super().__init__(CciOdp(only_consider_cube_ready=False, **store_params), DATASET_OPENER_ID, TYPE_SPECIFIER_DATASET)
 
-    def _get_subsetting_params(self, min_lon:float, min_lat:float, max_lon:float, max_lat:float):
-        # no subsetting allowed on non-cubes
-        return dict(
-            bbox=JsonArraySchema(items=(
-                JsonNumberSchema(minimum=min_lon, maximum=min_lon),
-                JsonNumberSchema(minimum=min_lat, maximum=min_lat),
-                JsonNumberSchema(minimum=max_lon, maximum=max_lon),
-                JsonNumberSchema(minimum=max_lat, maximum=max_lat)))
-        )
-
     def _normalize_dataset(self, ds: xr.Dataset, cci_schema: JsonObjectSchema, **open_params) -> xr.Dataset:
         return ds
 
@@ -285,23 +282,9 @@ class CciOdpCubeOpener(CciOdpDataOpener):
     def __init__(self, **store_params):
         super().__init__(CciOdp(only_consider_cube_ready=True, **store_params), CUBE_OPENER_ID, TYPE_SPECIFIER_CUBE)
 
-    def _get_subsetting_params(self, min_lon:float, min_lat:float, max_lon:float, max_lat:float):
-        return dict(
-            bbox=JsonArraySchema(items=(
-                JsonNumberSchema(minimum=min_lon, maximum=max_lon),
-                JsonNumberSchema(minimum=min_lat, maximum=max_lat),
-                JsonNumberSchema(minimum=min_lon, maximum=max_lon),
-                JsonNumberSchema(minimum=min_lat, maximum=max_lat)))
-        )
-
     def _normalize_dataset(self, ds: xr.Dataset, cci_schema: JsonObjectSchema, **open_params) -> xr.Dataset:
         ds = normalize_cci_dataset(ds)
         ds = normalize_dataset(ds)
-        subsetting_kwargs, open_params = cci_schema.process_kwargs_subset(open_params, (
-            'bbox',
-        ))
-        if 'bbox' in subsetting_kwargs:
-            ds = subset_spatial(ds, **subsetting_kwargs)
         return ds
 
     def _normalize_dims(self, dims: dict) -> dict:
@@ -317,8 +300,8 @@ class CciOdpDataStore(DataStore):
         cci_schema = self.get_data_store_params_schema()
         cci_schema.validate_instance(store_params)
         store_kwargs, store_params = cci_schema.process_kwargs_subset(store_params, (
-            'opensearch_url',
-            'opensearch_description_url',
+            'endpoint_url',
+            'endpoint_description_url',
             'enable_warnings',
             'num_retries',
             'retry_backoff_max',
@@ -330,8 +313,8 @@ class CciOdpDataStore(DataStore):
     @classmethod
     def get_data_store_params_schema(cls) -> JsonObjectSchema:
         cciodp_params = dict(
-            opensearch_url=JsonStringSchema(default=OPENSEARCH_CEDA_URL),
-            opensearch_description_url=JsonStringSchema(default=CCI_ODD_URL),
+            endpoint_url=JsonStringSchema(default=OPENSEARCH_CEDA_URL),
+            endpoint_description_url=JsonStringSchema(default=CCI_ODD_URL),
             enable_warnings=JsonBooleanSchema(default=False, title='Whether to output warnings'),
             num_retries=JsonIntegerSchema(default=DEFAULT_NUM_RETRIES, minimum=0,
                                             title='Number of retries when requesting data fails'),

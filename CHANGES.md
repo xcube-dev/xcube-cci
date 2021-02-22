@@ -1,5 +1,10 @@
 ## Changes in 0.6.1. (under development)
-* * Fixed problem with the encoding of a dataset's coordinate variables that occurs 
+* Removed constant-valued parameters from opener schema
+* Renamed store parameters `opensearch_url` and `opensearch_description_url` to
+  `endpoint_url` and `endpoint_description_url`, respectively.
+* Chunkstore considers bounding box when accessing data. Less data is accessed and normalized. (#33)
+* Fixed time range detection for datasets with daily time frequency.
+* Fixed problem with the encoding of a dataset's coordinate variables that occurs 
   when using `xcube_cci` with xcube 0.6.0. (#27)
 * Removed CLI
 
