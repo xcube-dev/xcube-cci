@@ -109,7 +109,7 @@ class RemoteChunkStore(MutableMapping, metaclass=ABCMeta):
             dim_attrs = self.get_attrs(dimension_name)
             dim_attrs['_ARRAY_DIMENSIONS'] = dimension_name
             dimension_data = self._dimension_data[dimension_name]['data']
-            if bbox and dimension_name == 'lat' or dimension_name == 'latitude':
+            if bbox is not None and (dimension_name == 'lat' or dimension_name == 'latitude'):
                 if dimension_data[0] < dimension_data[-1]:
                     min_offset = bisect.bisect_left(dimension_data, bbox[1])
                     max_offset = bisect.bisect_right(dimension_data, bbox[3])
@@ -121,7 +121,7 @@ class RemoteChunkStore(MutableMapping, metaclass=ABCMeta):
                 dimension_data = self._adjust_dimension_data(dimension_name, min_offset,
                                                              max_offset, dimension_data,
                                                              dim_attrs)
-            elif bbox and dimension_name == 'lon' or dimension_name == 'longitude':
+            elif bbox is not None and (dimension_name == 'lon' or dimension_name == 'longitude'):
                 min_offset = bisect.bisect_left(dimension_data, bbox[0])
                 max_offset = bisect.bisect_right(dimension_data, bbox[2])
                 dimension_data = self._adjust_dimension_data(dimension_name, min_offset,
