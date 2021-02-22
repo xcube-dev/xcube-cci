@@ -36,7 +36,7 @@ import urllib.parse
 import warnings
 from datetime import datetime
 from dateutil.relativedelta import relativedelta
-from typing import List, Dict, Tuple, Optional, Union, Sequence
+from typing import Any, List, Dict, Tuple, Optional, Union, Sequence
 from urllib.parse import quote
 from xcube_cci.constants import CCI_ODD_URL
 from xcube_cci.constants import DEFAULT_NUM_RETRIES
@@ -437,6 +437,8 @@ class CciOdp:
             await self._extract_metadata_from_odd_url(session, self._opensearch_description_url)
         if 'drs_ids' in meta_info_dict:
             self._drs_ids = meta_info_dict['drs_ids']
+            if '_all' in self._drs_ids:
+                self._drs_ids.remove('_all')
             for excluded_data_source in self._excluded_data_sources:
                 if excluded_data_source in self._drs_ids:
                     self._drs_ids.remove(excluded_data_source)
@@ -457,15 +459,22 @@ class CciOdp:
 
     async def _create_data_source(self, session, json_dict: dict, datasource_id: str):
         meta_info = await self._fetch_meta_info(session,
+                                                datasource_id,
                                                 json_dict.get('odd_url', None),
                                                 json_dict.get('metadata_url', None))
         drs_ids = self._get_as_list(meta_info, 'drs_id', 'drs_ids')
         for excluded_data_source in self._excluded_data_sources:
             if excluded_data_source in drs_ids:
-                    drs_ids.remove(excluded_data_source)
+                drs_ids.remove(excluded_data_source)
         for drs_id in drs_ids:
             drs_meta_info = copy.deepcopy(meta_info)
+            drs_variables = drs_meta_info.get('variables', {}).get(drs_id, None)
             drs_meta_info.update(json_dict)
+            if drs_variables:
+                drs_meta_info['variables'] = drs_variables
+            drs_uuid = drs_meta_info.get('uuids', {}).get(drs_id, None)
+            if drs_uuid:
+                drs_meta_info['uuid'] = drs_uuid
             self._adjust_json_dict(drs_meta_info, drs_id)
             for variable in drs_meta_info.get('variables', []):
                 variable['name'] = variable['name'].replace('.', '_')
@@ -520,7 +529,7 @@ class CciOdp:
                 and 'variable_infos' in data_source \
                 and 'attributes' in data_source:
             return
-        data_fid = await self._get_fid_for_dataset(session, dataset_name)
+        data_fid = await self._get_dataset_id(session, dataset_name)
         await self._set_variable_infos(self._opensearch_url, data_fid, dataset_name, session,
                                        data_source)
 
@@ -681,8 +690,8 @@ class CciOdp:
 
     async def _get_var_data(self, session, dataset_name: str, variable_names: Dict[str, int],
                             start_time: str, end_time: str):
-        fid = await self._get_fid_for_dataset(session, dataset_name)
-        request = dict(parentIdentifier=fid,
+        id = await self._get_dataset_id(session, dataset_name)
+        request = dict(parentIdentifier=id,
                        startDate=start_time,
                        endDate=end_time,
                        drsId=dataset_name
@@ -807,8 +816,8 @@ class CciOdp:
 
     async def _get_time_ranges_from_data(self, session, dataset_name: str, start_time: str,
                                          end_time: str) -> List[Tuple[datetime, datetime]]:
-        fid = await self._get_fid_for_dataset(session, dataset_name)
-        request = dict(parentIdentifier=fid,
+        id = await self._get_dataset_id(session, dataset_name)
+        request = dict(parentIdentifier=id,
                        startDate=start_time,
                        endDate=end_time,
                        drsId=dataset_name,
@@ -822,8 +831,8 @@ class CciOdp:
         return _run_with_session(self._get_file_list, dataset_name)
 
     async def _get_file_list(self, session, dataset_name):
-        fid = await self._get_fid_for_dataset(session, dataset_name)
-        request = dict(parentIdentifier=fid,
+        id = await self._get_dataset_id(session, dataset_name)
+        request = dict(parentIdentifier=id,
                        drsId=dataset_name,
                        startDate='1900-01-01T00:00:00',
                        endDate='3001-12-31T00:00:00',
@@ -832,12 +841,12 @@ class CciOdp:
         file_list = [feature[2] for feature in feature_list]
         return file_list
 
-    def get_fid_for_dataset(self, dataset_name: str) -> str:
-        return _run_with_session(self._get_fid_for_dataset, dataset_name)
+    def get_dataset_id(self, dataset_name: str) -> str:
+        return _run_with_session(self._get_dataset_id, dataset_name)
 
-    async def _get_fid_for_dataset(self, session, dataset_name: str) -> str:
+    async def _get_dataset_id(self, session, dataset_name: str) -> str:
         await self._ensure_in_data_sources(session, [dataset_name])
-        return self._data_sources[dataset_name]['fid']
+        return self._data_sources[dataset_name].get('uuid', self._data_sources[dataset_name]['fid'])
 
     async def _get_opendap_url(self, session, request: Dict):
         request['fileFormat'] = '.nc'
@@ -864,7 +873,8 @@ class CciOdp:
         result = variable_data.flatten().tobytes()
         return result
 
-    async def _fetch_data_source_list_json(self, session, base_url, query_args) -> Sequence:
+    async def _fetch_data_source_list_json(self, session, base_url, query_args,
+                                           max_wanted_results=100000) -> Sequence:
         def _extender(inner_catalogue: dict, feature_list: List[Dict]):
             for fc in feature_list:
                 fc_props = fc.get("properties", {})
@@ -874,24 +884,24 @@ class CciOdp:
                 inner_catalogue[fc_id] = _get_feature_dict_from_feature(fc)
         catalogue = {}
         await self._fetch_opensearch_feature_list(session, base_url, catalogue, _extender,
-                                                  query_args)
+                                                  query_args, max_wanted_results)
         return catalogue
 
     async def _fetch_opensearch_feature_list(self, session, base_url, extension, extender,
-                                             query_args):
+                                             query_args, max_wanted_results=100000):
         """
         Return JSON value read from Opensearch web service.
         :return:
         """
         start_page = 1
-        initial_maximum_records = 1000
+        initial_maximum_records = min(1000, max_wanted_results)
         maximum_records = 10000
         total_results = await self._fetch_opensearch_feature_part_list(session, base_url,
                                                                        query_args, start_page,
                                                                        initial_maximum_records,
                                                                        extension, extender,
                                                                        None, None)
-        if total_results < initial_maximum_records:
+        if total_results < initial_maximum_records or max_wanted_results < 1000:
             return
         # num_results = maximum_records
         num_results = 0
@@ -972,7 +982,9 @@ class CciOdp:
                                                           dict(parentIdentifier=dataset_id,
                                                                drsId=dataset_name),
                                                           1)
-        time_dimension_size = data_source['num_files']
+        #we need to do this to determine whether we are using the old or the new version of the odp
+        if 'uuid' not in data_source or data_source['uuid'] == data_source['fid']:
+            time_dimension_size = data_source['num_files']
         if feature is not None:
             variable_infos, attributes = \
                 await self._get_variable_infos_from_feature(feature, session)
@@ -1008,7 +1020,11 @@ class CciOdp:
                 return feature_list[0], json_dict.get("totalResults", 0)
         return None, 0
 
-    async def _fetch_meta_info(self, session, odd_url: str, metadata_url: str) -> Dict:
+    async def _fetch_meta_info(self,
+                               session,
+                               datasource_id: str,
+                               odd_url: str,
+                               metadata_url: str) -> Dict:
         meta_info_dict = {}
         if odd_url:
             meta_info_dict = await self._extract_metadata_from_odd_url(session, odd_url)
@@ -1017,12 +1033,32 @@ class CciOdp:
             for item in desc_metadata:
                 if not item in meta_info_dict:
                     meta_info_dict[item] = desc_metadata[item]
+        await self._set_drs_metadata(session, datasource_id, meta_info_dict)
         _harmonize_info_field_names(meta_info_dict, 'file_format', 'file_formats')
         _harmonize_info_field_names(meta_info_dict, 'platform_id', 'platform_ids')
         _harmonize_info_field_names(meta_info_dict, 'sensor_id', 'sensor_ids')
         _harmonize_info_field_names(meta_info_dict, 'processing_level', 'processing_levels')
         _harmonize_info_field_names(meta_info_dict, 'time_frequency', 'time_frequencies')
         return meta_info_dict
+
+    async def _set_drs_metadata(self, session, datasource_id, metainfo_dict):
+        data_source_list = await self._fetch_data_source_list_json(session, OPENSEARCH_CEDA_URL,
+                                                                   {'parentIdentifier':
+                                                                        datasource_id},
+                                                                   max_wanted_results=20)
+        for data_source_key, data_source_value in data_source_list.items():
+            drs_id = data_source_value.get('title', 'All Files')
+            variables = data_source_value.get('variables', None)
+            uuid = data_source_value.get('uuid', None)
+            if drs_id != 'All Files':
+                if variables:
+                    if 'variables' not in metainfo_dict:
+                        metainfo_dict['variables'] = {}
+                    metainfo_dict['variables'][drs_id] = variables
+                    if uuid:
+                        if 'uuids' not in metainfo_dict:
+                            metainfo_dict['uuids'] = {}
+                        metainfo_dict['uuids'][drs_id] = uuid
 
     async def _extract_metadata_from_descxml_url(self, session, descxml_url: str = None) -> dict:
         if not descxml_url:
@@ -1178,8 +1214,10 @@ class CciOdp:
             if resp.status == 200:
                 return resp
             elif 500 <= resp.status < 600:
-                # Retry (immediately) on 5xx errors
-                continue
+                if self._enable_warnings:
+                    error_message = f'Error {resp.status}: Cannot access url.'
+                    warnings.warn(error_message)
+                return None
             elif resp.status == 429:
                 # Retry after 'Retry-After' with exponential backoff
                 retry_min = int(response.headers.get('Retry-After', '100'))

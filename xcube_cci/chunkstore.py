@@ -111,7 +111,7 @@ class RemoteChunkStore(MutableMapping, metaclass=ABCMeta):
             dim_attrs = self.get_attrs(dimension_name)
             dim_attrs['_ARRAY_DIMENSIONS'] = dimension_name
             dimension_data = self._dimension_data[dimension_name]['data']
-            if bbox and dimension_name == 'lat' or dimension_name == 'latitude':
+            if bbox is not None and (dimension_name == 'lat' or dimension_name == 'latitude'):
                 if dimension_data[0] < dimension_data[-1]:
                     min_offset = bisect.bisect_left(dimension_data, bbox[1])
                     max_offset = bisect.bisect_right(dimension_data, bbox[3])
@@ -123,7 +123,7 @@ class RemoteChunkStore(MutableMapping, metaclass=ABCMeta):
                 dimension_data = self._adjust_dimension_data(dimension_name, min_offset,
                                                              max_offset, dimension_data,
                                                              dim_attrs)
-            elif bbox and dimension_name == 'lon' or dimension_name == 'longitude':
+            elif bbox is not None and (dimension_name == 'lon' or dimension_name == 'longitude'):
                 min_offset = bisect.bisect_left(dimension_data, bbox[0])
                 max_offset = bisect.bisect_right(dimension_data, bbox[2])
                 dimension_data = self._adjust_dimension_data(dimension_name, min_offset,
@@ -752,7 +752,7 @@ class CciChunkStore(RemoteChunkStore):
                     time_range: Tuple[pd.Timestamp, pd.Timestamp]) -> bytes:
 
         start_time, end_time = time_range
-        identifier = self._cci_odp.get_fid_for_dataset(self._dataset_name)
+        identifier = self._cci_odp.get_dataset_id(self._dataset_name)
         iso_start_date = start_time.tz_localize(None).isoformat()
         iso_end_date = end_time.tz_localize(None).isoformat()
         dim_indexes = self._get_dimension_indexes_for_chunk(var_name, chunk_index)
