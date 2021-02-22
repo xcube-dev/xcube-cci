@@ -580,7 +580,7 @@ class RemoteChunkStore(MutableMapping, metaclass=ABCMeta):
         if self._trace_store_calls:
             print(f'{self._class_name}.__getitem__(key={key!r})')
         try:
-            value =  self._vfs[key]
+            value = self._vfs[key]
         except KeyError:
             self._try_building_vfs_entry(key)
             value = self._vfs[key]
@@ -594,15 +594,16 @@ class RemoteChunkStore(MutableMapping, metaclass=ABCMeta):
             try:
                 chunk_indexes = \
                     tuple(int(chunk_index) for chunk_index in chunk_index_part.split('.'))
-                ranges = self._var_name_to_ranges[name]
-                indexes = self._ranges_to_indexes[ranges]
-                if chunk_indexes in indexes:
-                    for var_name in self._ranges_to_var_names[ranges]:
-                        self._vfs[key] = var_name, chunk_indexes
-                        self._num_data_var_chunks_not_in_vfs -= 1
-                    indexes.remove(chunk_indexes)
-            except:
-                pass
+            except ValueError:
+                # latter part of key does not consist of chunk indexes
+                return
+            ranges = self._var_name_to_ranges[name]
+            indexes = self._ranges_to_indexes[ranges]
+            if chunk_indexes in indexes:
+                for var_name in self._ranges_to_var_names[ranges]:
+                    self._vfs[var_name + '/' + chunk_index_part] = var_name, chunk_indexes
+                    self._num_data_var_chunks_not_in_vfs -= 1
+                indexes.remove(chunk_indexes)
 
     def _build_missing_vfs_entries(self):
         for name, ranges in self._var_name_to_ranges.items():
