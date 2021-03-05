@@ -278,7 +278,7 @@ class RemoteChunkStore(MutableMapping, metaclass=ABCMeta):
     @classmethod
     def _adjust_chunk_sizes(cls, chunks, sizes, time_dimension):
         # check if we can actually read in everything as one big chunk
-        sum_sizes = np.product(sizes)
+        sum_sizes = np.prod(sizes, dtype=np.int64)
         if time_dimension >= 0:
             sum_sizes = sum_sizes / sizes[time_dimension] * chunks[time_dimension]
             if sum_sizes < 1000000:
@@ -294,9 +294,9 @@ class RemoteChunkStore(MutableMapping, metaclass=ABCMeta):
             if i == time_dimension:
                 valid_chunk_sizes.append([chunk])
                 continue
-            #handle case that the size cannot be divided evenly by the chunk
+            # handle case that the size cannot be divided evenly by the chunk
             if size % chunk > 0:
-                if np.product(chunks) / chunk * size < 1000000:
+                if np.prod(chunks, dtype=np.int64) / chunk * size < 1000000:
                     # if the size is small enough to be ingested in single chunk, take it
                     valid_chunk_sizes.append([size])
                 else:
@@ -322,7 +322,7 @@ class RemoteChunkStore(MutableMapping, metaclass=ABCMeta):
                     cls._get_best_chunks(test_chunks, valid_sizes, best_chunks, best_chunk_size, index + 1,
                                          time_dimension)
             else:
-                test_chunk_size = np.product(test_chunks)
+                test_chunk_size = np.prod(test_chunks, dtype=np.int64)
                 if test_chunk_size > 1000000:
                     break
             if test_chunk_size > best_chunk_size:
