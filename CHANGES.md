@@ -1,3 +1,5 @@
+## Changes in 0.7.1 (in development)
+
 ## Changes in 0.7.0
 * Removed constant-valued parameters from opener schema
 * Renamed store parameters `opensearch_url` and `opensearch_description_url` to
