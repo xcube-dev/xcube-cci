@@ -44,9 +44,11 @@ build_script:
   # Environments created by mamba can't be referenced by name from conda
   # (presumably a bug), so we use an explicit path instead.
   - mamba env create --prefix $HOME/mamba-env --file environment.yml
+  # install pytest for testing
+  - mamba install --prefix $HOME/mamba-env pytest
   - conda activate $HOME/mamba-env
   - conda list
   - python setup.py install
 
   # Run the test suite.
-  - py.test
+  - pytest
