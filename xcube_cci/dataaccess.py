@@ -22,6 +22,8 @@
 from abc import abstractmethod
 from typing import Any, Iterator, List, Tuple, Optional
 
+import json
+import os
 import xarray as xr
 import zarr
 
@@ -107,6 +109,10 @@ class CciOdpDataOpener(DataOpener):
         self._cci_odp = cci_odp
         self._id = id
         self._type_specifier = type_specifier
+        dataset_states_file = os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                                           'data/dataset_states.json')
+        with open(dataset_states_file, 'r') as fp:
+            self._dataset_states = json.load(fp)
 
     @property
     def dataset_names(self) -> List[str]:
@@ -165,6 +171,8 @@ class CciOdpDataOpener(DataOpener):
         ds_metadata.pop('attributes')
         attrs.update(ds_metadata)
         self._remove_irrelevant_metadata_attributes(attrs)
+        attrs['verification_flags'] = \
+            self._dataset_states.get(data_id, {}).get('verification_flags', [])
         descriptor = DatasetDescriptor(data_id=data_id, type_specifier=self._type_specifier,
                                        dims=dims, data_vars=var_descriptors, attrs=attrs,
                                        bbox=bbox, spatial_res=spatial_resolution,
