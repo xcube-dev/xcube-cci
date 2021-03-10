@@ -20,7 +20,7 @@
 # SOFTWARE.
 
 from abc import abstractmethod
-from typing import Any, Iterator, List, Tuple, Optional
+from typing import Any, Iterator, List, Tuple, Optional, Sequence
 
 import json
 import os
@@ -28,14 +28,14 @@ import xarray as xr
 import zarr
 
 from xcube.core.normalize import normalize_dataset
-from xcube.core.store import TYPE_SPECIFIER_CUBE
-from xcube.core.store import TYPE_SPECIFIER_DATASET
-from xcube.core.store import TypeSpecifier
 from xcube.core.store import DataDescriptor
 from xcube.core.store import DataOpener
 from xcube.core.store import DataStore
 from xcube.core.store import DataStoreError
 from xcube.core.store import DatasetDescriptor
+from xcube.core.store import TYPE_SPECIFIER_CUBE
+from xcube.core.store import TYPE_SPECIFIER_DATASET
+from xcube.core.store import TypeSpecifier
 from xcube.core.store import VariableDescriptor
 from xcube.util.jsonschema import JsonArraySchema
 from xcube.util.jsonschema import JsonBooleanSchema
@@ -105,7 +105,7 @@ def _get_temporal_resolution_from_id(data_id: str) -> Optional[str]:
 
 class CciOdpDataOpener(DataOpener):
 
-    def __init__(self, cci_odp: CciOdp, id:str, type_specifier: TypeSpecifier):
+    def __init__(self, cci_odp: CciOdp, id: str, type_specifier: TypeSpecifier):
         self._cci_odp = cci_odp
         self._id = id
         self._type_specifier = type_specifier
@@ -204,7 +204,7 @@ class CciOdpDataOpener(DataOpener):
         return self._get_open_data_params_schema(dsd)
 
     @staticmethod
-    def _get_open_data_params_schema(dsd: DataDescriptor=None):
+    def _get_open_data_params_schema(dsd: DataDescriptor = None):
         min_date = dsd.time_range[0] if dsd and dsd.time_range else None
         max_date = dsd.time_range[1] if dsd and dsd.time_range else None
         # noinspection PyUnresolvedReferences
@@ -270,7 +270,8 @@ class CciOdpDataOpener(DataOpener):
 class CciOdpDatasetOpener(CciOdpDataOpener):
 
     def __init__(self, **store_params):
-        super().__init__(CciOdp(only_consider_cube_ready=False, **store_params), DATASET_OPENER_ID, TYPE_SPECIFIER_DATASET)
+        super().__init__(CciOdp(only_consider_cube_ready=False, **store_params), DATASET_OPENER_ID,
+                         TYPE_SPECIFIER_DATASET)
 
     def _normalize_dataset(self, ds: xr.Dataset, cci_schema: JsonObjectSchema, **open_params) -> xr.Dataset:
         return ds
@@ -325,7 +326,7 @@ class CciOdpDataStore(DataStore):
             endpoint_description_url=JsonStringSchema(default=CCI_ODD_URL),
             enable_warnings=JsonBooleanSchema(default=False, title='Whether to output warnings'),
             num_retries=JsonIntegerSchema(default=DEFAULT_NUM_RETRIES, minimum=0,
-                                            title='Number of retries when requesting data fails'),
+                                          title='Number of retries when requesting data fails'),
             retry_backoff_max=JsonIntegerSchema(default=DEFAULT_RETRY_BACKOFF_MAX, minimum=0),
             retry_backoff_base=JsonNumberSchema(default=DEFAULT_RETRY_BACKOFF_BASE, exclusive_minimum=1.0)
         )
@@ -362,7 +363,12 @@ class CciOdpDataStore(DataStore):
             return self._cube_opener
         return self._dataset_opener
 
-    def get_data_ids(self, type_specifier: str = None, include_titles = True) -> Iterator[Tuple[str, str]]:
+    def get_data_ids(self,
+                     type_specifier: str = None,
+                     include_titles: bool = True,
+                     include_attrs: Sequence[str] = None) -> Iterator[Tuple[str, str]]:
+        # TODO: do not ignore include_titles
+        # TODO: do not ignore include_attrs
         data_ids = self._get_opener(type_specifier=type_specifier).dataset_names
         if include_titles:
             tuples = ((data_id, self._create_human_readable_title_from_data_id(data_id)) for data_id in data_ids)
@@ -380,14 +386,14 @@ class CciOdpDataStore(DataStore):
         return f'{split_id[1]} CCI: {_FREQUENCY_TO_ADJECTIVE[split_id[2]]} {split_id[5]} {split_id[3]} ' \
                f'{split_id[7]} {split_id[4]}, {version}'
 
-    def has_data(self, data_id: str, type_specifier: str=None) -> bool:
+    def has_data(self, data_id: str, type_specifier: str = None) -> bool:
         return data_id in self._get_opener(type_specifier=type_specifier).dataset_names
 
-    def describe_data(self, data_id: str, type_specifier: str=None) -> DataDescriptor:
+    def describe_data(self, data_id: str, type_specifier: str = None) -> DataDescriptor:
         return self._get_opener(type_specifier=type_specifier).describe_data(data_id)
 
     @classmethod
-    def get_search_params_schema(cls, type_specifier:str=None) -> JsonObjectSchema:
+    def get_search_params_schema(cls, type_specifier: str = None) -> JsonObjectSchema:
         cls._assert_valid_type_specifier(type_specifier)
         search_params = dict(
             start_date=JsonStringSchema(format='date-time'),
