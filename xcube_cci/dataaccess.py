@@ -19,11 +19,11 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-from abc import abstractmethod
-from typing import Any, Iterator, List, Tuple, Optional, Sequence
-
 import json
 import os
+from abc import abstractmethod
+from typing import Any, Iterator, List, Tuple, Optional, Sequence, Dict, Union
+
 import xarray as xr
 import zarr
 
@@ -365,16 +365,20 @@ class CciOdpDataStore(DataStore):
 
     def get_data_ids(self,
                      type_specifier: str = None,
-                     include_titles: bool = True,
-                     include_attrs: Sequence[str] = None) -> Iterator[Tuple[str, str]]:
-        # TODO: do not ignore include_titles
-        # TODO: do not ignore include_attrs
+                     include_attrs: Sequence[str] = None) -> \
+            Union[Iterator[str], Iterator[Tuple[str, Dict[str, Any]]]]:
         data_ids = self._get_opener(type_specifier=type_specifier).dataset_names
-        if include_titles:
-            tuples = ((data_id, self._create_human_readable_title_from_data_id(data_id)) for data_id in data_ids)
-        else:
-            tuples = ((data_id, None) for data_id in data_ids)
-        return iter(tuples)
+        return_tuples = include_attrs is not None
+        # TODO: respect names other than "title" in include_attrs
+        include_titles = return_tuples and 'title' in include_attrs
+        for data_id in data_ids:
+            if return_tuples:
+                if include_titles:
+                    yield data_id, {'title': self._create_human_readable_title_from_data_id(data_id)}
+                else:
+                    yield data_id, {}
+            else:
+                yield data_id
 
     @staticmethod
     def _create_human_readable_title_from_data_id(data_id: str) -> str:

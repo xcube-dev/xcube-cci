@@ -411,14 +411,21 @@ class CciOdpDataStoreTest(unittest.TestCase):
         self.assertIsNotNone(dataset_ids_iter)
         dataset_ids = list(dataset_ids_iter)
         self.assertTrue(len(dataset_ids) > 200)
-        self.assertIsNotNone(dataset_ids[0][1])
+        for dataset_id in dataset_ids:
+            self.assertIsInstance(dataset_id, str)
 
-        dataset_ids_iter = self.store.get_data_ids(type_specifier='dataset[cube]', include_titles=False)
+        dataset_ids_iter = self.store.get_data_ids(type_specifier='dataset[cube]',
+                                                   include_attrs=['title'])
         self.assertIsNotNone(dataset_ids_iter)
         dataset_ids = list(dataset_ids_iter)
         self.assertTrue(len(dataset_ids) < 200)
         self.assertTrue(len(dataset_ids) > 100)
-        self.assertIsNone(dataset_ids[0][1])
+        for dataset_id in dataset_ids:
+            self.assertIsInstance(dataset_id, tuple)
+            self.assertEqual(2, len(dataset_id))
+            self.assertIsInstance(dataset_id[0], str)
+            self.assertIsInstance(dataset_id[1], dict)
+            self.assertIn('title', dataset_id[1])
 
     def test_create_human_readable_title_from_id(self):
         self.assertEqual('OZONE CCI: Monthly multi-sensor L3 MERGED NP, vfv0002',
