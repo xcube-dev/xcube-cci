@@ -22,7 +22,7 @@
 import json
 import os
 from abc import abstractmethod
-from typing import Any, Iterator, List, Tuple, Optional, Sequence, Dict, Union
+from typing import Any, Iterator, List, Tuple, Optional, Dict, Union, Container
 
 import xarray as xr
 import zarr
@@ -365,7 +365,7 @@ class CciOdpDataStore(DataStore):
 
     def get_data_ids(self,
                      type_specifier: str = None,
-                     include_attrs: Sequence[str] = None) -> \
+                     include_attrs: Container[str] = None) -> \
             Union[Iterator[str], Iterator[Tuple[str, Dict[str, Any]]]]:
         data_ids = self._get_opener(type_specifier=type_specifier).dataset_names
         return_tuples = include_attrs is not None
