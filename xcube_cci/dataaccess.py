@@ -109,10 +109,6 @@ class CciOdpDataOpener(DataOpener):
         self._cci_odp = cci_odp
         self._id = id
         self._type_specifier = type_specifier
-        dataset_states_file = os.path.join(os.path.dirname(os.path.abspath(__file__)),
-                                           'data/dataset_states.json')
-        with open(dataset_states_file, 'r') as fp:
-            self._dataset_states = json.load(fp)
 
     @property
     def dataset_names(self) -> List[str]:
@@ -171,8 +167,6 @@ class CciOdpDataOpener(DataOpener):
         ds_metadata.pop('attributes')
         attrs.update(ds_metadata)
         self._remove_irrelevant_metadata_attributes(attrs)
-        attrs['verification_flags'] = \
-            self._dataset_states.get(data_id, {}).get('verification_flags', [])
         descriptor = DatasetDescriptor(data_id=data_id, type_specifier=self._type_specifier,
                                        dims=dims, data_vars=var_descriptors, attrs=attrs,
                                        bbox=bbox, spatial_res=spatial_resolution,
@@ -318,6 +312,10 @@ class CciOdpDataStore(DataStore):
         ))
         self._dataset_opener = CciOdpDatasetOpener(**store_params)
         self._cube_opener = CciOdpCubeOpener(**store_params)
+        dataset_states_file = os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                                           'data/dataset_states.json')
+        with open(dataset_states_file, 'r') as fp:
+            self._dataset_states = json.load(fp)
 
     @classmethod
     def get_data_store_params_schema(cls) -> JsonObjectSchema:
@@ -368,17 +366,20 @@ class CciOdpDataStore(DataStore):
                      include_attrs: Container[str] = None) -> \
             Union[Iterator[str], Iterator[Tuple[str, Dict[str, Any]]]]:
         data_ids = self._get_opener(type_specifier=type_specifier).dataset_names
-        return_tuples = include_attrs is not None
-        # TODO: respect names other than "title" in include_attrs
-        include_titles = return_tuples and 'title' in include_attrs
+
+        def _return_nothing(data_id: str):
+            return None
+
+        _fallback_attrs = dict(title=self._create_human_readable_title_from_data_id,
+                               verification_flags=_return_nothing,
+                               type_specifier=_return_nothing)
         for data_id in data_ids:
-            if return_tuples:
-                if include_titles:
-                    yield data_id, {'title': self._create_human_readable_title_from_data_id(data_id)}
-                else:
-                    yield data_id, {}
-            else:
+            if include_attrs is None:
                 yield data_id
+            else:
+                attrs = {attr: self._dataset_states.get(data_id, {}).
+                    get(attr, _fallback_attrs[attr](data_id)) for attr in include_attrs}
+                yield data_id, attrs
 
     @staticmethod
     def _create_human_readable_title_from_data_id(data_id: str) -> str:

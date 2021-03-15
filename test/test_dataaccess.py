@@ -415,7 +415,9 @@ class CciOdpDataStoreTest(unittest.TestCase):
             self.assertIsInstance(dataset_id, str)
 
         dataset_ids_iter = self.store.get_data_ids(type_specifier='dataset[cube]',
-                                                   include_attrs=['title'])
+                                                   include_attrs=['title',
+                                                                  'verification_flags',
+                                                                  'type_specifier'])
         self.assertIsNotNone(dataset_ids_iter)
         dataset_ids = list(dataset_ids_iter)
         self.assertTrue(len(dataset_ids) < 200)
@@ -426,6 +428,10 @@ class CciOdpDataStoreTest(unittest.TestCase):
             self.assertIsInstance(dataset_id[0], str)
             self.assertIsInstance(dataset_id[1], dict)
             self.assertIn('title', dataset_id[1])
+            self.assertIsInstance(dataset_id[1]['title'], str)
+            self.assertIn('verification_flags', dataset_id[1])
+            self.assertIn('type_specifier', dataset_id[1])
+            self.assertIsInstance(dataset_id[1]['type_specifier'], str)
 
     def test_create_human_readable_title_from_id(self):
         self.assertEqual('OZONE CCI: Monthly multi-sensor L3 MERGED NP, vfv0002',
