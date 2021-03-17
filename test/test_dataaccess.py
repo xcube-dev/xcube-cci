@@ -427,19 +427,6 @@ class CciOdpDataStoreTest(unittest.TestCase):
             self.assertEqual(2, len(dataset_id))
             self.assertIsInstance(dataset_id[0], str)
             self.assertIsInstance(dataset_id[1], dict)
-            self.assertIn('title', dataset_id[1])
-            self.assertIsInstance(dataset_id[1]['title'], str)
-            self.assertIn('verification_flags', dataset_id[1])
-            self.assertIn('type_specifier', dataset_id[1])
-            self.assertIsInstance(dataset_id[1]['type_specifier'], str)
-
-    def test_create_human_readable_title_from_id(self):
-        self.assertEqual('OZONE CCI: Monthly multi-sensor L3 MERGED NP, vfv0002',
-                         self.store._create_human_readable_title_from_data_id(
-                             'esacci.OZONE.mon.L3.NP.multi-sensor.multi-platform.MERGED.fv0002.r1'))
-        self.assertEqual('LC CCI: 13 year ASAR L4 Map WB, v4.0',
-                         self.store._create_human_readable_title_from_data_id(
-                             'esacci.LC.13-yrs.L4.WB.ASAR.Envisat.Map.4-0.r1'))
 
     def test_get_open_data_params_schema_no_data(self):
         schema = self.store.get_open_data_params_schema().to_dict()

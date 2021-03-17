@@ -367,29 +367,16 @@ class CciOdpDataStore(DataStore):
             Union[Iterator[str], Iterator[Tuple[str, Dict[str, Any]]]]:
         data_ids = self._get_opener(type_specifier=type_specifier).dataset_names
 
-        def _return_nothing(data_id: str):
-            return None
-
-        _fallback_attrs = dict(title=self._create_human_readable_title_from_data_id,
-                               verification_flags=_return_nothing,
-                               type_specifier=_return_nothing)
         for data_id in data_ids:
             if include_attrs is None:
                 yield data_id
             else:
-                attrs = {attr: self._dataset_states.get(data_id, {}).
-                    get(attr, _fallback_attrs[attr](data_id)) for attr in include_attrs}
+                attrs = {}
+                for attr in include_attrs:
+                    value = self._dataset_states.get(data_id, {}).get(attr)
+                    if value is not None:
+                        attrs[attr] = value
                 yield data_id, attrs
-
-    @staticmethod
-    def _create_human_readable_title_from_data_id(data_id: str) -> str:
-        split_id = data_id.split('.')
-        version = split_id[-2]
-        if not version.startswith('v'):
-            version = f'v{version}'
-        version = version.replace('-', '.')
-        return f'{split_id[1]} CCI: {_FREQUENCY_TO_ADJECTIVE[split_id[2]]} {split_id[5]} {split_id[3]} ' \
-               f'{split_id[7]} {split_id[4]}, {version}'
 
     def has_data(self, data_id: str, type_specifier: str = None) -> bool:
         return data_id in self._get_opener(type_specifier=type_specifier).dataset_names
