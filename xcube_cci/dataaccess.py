@@ -63,20 +63,6 @@ WKT_PATTERN = '[A-Z]*\(\([0-9 0-9,*]+\)\)'
 TIME_PERIOD_PATTERN = '[0-9]+[Y|M|W|D|T|S|L|U|N|days|day|hours|hour|hr|h|minutes|minute|min|m|seconds|second|sec|' \
                       'milliseconds|millisecond|millis|milli|microseconds|microsecond|micros|micro|' \
                       'nanoseconds|nanosecond|nanos|nano|ns]'
-_FREQUENCY_TO_ADJECTIVE = {
-    'mon': 'Monthly',
-    'day': 'Daily',
-    'satellite-orbit-frequency': '',
-    '5-days': '5 day',
-    '8-days': '8 day',
-    '10-days': '10 day',
-    'climatology': '',
-    '13-yrs': '13 year',
-    '15-days': '15 day',
-    '5-yrs': '5 year',
-    'yr': 'year',
-    'unspecified': ''
-}
 _RELEVANT_METADATA_ATTRIBUTES = ['ecv', 'institute', 'processing_level', 'product_string',
                                  'product_version', 'data_type', 'abstract', 'title', 'licences',
                                  'publication_date', 'catalog_url', 'sensor_id', 'platform_id',
