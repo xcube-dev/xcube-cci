@@ -81,7 +81,7 @@ _RELEVANT_METADATA_ATTRIBUTES = ['ecv', 'institute', 'processing_level', 'produc
                                  'product_version', 'data_type', 'abstract', 'title', 'licences',
                                  'publication_date', 'catalog_url', 'sensor_id', 'platform_id',
                                  'cci_project', 'description', 'project', 'references', 'source',
-                                 'history', 'comment']
+                                 'history', 'comment', 'uuid']
 
 
 def _normalize_dataset(ds: xr.Dataset) -> xr.Dataset:
