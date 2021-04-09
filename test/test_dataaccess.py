@@ -71,8 +71,6 @@ class CciOdpDatasetOpenerTest(unittest.TestCase):
         self.assertEqual(1.0, descriptor.spatial_res)
         self.assertEqual(('1997-01-01', '2008-12-31'), descriptor.time_range)
         self.assertEqual('1M', descriptor.time_period)
-        self.assertIn('verification_flags', descriptor.attrs)
-        self.assertEquals(['open', 'cache', 'map'], descriptor.attrs['verification_flags'])
 
         descriptor = self.opener.describe_data('esacci.AEROSOL.day.L3.AAI.multi-sensor.multi-platform.MSAAI.1-7.r1')
         self.assertIsNotNone(descriptor)
@@ -93,8 +91,6 @@ class CciOdpDatasetOpenerTest(unittest.TestCase):
         self.assertEqual(1.0, descriptor.spatial_res)
         self.assertEqual(('1978-11-01', '2015-12-31'), descriptor.time_range)
         self.assertEqual('1D', descriptor.time_period)
-        self.assertIn('verification_flags', descriptor.attrs)
-        self.assertEquals(['open', 'cache', 'map'], descriptor.attrs['verification_flags'])
 
     def test_get_open_data_params_schema_no_data(self):
         schema = self.opener.get_open_data_params_schema().to_dict()
@@ -186,8 +182,6 @@ class CciOdpCubeOpenerTest(unittest.TestCase):
         self.assertEqual(1.0, descriptor.spatial_res)
         self.assertEqual(('1978-11-01', '2015-12-31'), descriptor.time_range)
         self.assertEqual('1D', descriptor.time_period)
-        self.assertIn('verification_flags', descriptor.attrs)
-        self.assertEquals(['open', 'cache', 'map'], descriptor.attrs['verification_flags'])
 
     def test_get_open_data_params_schema_no_data(self):
         schema = self.opener.get_open_data_params_schema().to_dict()
@@ -350,8 +344,6 @@ class CciOdpDataStoreTest(unittest.TestCase):
         self.assertEqual(1.0, descriptor.spatial_res)
         self.assertEqual(('1997-01-01', '2008-12-31'), descriptor.time_range)
         self.assertEqual('1M', descriptor.time_period)
-        self.assertIn('verification_flags', descriptor.attrs)
-        self.assertEquals(['open', 'cache', 'map'], descriptor.attrs['verification_flags'])
 
         descriptor = self.store.describe_data('esacci.AEROSOL.day.L3.AAI.multi-sensor.multi-platform.MSAAI.1-7.r1')
         self.assertIsNotNone(descriptor)
@@ -372,8 +364,6 @@ class CciOdpDataStoreTest(unittest.TestCase):
         self.assertEqual(1.0, descriptor.spatial_res)
         self.assertEqual(('1978-11-01', '2015-12-31'), descriptor.time_range)
         self.assertEqual('1D', descriptor.time_period)
-        self.assertIn('verification_flags', descriptor.attrs)
-        self.assertEquals(['open', 'cache', 'map'], descriptor.attrs['verification_flags'])
 
         with self.assertRaises(DataStoreError) as dse:
             self.store.describe_data('esacci.OZONE.mon.L3.NP.multi-sensor.multi-platform.MERGED.fv0002.r1',
@@ -402,8 +392,6 @@ class CciOdpDataStoreTest(unittest.TestCase):
         self.assertEqual(1.0, descriptor.spatial_res)
         self.assertEqual(('1978-11-01', '2015-12-31'), descriptor.time_range)
         self.assertEqual('1D', descriptor.time_period)
-        self.assertIn('verification_flags', descriptor.attrs)
-        self.assertEquals(['open', 'cache', 'map'], descriptor.attrs['verification_flags'])
 
     @skipIf(os.environ.get('XCUBE_DISABLE_WEB_TESTS', None) == '1', 'XCUBE_DISABLE_WEB_TESTS = 1')
     def test_get_data_ids(self):
