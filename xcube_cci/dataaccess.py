@@ -91,6 +91,7 @@ def _get_temporal_resolution_from_id(data_id: str) -> Optional[str]:
 
 class CciOdpDataOpener(DataOpener):
 
+    # noinspection PyShadowingBuiltins
     def __init__(self, cci_odp: CciOdp, id: str, type_specifier: TypeSpecifier):
         self._cci_odp = cci_odp
         self._id = id
@@ -107,7 +108,7 @@ class CciOdpDataOpener(DataOpener):
             data_descriptors.append(self._get_data_descriptor_from_metadata(data_ids[i], ds_metadata))
         return data_descriptors
 
-    def describe_data(self, data_id: str) -> DataDescriptor:
+    def describe_data(self, data_id: str) -> DatasetDescriptor:
         self._assert_valid_data_id(data_id)
         try:
             ds_metadata = self._cci_odp.get_dataset_metadata(data_id)
@@ -142,7 +143,8 @@ class CciOdpDataOpener(DataOpener):
                 var_dims = self._normalize_var_dims(var_info['dimensions'])
                 if var_dims:
                     var_descriptors[var_name] = \
-                        VariableDescriptor(var_name, var_dtype, var_dims, var_info)
+                        VariableDescriptor(var_name, var_dtype, var_dims,
+                                           attrs=var_info)
             else:
                 var_descriptors[var_name] = VariableDescriptor(var_name, '', '')
         if 'variables' in ds_metadata:
@@ -153,9 +155,13 @@ class CciOdpDataOpener(DataOpener):
         ds_metadata.pop('attributes')
         attrs.update(ds_metadata)
         self._remove_irrelevant_metadata_attributes(attrs)
-        descriptor = DatasetDescriptor(data_id=data_id, type_specifier=self._type_specifier,
-                                       dims=dims, data_vars=var_descriptors, attrs=attrs,
-                                       bbox=bbox, spatial_res=spatial_resolution,
+        descriptor = DatasetDescriptor(data_id,
+                                       type_specifier=self._type_specifier,
+                                       dims=dims,
+                                       data_vars=var_descriptors,
+                                       attrs=attrs,
+                                       bbox=bbox,
+                                       spatial_res=spatial_resolution,
                                        time_range=temporal_coverage,
                                        time_period=temporal_resolution)
         data_schema = self._get_open_data_params_schema(descriptor)
@@ -184,7 +190,7 @@ class CciOdpDataOpener(DataOpener):
         return self._get_open_data_params_schema(dsd)
 
     @staticmethod
-    def _get_open_data_params_schema(dsd: DataDescriptor = None):
+    def _get_open_data_params_schema(dsd: DatasetDescriptor = None) -> JsonObjectSchema:
         min_date = dsd.time_range[0] if dsd and dsd.time_range else None
         max_date = dsd.time_range[1] if dsd and dsd.time_range else None
         # noinspection PyUnresolvedReferences
@@ -261,7 +267,7 @@ class CciOdpDatasetOpener(CciOdpDataOpener):
 
     def _normalize_var_dims(self, var_dims: List[str]) -> Optional[List[str]]:
         new_var_dims = var_dims.copy()
-        if not 'time' in new_var_dims:
+        if 'time' not in new_var_dims:
             new_var_dims.append('time')
         return new_var_dims
 
