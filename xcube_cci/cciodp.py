@@ -365,7 +365,7 @@ class CciOdp:
                  retry_backoff_max: int = DEFAULT_RETRY_BACKOFF_MAX,
                  retry_backoff_base: float = DEFAULT_RETRY_BACKOFF_BASE,
                  user_agent: str = None,
-                 only_consider_cube_ready = False
+                 only_consider_cube_ready:bool = False
                  ):
         self._opensearch_url = endpoint_url
         self._opensearch_description_url = endpoint_description_url
@@ -373,7 +373,7 @@ class CciOdp:
         self._num_retries = num_retries
         self._retry_backoff_max = retry_backoff_max
         self._retry_backoff_base = retry_backoff_base
-        self._headers={'User_Agent': user_agent} if user_agent else None
+        self._headers = {'User_Agent': user_agent} if user_agent else None
         self._drs_ids = None
         self._data_sources = {}
         self._features = {}
@@ -393,7 +393,8 @@ class CciOdp:
         pass
 
     def _run_with_session(self, async_function, *params):
-        # See https://github.com/aio-libs/aiohttp/blob/master/docs/client_advanced.rst#graceful-shutdown
+        # See https://github.com/aio-libs/aiohttp/blob/master/docs/
+        # client_advanced.rst#graceful-shutdown
         loop = asyncio.get_event_loop()
         coro = _run_with_session_executor(async_function, *params, headers=self._headers)
         result = loop.run_until_complete(coro)
@@ -636,8 +637,8 @@ class CciOdp:
 
     async def _read_all_data_sources(self, session):
         catalogue = await self._fetch_data_source_list_json(session,
-                                                       self._opensearch_url,
-                                                       dict(parentIdentifier='cci'))
+                                                            self._opensearch_url,
+                                                            dict(parentIdentifier='cci'))
         if catalogue:
             tasks = []
             for catalogue_item in catalogue:
@@ -674,7 +675,7 @@ class CciOdp:
         dataset_catalogue = await self._fetch_data_source_list_json(session,
                                                                     self._opensearch_url,
                                                                     dict(parentIdentifier='cci',
-                                                                    drsId=dataset_name))
+                                                                         drsId=dataset_name))
         catalogue.update(dataset_catalogue)
 
     @staticmethod
@@ -687,13 +688,13 @@ class CciOdp:
                           start_time: str = '1900-01-01T00:00:00',
                           end_time: str = '3001-12-31T00:00:00'):
         dimension_data = self._run_with_session(self._get_var_data, dataset_name, dimension_names,
-                                           start_time, end_time)
+                                                start_time, end_time)
         return dimension_data
 
     async def _get_var_data(self, session, dataset_name: str, variable_names: Dict[str, int],
                             start_time: str, end_time: str):
-        id = await self._get_dataset_id(session, dataset_name)
-        request = dict(parentIdentifier=id,
+        dataset_id = await self._get_dataset_id(session, dataset_name)
+        request = dict(parentIdentifier=dataset_id,
                        startDate=start_time,
                        endDate=end_time,
                        drsId=dataset_name
@@ -812,14 +813,14 @@ class CciOdp:
     def get_time_ranges_from_data(self, dataset_name: str, start_time: str, end_time: str) -> \
             List[Tuple[datetime, datetime]]:
         return self._run_with_session(self._get_time_ranges_from_data,
-                                 dataset_name,
-                                 start_time,
-                                 end_time)
+                                      dataset_name,
+                                      start_time,
+                                      end_time)
 
     async def _get_time_ranges_from_data(self, session, dataset_name: str, start_time: str,
                                          end_time: str) -> List[Tuple[datetime, datetime]]:
-        id = await self._get_dataset_id(session, dataset_name)
-        request = dict(parentIdentifier=id,
+        dataset_id = await self._get_dataset_id(session, dataset_name)
+        request = dict(parentIdentifier=dataset_id,
                        startDate=start_time,
                        endDate=end_time,
                        drsId=dataset_name,
@@ -833,8 +834,8 @@ class CciOdp:
         return self._run_with_session(self._get_file_list, dataset_name)
 
     async def _get_file_list(self, session, dataset_name):
-        id = await self._get_dataset_id(session, dataset_name)
-        request = dict(parentIdentifier=id,
+        dataset_id = await self._get_dataset_id(session, dataset_name)
+        request = dict(parentIdentifier=dataset_id,
                        drsId=dataset_name,
                        startDate='1900-01-01T00:00:00',
                        endDate='3001-12-31T00:00:00',
@@ -848,7 +849,8 @@ class CciOdp:
 
     async def _get_dataset_id(self, session, dataset_name: str) -> str:
         await self._ensure_in_data_sources(session, [dataset_name])
-        return self._data_sources[dataset_name].get('uuid', self._data_sources[dataset_name]['fid'])
+        return self._data_sources[dataset_name].get('uuid',
+                                                    self._data_sources[dataset_name]['fid'])
 
     async def _get_opendap_url(self, session, request: Dict):
         request['fileFormat'] = '.nc'
@@ -876,7 +878,7 @@ class CciOdp:
         return result
 
     async def _fetch_data_source_list_json(self, session, base_url, query_args,
-                                           max_wanted_results=100000) -> Sequence:
+                                           max_wanted_results=100000) -> Dict:
         def _extender(inner_catalogue: dict, feature_list: List[Dict]):
             for fc in feature_list:
                 fc_props = fc.get("properties", {})
@@ -984,7 +986,8 @@ class CciOdp:
                                                           dict(parentIdentifier=dataset_id,
                                                                drsId=dataset_name),
                                                           1)
-        #we need to do this to determine whether we are using the old or the new version of the odp
+        # we need to do this to determine whether we are using the old
+        # or the new version of the odp
         if 'uuid' not in data_source or data_source['uuid'] == data_source['fid']:
             time_dimension_size = data_source['num_files']
         if feature is not None:
@@ -992,7 +995,7 @@ class CciOdp:
                 await self._get_variable_infos_from_feature(feature, session)
             for variable_info in variable_infos:
                 for index, dimension in enumerate(variable_infos[variable_info]['dimensions']):
-                    if not dimension in dimensions:
+                    if dimension not in dimensions:
                         dimensions[dimension] = variable_infos[variable_info]['shape'][index]
             if 'time' in dimensions:
                 time_dimension_size *= dimensions['time']
@@ -1033,7 +1036,7 @@ class CciOdp:
         if metadata_url:
             desc_metadata = await self._extract_metadata_from_descxml_url(session, metadata_url)
             for item in desc_metadata:
-                if not item in meta_info_dict:
+                if item not in meta_info_dict:
                     meta_info_dict[item] = desc_metadata[item]
         await self._set_drs_metadata(session, datasource_id, meta_info_dict)
         _harmonize_info_field_names(meta_info_dict, 'file_format', 'file_formats')
@@ -1044,10 +1047,11 @@ class CciOdp:
         return meta_info_dict
 
     async def _set_drs_metadata(self, session, datasource_id, metainfo_dict):
-        data_source_list = await self._fetch_data_source_list_json(session, OPENSEARCH_CEDA_URL,
-                                                                   {'parentIdentifier':
-                                                                        datasource_id},
-                                                                   max_wanted_results=20)
+        data_source_list = \
+            await self._fetch_data_source_list_json(session,
+                                                    OPENSEARCH_CEDA_URL,
+                                                    {'parentIdentifier': datasource_id},
+                                                    max_wanted_results=20)
         for data_source_key, data_source_value in data_source_list.items():
             drs_id = data_source_value.get('title', 'All Files')
             variables = data_source_value.get('variables', None)
@@ -1210,7 +1214,6 @@ class CciOdp:
         num_retries = self._num_retries
         retry_backoff_max = self._retry_backoff_max  # ms
         retry_backoff_base = self._retry_backoff_base
-        response = None
         for i in range(num_retries):
             resp = await session.request(method='GET', url=url)
             if resp.status == 200:
@@ -1222,7 +1225,7 @@ class CciOdp:
                 return None
             elif resp.status == 429:
                 # Retry after 'Retry-After' with exponential backoff
-                retry_min = int(response.headers.get('Retry-After', '100'))
+                retry_min = int(resp.headers.get('Retry-After', '100'))
                 retry_backoff = random.random() * retry_backoff_max
                 retry_total = retry_min + retry_backoff
                 if self._enable_warnings:
