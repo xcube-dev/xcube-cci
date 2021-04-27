@@ -3,7 +3,7 @@ import os
 import unittest
 from unittest import skip, skipIf
 
-from xcube_cci.cciodp import find_datetime_format, _get_res, CciOdp, _run_with_session
+from xcube_cci.cciodp import find_datetime_format, _get_res, CciOdp
 from xcube_cci.constants import OPENSEARCH_CEDA_URL
 
 
@@ -133,7 +133,7 @@ class CciOdpTest(unittest.TestCase):
                                                               OPENSEARCH_CEDA_URL,
                                                               {'parentIdentifier': 'cci',
                                                                'drsId': drs_id})
-        data_source_list = _run_with_session(fetch_data_source_list_json)
+        data_source_list = cci_odp._run_with_session(fetch_data_source_list_json)
         self.assertIsNotNone(data_source_list)
         self.assertEqual(1, len(data_source_list))
         self.assertTrue('12d6f4bdabe144d7836b0807e65aa0e2' in data_source_list)
@@ -255,7 +255,7 @@ class CciOdpTest(unittest.TestCase):
         metadata = {}
         async def set_drs_metadata(session):
             return await cci_odp._set_drs_metadata(session, fid, metadata)
-        _run_with_session(set_drs_metadata)
+        cci_odp._run_with_session(set_drs_metadata)
         variables_dict = metadata['variables']
         drs_uuids = metadata['uuids']
         self.assertIsNotNone(variables_dict)

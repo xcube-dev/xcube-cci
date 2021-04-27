@@ -1,5 +1,6 @@
 ## Changes in 0.8.0 (in development)
 
+* Added `user_agent` as additional optional store parameter.
 * Provided xcube data store framework interface compatibility with 
   breaking changes in xcube 0.8.0 (see https://github.com/dcs4cop/xcube/issues/420).
 

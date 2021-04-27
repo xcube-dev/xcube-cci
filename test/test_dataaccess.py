@@ -234,16 +234,30 @@ class CciOdpCubeOpenerTest(unittest.TestCase):
         self.assertEqual({1, 32, 18, 36}, set(dataset.ozone_mixing_ratio.chunk_sizes))
 
 
+def user_agent(ext: str = "") -> str:
+    from xcube_cci.version import version
+    from platform import machine, python_version, system
+
+    return "xcube-cci-testing/{version} (Python {python}; {system} {arch}) {ext}".format(
+        version=version,
+        python=python_version(),
+        system=system(),
+        arch=machine(),
+        ext=ext)
+
+
 class CciOdpDataStoreTest(unittest.TestCase):
 
     def setUp(self) -> None:
-        self.store = CciOdpDataStore()
+        params = {'user_agent': user_agent()}
+        self.store = CciOdpDataStore(**params)
 
     def test_get_data_store_params_schema(self):
         cci_store_params_schema = CciOdpDataStore.get_data_store_params_schema().to_dict()
         self.assertIsNotNone(cci_store_params_schema)
         self.assertTrue('endpoint_url' in cci_store_params_schema['properties'])
         self.assertTrue('endpoint_description_url' in cci_store_params_schema['properties'])
+        self.assertTrue('user_agent' in cci_store_params_schema['properties'])
 
     def test_get_type_specifiers(self):
         self.assertEqual(('dataset', 'dataset[cube]'), CciOdpDataStore.get_type_specifiers())

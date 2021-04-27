@@ -301,9 +301,10 @@ class CciOdpDataStore(DataStore):
             'num_retries',
             'retry_backoff_max',
             'retry_backoff_base',
+            'user_agent'
         ))
-        self._dataset_opener = CciOdpDatasetOpener(**store_params)
-        self._cube_opener = CciOdpCubeOpener(**store_params)
+        self._dataset_opener = CciOdpDatasetOpener(**store_kwargs)
+        self._cube_opener = CciOdpCubeOpener(**store_kwargs)
         dataset_states_file = os.path.join(os.path.dirname(os.path.abspath(__file__)),
                                            'data/dataset_states.json')
         with open(dataset_states_file, 'r') as fp:
@@ -318,7 +319,9 @@ class CciOdpDataStore(DataStore):
             num_retries=JsonIntegerSchema(default=DEFAULT_NUM_RETRIES, minimum=0,
                                           title='Number of retries when requesting data fails'),
             retry_backoff_max=JsonIntegerSchema(default=DEFAULT_RETRY_BACKOFF_MAX, minimum=0),
-            retry_backoff_base=JsonNumberSchema(default=DEFAULT_RETRY_BACKOFF_BASE, exclusive_minimum=1.0)
+            retry_backoff_base=JsonNumberSchema(default=DEFAULT_RETRY_BACKOFF_BASE,
+                                                exclusive_minimum=1.0),
+            user_agent=JsonStringSchema(default=None)
         )
         return JsonObjectSchema(
             properties=dict(**cciodp_params),
