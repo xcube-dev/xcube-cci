@@ -1,4 +1,4 @@
-## Changes in 0.8.0 (in development)
+## Changes in 0.8.0
 
 * Added `user_agent` as additional optional store parameter.
 * Provided xcube data store framework interface compatibility with 
