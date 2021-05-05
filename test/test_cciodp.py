@@ -60,14 +60,16 @@ class CciOdpTest(unittest.TestCase):
             in dataset_names)
 
     @skipIf(os.environ.get('XCUBE_DISABLE_WEB_TESTS', None) == '1', 'XCUBE_DISABLE_WEB_TESTS = 1')
-    def test_var_names(self):
+    def test_var_and_coord_names(self):
         cci_odp = CciOdp()
-        var_names = cci_odp.var_names(
+        var_names, coord_names = cci_odp.var_and_coord_names(
             'esacci.OC.mon.L3S.K_490.multi-sensor.multi-platform.MERGED.3-1.geographic')
         self.assertIsNotNone(var_names)
         self.assertEqual(['MERIS_nobs_sum', 'MODISA_nobs_sum', 'SeaWiFS_nobs_sum',
                           'VIIRS_nobs_sum', 'kd_490', 'kd_490_bias', 'kd_490_rmsd',
                           'total_nobs_sum'], var_names)
+        self.assertIsNotNone(coord_names)
+        self.assertEqual(['crs', 'lat', 'lon', 'time'], coord_names)
 
     @skipIf(os.environ.get('XCUBE_DISABLE_WEB_TESTS', None) == '1', 'XCUBE_DISABLE_WEB_TESTS = 1')
     def test_get_dataset_info(self):

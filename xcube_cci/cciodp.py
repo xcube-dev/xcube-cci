@@ -36,7 +36,7 @@ import urllib.parse
 import warnings
 from datetime import datetime
 from dateutil.relativedelta import relativedelta
-from typing import Any, List, Dict, Tuple, Optional, Union, Sequence
+from typing import List, Dict, Tuple, Optional, Union
 from urllib.parse import quote
 from xcube_cci.constants import CCI_ODD_URL
 from xcube_cci.constants import DEFAULT_NUM_RETRIES
@@ -419,7 +419,7 @@ class CciOdp:
                              float(dataset_metadata['bbox_maxy']))
         data_info['temporal_coverage_start'] = dataset_metadata.get('temporal_coverage_start', '')
         data_info['temporal_coverage_end'] = dataset_metadata.get('temporal_coverage_end', '')
-        data_info['var_names'] = self.var_names(dataset_id)
+        data_info['var_names'], data_info['coord_names'] = self.var_and_coord_names(dataset_id)
         return data_info
 
     def get_dataset_metadata(self, dataset_id: str) -> dict:
@@ -515,9 +515,9 @@ class CciOdp:
             return meta_info[list_name]
         return []
 
-    def var_names(self, dataset_name: str) -> List:
+    def var_and_coord_names(self, dataset_name: str) -> Tuple[List[str], List[str]]:
         self._run_with_session(self._ensure_all_info_in_data_sources, [dataset_name])
-        return self._get_data_var_names(self._data_sources[dataset_name])
+        return self._get_data_var_and_coord_names(self._data_sources[dataset_name])
 
     async def _ensure_all_info_in_data_sources(self, session, dataset_names: List[str]):
         await self._ensure_in_data_sources(session, dataset_names)
@@ -537,21 +537,25 @@ class CciOdp:
                                        data_source)
 
     @staticmethod
-    def _get_data_var_names(data_source) -> List:
+    def _get_data_var_and_coord_names(data_source) -> Tuple[List[str], List[str]]:
         names_of_dims = list(data_source['dimensions'].keys())
         variable_infos = data_source['variable_infos']
         variables = []
+        coords = []
         for variable in variable_infos:
             if variable in names_of_dims:
-                continue
-            if len(variable_infos[variable]['dimensions']) == 0 or \
+                coords.append(variable)
+            elif variable.endswith('bounds') or variable.endswith('bnds'):
+                coords.append(variable)
+            elif len(variable_infos[variable]['dimensions']) == 0 or \
                     variable_infos[variable]['size'] < 2:
-                continue
-            if variable_infos[variable].get('data_type', '') not in \
+                coords.append(variable)
+            elif variable_infos[variable].get('data_type', '') not in \
                     ['uint8', 'uint16', 'uint32', 'int8', 'int16', 'int32', 'float32', 'float64']:
-                continue
-            variables.append(variable)
-        return variables
+                coords.append(variable)
+            else:
+                variables.append(variable)
+        return variables, coords
 
     def search(self,
                start_date: Optional[str] = None,

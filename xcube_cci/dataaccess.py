@@ -133,20 +133,9 @@ class CciOdpDataOpener(DataOpener):
         # only use date parts of times
         temporal_coverage = (dataset_info['temporal_coverage_start'].split('T')[0],
                              dataset_info['temporal_coverage_end'].split('T')[0])
-        var_descriptors = {}
         var_infos = ds_metadata.get('variable_infos', {})
-        var_names = dataset_info['var_names']
-        for var_name in var_names:
-            if var_name in var_infos:
-                var_info = var_infos[var_name]
-                var_dtype = var_info['data_type']
-                var_dims = self._normalize_var_dims(var_info['dimensions'])
-                if var_dims:
-                    var_descriptors[var_name] = \
-                        VariableDescriptor(var_name, var_dtype, var_dims,
-                                           attrs=var_info)
-            else:
-                var_descriptors[var_name] = VariableDescriptor(var_name, '', '')
+        var_descriptors = self._get_variable_descriptors(dataset_info['var_names'], var_infos)
+        coord_descriptors = self._get_variable_descriptors(dataset_info['coord_names'], var_infos)
         if 'variables' in ds_metadata:
             ds_metadata.pop('variables')
         ds_metadata.pop('dimensions')
@@ -158,6 +147,7 @@ class CciOdpDataOpener(DataOpener):
         descriptor = DatasetDescriptor(data_id,
                                        type_specifier=self._type_specifier,
                                        dims=dims,
+                                       coords=coord_descriptors,
                                        data_vars=var_descriptors,
                                        attrs=attrs,
                                        bbox=bbox,
@@ -167,6 +157,22 @@ class CciOdpDataOpener(DataOpener):
         data_schema = self._get_open_data_params_schema(descriptor)
         descriptor.open_params_schema = data_schema
         return descriptor
+
+    def _get_variable_descriptors(self, var_names: str, var_infos: dict) \
+            -> Dict[str, VariableDescriptor]:
+        var_descriptors = {}
+        for var_name in var_names:
+            if var_name in var_infos:
+                var_info = var_infos[var_name]
+                var_dtype = var_info['data_type']
+                var_dims = self._normalize_var_dims(var_info['dimensions'])
+                if var_dims:
+                    var_descriptors[var_name] = \
+                        VariableDescriptor(var_name, var_dtype, var_dims,
+                                           attrs=var_info)
+            else:
+                var_descriptors[var_name] = VariableDescriptor(var_name, '', '')
+        return var_descriptors
 
     @staticmethod
     def _remove_irrelevant_metadata_attributes(attrs: dict):

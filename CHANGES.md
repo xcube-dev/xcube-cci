@@ -1,5 +1,6 @@
 ## Changes in 0.8.1 (in development)
 
+* DataDescriptors contain coords 
 
 ## Changes in 0.8.0
 
