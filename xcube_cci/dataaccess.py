@@ -27,7 +27,7 @@ from typing import Any, Iterator, List, Tuple, Optional, Dict, Union, Container
 import xarray as xr
 import zarr
 
-from xcube.core.normalize import normalize_dataset
+from xcube.core.normalize import cubify_dataset
 from xcube.core.store import DataDescriptor
 from xcube.core.store import DataOpener
 from xcube.core.store import DataStore
@@ -53,7 +53,6 @@ from xcube_cci.constants import DEFAULT_NUM_RETRIES
 from xcube_cci.constants import DEFAULT_RETRY_BACKOFF_BASE
 from xcube_cci.constants import DEFAULT_RETRY_BACKOFF_MAX
 from xcube_cci.constants import OPENSEARCH_CEDA_URL
-from xcube_cci.normalize import normalize_cci_dataset
 from xcube_cci.normalize import normalize_dims_description
 from xcube_cci.normalize import normalize_variable_dims_description
 
@@ -68,12 +67,6 @@ _RELEVANT_METADATA_ATTRIBUTES = ['ecv', 'institute', 'processing_level', 'produc
                                  'publication_date', 'catalog_url', 'sensor_id', 'platform_id',
                                  'cci_project', 'description', 'project', 'references', 'source',
                                  'history', 'comment', 'uuid']
-
-
-def _normalize_dataset(ds: xr.Dataset) -> xr.Dataset:
-    ds = normalize_cci_dataset(ds)
-    ds = normalize_dataset(ds)
-    return ds
 
 
 def _get_temporal_resolution_from_id(data_id: str) -> Optional[str]:
@@ -262,7 +255,8 @@ class CciOdpDataOpener(DataOpener):
                                  f'as it cannot be accessed by data accessor "{self._id}".')
 
     @abstractmethod
-    def _normalize_dataset(self, ds: xr.Dataset, cci_schema: JsonObjectSchema, **open_params) -> xr.Dataset:
+    def _normalize_dataset(self, ds: xr.Dataset, cci_schema: JsonObjectSchema, **open_params) \
+            -> xr.Dataset:
         pass
 
     @abstractmethod
@@ -298,9 +292,9 @@ class CciOdpCubeOpener(CciOdpDataOpener):
     def __init__(self, **store_params):
         super().__init__(CciOdp(only_consider_cube_ready=True, **store_params), CUBE_OPENER_ID, TYPE_SPECIFIER_CUBE)
 
-    def _normalize_dataset(self, ds: xr.Dataset, cci_schema: JsonObjectSchema, **open_params) -> xr.Dataset:
-        ds = normalize_cci_dataset(ds)
-        ds = normalize_dataset(ds)
+    def _normalize_dataset(self, ds: xr.Dataset, cci_schema: JsonObjectSchema, **open_params) \
+            -> xr.Dataset:
+        ds = cubify_dataset(ds)
         return ds
 
     def _normalize_dims(self, dims: dict) -> dict:
