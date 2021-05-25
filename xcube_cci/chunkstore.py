@@ -597,6 +597,7 @@ class RemoteChunkStore(MutableMapping, metaclass=ABCMeta):
             except ValueError:
                 # latter part of key does not consist of chunk indexes
                 return
+            # build vfs entry of this chunk index for all variables that have this range
             ranges = self._var_name_to_ranges[name]
             indexes = self._ranges_to_indexes[ranges]
             if chunk_indexes in indexes:
