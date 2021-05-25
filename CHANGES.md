@@ -1,6 +1,7 @@
 ## Changes in 0.8.1 (in development)
 
-* DataDescriptors contain coords 
+* DataDescriptors contain coords
+* Internal virtual file system is built lazily, so opening datasets has become faster.
 
 ## Changes in 0.8.0
 
