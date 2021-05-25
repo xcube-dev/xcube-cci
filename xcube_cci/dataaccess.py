@@ -1,5 +1,5 @@
 # The MIT License (MIT)
-# Copyright (c) 2020 by the xcube development team and contributors
+# Copyright (c) 2021 by the xcube development team and contributors
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy of
 # this software and associated documentation files (the "Software"), to deal in
@@ -19,21 +19,23 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
+import json
+import os
 from abc import abstractmethod
-from typing import Any, Iterator, List, Tuple, Optional
+from typing import Any, Iterator, List, Tuple, Optional, Dict, Union, Container
 
 import xarray as xr
 import zarr
 
 from xcube.core.normalize import normalize_dataset
-from xcube.core.store import TYPE_SPECIFIER_CUBE
-from xcube.core.store import TYPE_SPECIFIER_DATASET
-from xcube.core.store import TypeSpecifier
 from xcube.core.store import DataDescriptor
 from xcube.core.store import DataOpener
 from xcube.core.store import DataStore
 from xcube.core.store import DataStoreError
 from xcube.core.store import DatasetDescriptor
+from xcube.core.store import TYPE_SPECIFIER_CUBE
+from xcube.core.store import TYPE_SPECIFIER_DATASET
+from xcube.core.store import TypeSpecifier
 from xcube.core.store import VariableDescriptor
 from xcube.util.jsonschema import JsonArraySchema
 from xcube.util.jsonschema import JsonBooleanSchema
@@ -61,25 +63,11 @@ WKT_PATTERN = '[A-Z]*\(\([0-9 0-9,*]+\)\)'
 TIME_PERIOD_PATTERN = '[0-9]+[Y|M|W|D|T|S|L|U|N|days|day|hours|hour|hr|h|minutes|minute|min|m|seconds|second|sec|' \
                       'milliseconds|millisecond|millis|milli|microseconds|microsecond|micros|micro|' \
                       'nanoseconds|nanosecond|nanos|nano|ns]'
-_FREQUENCY_TO_ADJECTIVE = {
-    'mon': 'Monthly',
-    'day': 'Daily',
-    'satellite-orbit-frequency': '',
-    '5-days': '5 day',
-    '8-days': '8 day',
-    '10-days': '10 day',
-    'climatology': '',
-    '13-yrs': '13 year',
-    '15-days': '15 day',
-    '5-yrs': '5 year',
-    'yr': 'year',
-    'unspecified': ''
-}
 _RELEVANT_METADATA_ATTRIBUTES = ['ecv', 'institute', 'processing_level', 'product_string',
                                  'product_version', 'data_type', 'abstract', 'title', 'licences',
                                  'publication_date', 'catalog_url', 'sensor_id', 'platform_id',
                                  'cci_project', 'description', 'project', 'references', 'source',
-                                 'history', 'comment']
+                                 'history', 'comment', 'uuid']
 
 
 def _normalize_dataset(ds: xr.Dataset) -> xr.Dataset:
@@ -103,7 +91,8 @@ def _get_temporal_resolution_from_id(data_id: str) -> Optional[str]:
 
 class CciOdpDataOpener(DataOpener):
 
-    def __init__(self, cci_odp: CciOdp, id:str, type_specifier: TypeSpecifier):
+    # noinspection PyShadowingBuiltins
+    def __init__(self, cci_odp: CciOdp, id: str, type_specifier: TypeSpecifier):
         self._cci_odp = cci_odp
         self._id = id
         self._type_specifier = type_specifier
@@ -119,7 +108,7 @@ class CciOdpDataOpener(DataOpener):
             data_descriptors.append(self._get_data_descriptor_from_metadata(data_ids[i], ds_metadata))
         return data_descriptors
 
-    def describe_data(self, data_id: str) -> DataDescriptor:
+    def describe_data(self, data_id: str) -> DatasetDescriptor:
         self._assert_valid_data_id(data_id)
         try:
             ds_metadata = self._cci_odp.get_dataset_metadata(data_id)
@@ -144,19 +133,9 @@ class CciOdpDataOpener(DataOpener):
         # only use date parts of times
         temporal_coverage = (dataset_info['temporal_coverage_start'].split('T')[0],
                              dataset_info['temporal_coverage_end'].split('T')[0])
-        var_descriptors = {}
         var_infos = ds_metadata.get('variable_infos', {})
-        var_names = dataset_info['var_names']
-        for var_name in var_names:
-            if var_name in var_infos:
-                var_info = var_infos[var_name]
-                var_dtype = var_info['data_type']
-                var_dims = self._normalize_var_dims(var_info['dimensions'])
-                if var_dims:
-                    var_descriptors[var_name] = \
-                        VariableDescriptor(var_name, var_dtype, var_dims, var_info)
-            else:
-                var_descriptors[var_name] = VariableDescriptor(var_name, '', '')
+        var_descriptors = self._get_variable_descriptors(dataset_info['var_names'], var_infos)
+        coord_descriptors = self._get_variable_descriptors(dataset_info['coord_names'], var_infos)
         if 'variables' in ds_metadata:
             ds_metadata.pop('variables')
         ds_metadata.pop('dimensions')
@@ -165,14 +144,35 @@ class CciOdpDataOpener(DataOpener):
         ds_metadata.pop('attributes')
         attrs.update(ds_metadata)
         self._remove_irrelevant_metadata_attributes(attrs)
-        descriptor = DatasetDescriptor(data_id=data_id, type_specifier=self._type_specifier,
-                                       dims=dims, data_vars=var_descriptors, attrs=attrs,
-                                       bbox=bbox, spatial_res=spatial_resolution,
+        descriptor = DatasetDescriptor(data_id,
+                                       type_specifier=self._type_specifier,
+                                       dims=dims,
+                                       coords=coord_descriptors,
+                                       data_vars=var_descriptors,
+                                       attrs=attrs,
+                                       bbox=bbox,
+                                       spatial_res=spatial_resolution,
                                        time_range=temporal_coverage,
                                        time_period=temporal_resolution)
         data_schema = self._get_open_data_params_schema(descriptor)
         descriptor.open_params_schema = data_schema
         return descriptor
+
+    def _get_variable_descriptors(self, var_names: str, var_infos: dict) \
+            -> Dict[str, VariableDescriptor]:
+        var_descriptors = {}
+        for var_name in var_names:
+            if var_name in var_infos:
+                var_info = var_infos[var_name]
+                var_dtype = var_info['data_type']
+                var_dims = self._normalize_var_dims(var_info['dimensions'])
+                if var_dims:
+                    var_descriptors[var_name] = \
+                        VariableDescriptor(var_name, var_dtype, var_dims,
+                                           attrs=var_info)
+            else:
+                var_descriptors[var_name] = VariableDescriptor(var_name, '', '')
+        return var_descriptors
 
     @staticmethod
     def _remove_irrelevant_metadata_attributes(attrs: dict):
@@ -196,7 +196,7 @@ class CciOdpDataOpener(DataOpener):
         return self._get_open_data_params_schema(dsd)
 
     @staticmethod
-    def _get_open_data_params_schema(dsd: DataDescriptor=None):
+    def _get_open_data_params_schema(dsd: DatasetDescriptor = None) -> JsonObjectSchema:
         min_date = dsd.time_range[0] if dsd and dsd.time_range else None
         max_date = dsd.time_range[1] if dsd and dsd.time_range else None
         # noinspection PyUnresolvedReferences
@@ -262,7 +262,8 @@ class CciOdpDataOpener(DataOpener):
 class CciOdpDatasetOpener(CciOdpDataOpener):
 
     def __init__(self, **store_params):
-        super().__init__(CciOdp(only_consider_cube_ready=False, **store_params), DATASET_OPENER_ID, TYPE_SPECIFIER_DATASET)
+        super().__init__(CciOdp(only_consider_cube_ready=False, **store_params), DATASET_OPENER_ID,
+                         TYPE_SPECIFIER_DATASET)
 
     def _normalize_dataset(self, ds: xr.Dataset, cci_schema: JsonObjectSchema, **open_params) -> xr.Dataset:
         return ds
@@ -272,7 +273,7 @@ class CciOdpDatasetOpener(CciOdpDataOpener):
 
     def _normalize_var_dims(self, var_dims: List[str]) -> Optional[List[str]]:
         new_var_dims = var_dims.copy()
-        if not 'time' in new_var_dims:
+        if 'time' not in new_var_dims:
             new_var_dims.append('time')
         return new_var_dims
 
@@ -306,9 +307,14 @@ class CciOdpDataStore(DataStore):
             'num_retries',
             'retry_backoff_max',
             'retry_backoff_base',
+            'user_agent'
         ))
-        self._dataset_opener = CciOdpDatasetOpener(**store_params)
-        self._cube_opener = CciOdpCubeOpener(**store_params)
+        self._dataset_opener = CciOdpDatasetOpener(**store_kwargs)
+        self._cube_opener = CciOdpCubeOpener(**store_kwargs)
+        dataset_states_file = os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                                           'data/dataset_states.json')
+        with open(dataset_states_file, 'r') as fp:
+            self._dataset_states = json.load(fp)
 
     @classmethod
     def get_data_store_params_schema(cls) -> JsonObjectSchema:
@@ -317,9 +323,11 @@ class CciOdpDataStore(DataStore):
             endpoint_description_url=JsonStringSchema(default=CCI_ODD_URL),
             enable_warnings=JsonBooleanSchema(default=False, title='Whether to output warnings'),
             num_retries=JsonIntegerSchema(default=DEFAULT_NUM_RETRIES, minimum=0,
-                                            title='Number of retries when requesting data fails'),
+                                          title='Number of retries when requesting data fails'),
             retry_backoff_max=JsonIntegerSchema(default=DEFAULT_RETRY_BACKOFF_MAX, minimum=0),
-            retry_backoff_base=JsonNumberSchema(default=DEFAULT_RETRY_BACKOFF_BASE, exclusive_minimum=1.0)
+            retry_backoff_base=JsonNumberSchema(default=DEFAULT_RETRY_BACKOFF_BASE,
+                                                exclusive_minimum=1.0),
+            user_agent=JsonStringSchema(default=None)
         )
         return JsonObjectSchema(
             properties=dict(**cciodp_params),
@@ -354,32 +362,31 @@ class CciOdpDataStore(DataStore):
             return self._cube_opener
         return self._dataset_opener
 
-    def get_data_ids(self, type_specifier: str = None, include_titles = True) -> Iterator[Tuple[str, str]]:
+    def get_data_ids(self,
+                     type_specifier: str = None,
+                     include_attrs: Container[str] = None) -> \
+            Union[Iterator[str], Iterator[Tuple[str, Dict[str, Any]]]]:
         data_ids = self._get_opener(type_specifier=type_specifier).dataset_names
-        if include_titles:
-            tuples = ((data_id, self._create_human_readable_title_from_data_id(data_id)) for data_id in data_ids)
-        else:
-            tuples = ((data_id, None) for data_id in data_ids)
-        return iter(tuples)
 
-    @staticmethod
-    def _create_human_readable_title_from_data_id(data_id: str) -> str:
-        split_id = data_id.split('.')
-        version = split_id[-2]
-        if not version.startswith('v'):
-            version = f'v{version}'
-        version = version.replace('-', '.')
-        return f'{split_id[1]} CCI: {_FREQUENCY_TO_ADJECTIVE[split_id[2]]} {split_id[5]} {split_id[3]} ' \
-               f'{split_id[7]} {split_id[4]}, {version}'
+        for data_id in data_ids:
+            if include_attrs is None:
+                yield data_id
+            else:
+                attrs = {}
+                for attr in include_attrs:
+                    value = self._dataset_states.get(data_id, {}).get(attr)
+                    if value is not None:
+                        attrs[attr] = value
+                yield data_id, attrs
 
-    def has_data(self, data_id: str, type_specifier: str=None) -> bool:
+    def has_data(self, data_id: str, type_specifier: str = None) -> bool:
         return data_id in self._get_opener(type_specifier=type_specifier).dataset_names
 
-    def describe_data(self, data_id: str, type_specifier: str=None) -> DataDescriptor:
+    def describe_data(self, data_id: str, type_specifier: str = None) -> DataDescriptor:
         return self._get_opener(type_specifier=type_specifier).describe_data(data_id)
 
     @classmethod
-    def get_search_params_schema(cls, type_specifier:str=None) -> JsonObjectSchema:
+    def get_search_params_schema(cls, type_specifier: str = None) -> JsonObjectSchema:
         cls._assert_valid_type_specifier(type_specifier)
         search_params = dict(
             start_date=JsonStringSchema(format='date-time'),

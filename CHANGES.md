@@ -1,4 +1,14 @@
-## Changes in 0.6.1. (under development)
+## Changes in 0.8.1 (in development)
+
+* DataDescriptors contain coords 
+
+## Changes in 0.8.0
+
+* Added `user_agent` as additional optional store parameter.
+* Provided xcube data store framework interface compatibility with 
+  breaking changes in xcube 0.8.0 (see https://github.com/dcs4cop/xcube/issues/420).
+
+## Changes in 0.7.0
 * Removed constant-valued parameters from opener schema
 * Renamed store parameters `opensearch_url` and `opensearch_description_url` to
   `endpoint_url` and `endpoint_description_url`, respectively.

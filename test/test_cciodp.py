@@ -3,7 +3,7 @@ import os
 import unittest
 from unittest import skip, skipIf
 
-from xcube_cci.cciodp import find_datetime_format, _get_res, CciOdp, _run_with_session
+from xcube_cci.cciodp import find_datetime_format, _get_res, CciOdp
 from xcube_cci.constants import OPENSEARCH_CEDA_URL
 
 
@@ -60,14 +60,16 @@ class CciOdpTest(unittest.TestCase):
             in dataset_names)
 
     @skipIf(os.environ.get('XCUBE_DISABLE_WEB_TESTS', None) == '1', 'XCUBE_DISABLE_WEB_TESTS = 1')
-    def test_var_names(self):
+    def test_var_and_coord_names(self):
         cci_odp = CciOdp()
-        var_names = cci_odp.var_names(
+        var_names, coord_names = cci_odp.var_and_coord_names(
             'esacci.OC.mon.L3S.K_490.multi-sensor.multi-platform.MERGED.3-1.geographic')
         self.assertIsNotNone(var_names)
         self.assertEqual(['MERIS_nobs_sum', 'MODISA_nobs_sum', 'SeaWiFS_nobs_sum',
                           'VIIRS_nobs_sum', 'kd_490', 'kd_490_bias', 'kd_490_rmsd',
                           'total_nobs_sum'], var_names)
+        self.assertIsNotNone(coord_names)
+        self.assertEqual(['crs', 'lat', 'lon', 'time'], coord_names)
 
     @skipIf(os.environ.get('XCUBE_DISABLE_WEB_TESTS', None) == '1', 'XCUBE_DISABLE_WEB_TESTS = 1')
     def test_get_dataset_info(self):
@@ -133,7 +135,7 @@ class CciOdpTest(unittest.TestCase):
                                                               OPENSEARCH_CEDA_URL,
                                                               {'parentIdentifier': 'cci',
                                                                'drsId': drs_id})
-        data_source_list = _run_with_session(fetch_data_source_list_json)
+        data_source_list = cci_odp._run_with_session(fetch_data_source_list_json)
         self.assertIsNotNone(data_source_list)
         self.assertEqual(1, len(data_source_list))
         self.assertTrue('12d6f4bdabe144d7836b0807e65aa0e2' in data_source_list)
@@ -255,7 +257,7 @@ class CciOdpTest(unittest.TestCase):
         metadata = {}
         async def set_drs_metadata(session):
             return await cci_odp._set_drs_metadata(session, fid, metadata)
-        _run_with_session(set_drs_metadata)
+        cci_odp._run_with_session(set_drs_metadata)
         variables_dict = metadata['variables']
         drs_uuids = metadata['uuids']
         self.assertIsNotNone(variables_dict)

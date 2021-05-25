@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 # The MIT License (MIT)
-# Copyright (c) 2020 by Brockmann Consult GmbH
+# Copyright (c) 2021 by Brockmann Consult GmbH
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy of
 # this software and associated documentation files (the "Software"), to deal in
@@ -45,7 +45,8 @@ setup(
     include_package_data=True,
     data_files=[('xcube_cci', [
         'xcube_cci/data/non_cube_data_sources',
-        'xcube_cci/data/excluded_data_sources']
+        'xcube_cci/data/excluded_data_sources',
+        'xcube_cci/data/dataset_states.json']
                  )],
     install_requires=requirements,
 )

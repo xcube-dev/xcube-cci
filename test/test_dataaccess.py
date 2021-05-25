@@ -234,16 +234,30 @@ class CciOdpCubeOpenerTest(unittest.TestCase):
         self.assertEqual({1, 32, 18, 36}, set(dataset.ozone_mixing_ratio.chunk_sizes))
 
 
+def user_agent(ext: str = "") -> str:
+    from xcube_cci.version import version
+    from platform import machine, python_version, system
+
+    return "xcube-cci-testing/{version} (Python {python}; {system} {arch}) {ext}".format(
+        version=version,
+        python=python_version(),
+        system=system(),
+        arch=machine(),
+        ext=ext)
+
+
 class CciOdpDataStoreTest(unittest.TestCase):
 
     def setUp(self) -> None:
-        self.store = CciOdpDataStore()
+        params = {'user_agent': user_agent()}
+        self.store = CciOdpDataStore(**params)
 
     def test_get_data_store_params_schema(self):
         cci_store_params_schema = CciOdpDataStore.get_data_store_params_schema().to_dict()
         self.assertIsNotNone(cci_store_params_schema)
         self.assertTrue('endpoint_url' in cci_store_params_schema['properties'])
         self.assertTrue('endpoint_description_url' in cci_store_params_schema['properties'])
+        self.assertTrue('user_agent' in cci_store_params_schema['properties'])
 
     def test_get_type_specifiers(self):
         self.assertEqual(('dataset', 'dataset[cube]'), CciOdpDataStore.get_type_specifiers())
@@ -399,22 +413,22 @@ class CciOdpDataStoreTest(unittest.TestCase):
         self.assertIsNotNone(dataset_ids_iter)
         dataset_ids = list(dataset_ids_iter)
         self.assertTrue(len(dataset_ids) > 200)
-        self.assertIsNotNone(dataset_ids[0][1])
+        for dataset_id in dataset_ids:
+            self.assertIsInstance(dataset_id, str)
 
-        dataset_ids_iter = self.store.get_data_ids(type_specifier='dataset[cube]', include_titles=False)
+        dataset_ids_iter = self.store.get_data_ids(type_specifier='dataset[cube]',
+                                                   include_attrs=['title',
+                                                                  'verification_flags',
+                                                                  'type_specifier'])
         self.assertIsNotNone(dataset_ids_iter)
         dataset_ids = list(dataset_ids_iter)
         self.assertTrue(len(dataset_ids) < 200)
         self.assertTrue(len(dataset_ids) > 100)
-        self.assertIsNone(dataset_ids[0][1])
-
-    def test_create_human_readable_title_from_id(self):
-        self.assertEqual('OZONE CCI: Monthly multi-sensor L3 MERGED NP, vfv0002',
-                         self.store._create_human_readable_title_from_data_id(
-                             'esacci.OZONE.mon.L3.NP.multi-sensor.multi-platform.MERGED.fv0002.r1'))
-        self.assertEqual('LC CCI: 13 year ASAR L4 Map WB, v4.0',
-                         self.store._create_human_readable_title_from_data_id(
-                             'esacci.LC.13-yrs.L4.WB.ASAR.Envisat.Map.4-0.r1'))
+        for dataset_id in dataset_ids:
+            self.assertIsInstance(dataset_id, tuple)
+            self.assertEqual(2, len(dataset_id))
+            self.assertIsInstance(dataset_id[0], str)
+            self.assertIsInstance(dataset_id[1], dict)
 
     def test_get_open_data_params_schema_no_data(self):
         schema = self.store.get_open_data_params_schema().to_dict()
