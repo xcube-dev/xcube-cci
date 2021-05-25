@@ -109,7 +109,7 @@ def gen_report(output_dir: str,
         t0 = time.perf_counter()
 
         try:
-            store = CciChunkStore(odp, ds_id, observer=observer)
+            store = CciChunkStore(odp, ds_id, observer=observer, trace_store_calls=True)
         except Exception as e:
             report_error(output_dir, ds_id, t0, 'CciChunkStore()', e)
             continue

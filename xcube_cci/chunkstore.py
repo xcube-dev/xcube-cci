@@ -91,8 +91,10 @@ class RemoteChunkStore(MutableMapping, metaclass=ABCMeta):
         cube_params['time_range'] = (self._extract_time_range_as_strings(
             cube_params.get('time_range', self.get_default_time_range(data_id))))
 
-        self._vfs = {
-        }
+        self._vfs = {}
+        self._var_name_to_ranges = {}
+        self._ranges_to_indexes = {}
+        self._ranges_to_var_names = {}
 
         bbox = cube_params.get('bbox', None)
         lon_size = -1
@@ -166,6 +168,7 @@ class RemoteChunkStore(MutableMapping, metaclass=ABCMeta):
 
         self._time_indexes = {}
         remove = []
+        self._num_data_var_chunks_not_in_vfs = 0
         logging.debug('Adding variables to dataset ...')
         for variable_name in self._variable_names:
             if variable_name in self._dimension_data or variable_name == 'time_bnds':
@@ -221,6 +224,7 @@ class RemoteChunkStore(MutableMapping, metaclass=ABCMeta):
                                    chunk_sizes,
                                    var_encoding,
                                    var_attrs)
+            self._num_data_var_chunks_not_in_vfs += np.prod(chunk_sizes)
         logging.debug(f"Added a total of {len(self._variable_names)} variables to the data set")
         for r in remove:
             self._variable_names.remove(r)
@@ -473,11 +477,13 @@ class RemoteChunkStore(MutableMapping, metaclass=ABCMeta):
         self._vfs[name + '/.zarray'] = _dict_to_bytes(array_metadata)
         self._vfs[name + '/.zattrs'] = _dict_to_bytes(attrs)
         nums = np.array(shape) // np.array(chunks)
-        indexes = itertools.product(*tuple(map(range, map(int, nums))))
-        for index in indexes:
-            filename = '.'.join(map(str, index))
-            # noinspection PyTypeChecker
-            self._vfs[name + '/' + filename] = name, index
+        ranges = tuple(map(range, map(int, nums)))
+        self._var_name_to_ranges[name] = ranges
+        if ranges not in self._ranges_to_indexes:
+            self._ranges_to_indexes[ranges] = list(itertools.product(*ranges))
+        if ranges not in self._ranges_to_var_names:
+            self._ranges_to_var_names[ranges] = []
+        self._ranges_to_var_names[ranges].append(name)
 
     def _fetch_chunk(self, key: str, var_name: str, chunk_index: Tuple[int, ...]) -> bytes:
         request_time_range = self.request_time_range(chunk_index[self._time_indexes[var_name]])
@@ -533,6 +539,7 @@ class RemoteChunkStore(MutableMapping, metaclass=ABCMeta):
     def keys(self) -> KeysView[str]:
         if self._trace_store_calls:
             print(f'{self._class_name}.keys()')
+        self._build_missing_vfs_entries()
         return self._vfs.keys()
 
     def listdir(self, key: str) -> Iterable[str]:
@@ -548,30 +555,63 @@ class RemoteChunkStore(MutableMapping, metaclass=ABCMeta):
     def getsize(self, key: str) -> int:
         if self._trace_store_calls:
             print(f'{self._class_name}.getsize(key={key!r})')
-        return len(self._vfs[key])
+        return len(self._vfs[key]) + self._num_data_var_chunks_not_in_vfs
 
     def __iter__(self) -> Iterator[str]:
         if self._trace_store_calls:
             print(f'{self._class_name}.__iter__()')
+        self._build_missing_vfs_entries()
         return iter(self._vfs.keys())
 
     def __len__(self) -> int:
         if self._trace_store_calls:
             print(f'{self._class_name}.__len__()')
-        return len(self._vfs.keys())
+        return len(self._vfs.keys()) + self._num_data_var_chunks_not_in_vfs
 
     def __contains__(self, key) -> bool:
         if self._trace_store_calls:
             print(f'{self._class_name}.__contains__(key={key!r})')
+        if key in self._vfs:
+            return True
+        self._try_building_vfs_entry(key)
         return key in self._vfs
 
     def __getitem__(self, key: str) -> bytes:
         if self._trace_store_calls:
             print(f'{self._class_name}.__getitem__(key={key!r})')
-        value = self._vfs[key]
+        try:
+            value = self._vfs[key]
+        except KeyError:
+            self._try_building_vfs_entry(key)
+            value = self._vfs[key]
         if isinstance(value, tuple):
             return self._fetch_chunk(key, *value)
         return value
+
+    def _try_building_vfs_entry(self, key):
+        if '/' in key:
+            name, chunk_index_part = key.split('/')
+            try:
+                chunk_indexes = \
+                    tuple(int(chunk_index) for chunk_index in chunk_index_part.split('.'))
+            except ValueError:
+                # latter part of key does not consist of chunk indexes
+                return
+            # build vfs entry of this chunk index for all variables that have this range
+            ranges = self._var_name_to_ranges[name]
+            indexes = self._ranges_to_indexes[ranges]
+            if chunk_indexes in indexes:
+                for var_name in self._ranges_to_var_names[ranges]:
+                    self._vfs[var_name + '/' + chunk_index_part] = var_name, chunk_indexes
+                    self._num_data_var_chunks_not_in_vfs -= 1
+                indexes.remove(chunk_indexes)
+
+    def _build_missing_vfs_entries(self):
+        for name, ranges in self._var_name_to_ranges.items():
+            indexes = self._ranges_to_indexes[ranges]
+            for index in indexes:
+                filename = '.'.join(map(str, index))
+                self._vfs[name + '/' + filename] = name, index
 
     def __setitem__(self, key: str, value: bytes) -> None:
         if self._trace_store_calls:
