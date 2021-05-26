@@ -388,6 +388,17 @@ class CciOdpDataStore(DataStore):
     @classmethod
     def get_search_params_schema(cls, type_specifier: str = None) -> JsonObjectSchema:
         cls._assert_valid_type_specifier(type_specifier)
+        data_ids = CciOdp().dataset_names
+        ecvs = set([data_id.split('.')[1] for data_id in data_ids])
+        frequencies = set([data_id.split('.')[2].replace('-days', ' days').replace('mon', 'month')
+                          .replace('-yrs', ' years').replace('yr', 'year')
+                           for data_id in data_ids])
+        processing_levels = set([data_id.split('.')[3] for data_id in data_ids])
+        data_types = set([data_id.split('.')[4] for data_id in data_ids])
+        sensors = set([data_id.split('.')[5] for data_id in data_ids])
+        platforms = set([data_id.split('.')[6] for data_id in data_ids])
+        product_strings = set([data_id.split('.')[7] for data_id in data_ids])
+        product_versions = set([data_id.split('.')[8] for data_id in data_ids])
         search_params = dict(
             start_date=JsonStringSchema(format='date-time'),
             end_date=JsonStringSchema(format='date-time'),
@@ -395,51 +406,27 @@ class CciOdpDataStore(DataStore):
                                         JsonNumberSchema(),
                                         JsonNumberSchema(),
                                         JsonNumberSchema())),
-            ecv=JsonStringSchema(enum=[
-                'ICESHEETS', 'AEROSOL', 'OC', 'GHG', 'OZONE', 'SEAICE', 'SST', 'CLOUD', 'SOILMOISTURE', 'FIRE', 'LC',
-                'SEASTATE', 'SEASURFACESALINITY', 'GLACIERS', 'SEALEVEL']),
-            frequency=JsonStringSchema(enum=[
-                'month', 'day', 'satellite orbit frequency' '5 days', '8 days', 'climatology', '13 years', '15 days',
-                '5 years', 'year']),
+            ecv=JsonStringSchema(enum=ecvs),
+            frequency=JsonStringSchema(enum=frequencies),
             institute=JsonStringSchema(enum=[
                 'Plymouth Marine Laboratory',
                 'Alfred-Wegener-Institut Helmholtz-Zentrum für Polar- und Meeresforschung',
                 'ENVironmental Earth Observation IT GmbH', 'multi-institution', 'DTU Space',
-                'Vienna University of Technology', 'Deutscher Wetterdienst', 'Netherlands Institute for Space Research',
-                'Technische Universität Dresden', 'Institute of Environmental Physics',
-                'Rutherford Appleton Laboratory', 'Universite Catholique de Louvain', 'University of Alcala',
-                'University of Leicester', 'Norwegian Meteorological Institute', 'University of Bremen',
-                'Belgian Institute for Space Aeronomy', 'Deutsches Zentrum fuer Luft- und Raumfahrt',
-                'Freie Universitaet Berlin', 'Royal Netherlands Meteorological Institute',
+                'Vienna University of Technology', 'Deutscher Wetterdienst',
+                'Netherlands Institute for Space Research', 'Technische Universität Dresden',
+                'Institute of Environmental Physics', 'Rutherford Appleton Laboratory',
+                'Universite Catholique de Louvain', 'University of Alcala',
+                'University of Leicester', 'Norwegian Meteorological Institute',
+                'University of Bremen', 'Belgian Institute for Space Aeronomy',
+                'Deutsches Zentrum fuer Luft- und Raumfahrt', 'Freie Universitaet Berlin',
+                'Royal Netherlands Meteorological Institute',
                 'The Geological Survey of Denmark and Greenland']),
-            processing_level=JsonStringSchema(enum=['L3S', 'L3C', 'L2P', 'L4', 'L2' 'L3', 'L3U']),
-            product_string=JsonStringSchema(enum=[
-                'MERGED (20)', 'ADV ', 'ORAC', 'SU', 'AATSR', 'ATSR1', 'ATSR2', 'AVHRR07_G', 'AVHRR09_G', 'AVHRR11_G',
-                'AVHRR12_G', 'AVHRR14_G', 'AVHRR15_G', 'AVHRR16_G', 'AVHRR17_G', 'AVHRR18_G', 'AVHRR19_G', 'AVHRRMTA_G',
-                'MODIS_TERRA', 'Map', 'OSTIA', 'ACTIVE', 'COMBINED', 'EMMA', 'MERIS_ENVISAT', 'MSI', 'OCFP', 'PASSIVE',
-                'SRFP', 'WFMD', 'ACE_FTS_SCISAT', 'AERGOM', 'AMSR_25kmEASE2', 'AMSR_50kmEASE2', 'ATSR2-AATSR',
-                'ATSR2_ERS2', 'AVHRR-AM', 'AVHRR-PM', 'BESD', 'Envisat', 'GFO', 'GOMOS_ENVISAT', 'IMAP',
-                'MERGED_OI_7DAY_RUNNINGMEAN_DAILY_25km', 'MERGED_OI_Monthly_CENTRED_15Day_25km', 'MERIS-AATSR',
-                'MIPAS_ENVISAT', 'MODIS_AQUA', 'MZM', 'OCPR', 'OSIRIS_ODIN', 'SCIAMACHY_ENVISAT', 'SMM', 'SMR_ODIN',
-                'SRPR', 'Saral']),
-            product_version=JsonStringSchema(enum=[
-                '1.1', '2.0', 'esp 2.1', '2.1', '4.0', '3.1', 'undefined', 'v0001', '1.2', 'v1.0', '03.02', '2.30',
-                '4.21', '04.4', '04.5', '1.0', '2.2', 'v1.1', 'v1.2', 'v2.3.8', '01.08', 'v0002', 'v1.3', 'v4.0', '0.1',
-                '1.3', '1.5.7', '1.6.1', '2.0.7', '2.19', '3.0', '4-0', '4.21u', 'ch4_v1.2', 'fv0002', 'fv0100', 'v0.1',
-                'v02.01.02', 'v1.4', 'v1.5', 'v2-1', 'v2.0', 'v2.2', 'v2.2a', 'v2.2b', 'v2.2c', 'v3.0', 'v5.1',
-                'v7-0-1', 'v7.0', 'v7.2']),
-            data_type=JsonStringSchema(enum=[
-                'IV', 'AER_PRODUCTS', 'LP', 'SITHICK', 'CH4', 'CLD_PRODUCTS', 'GMB', 'SSTskin', 'CO2', 'BA', 'CHLOR_A',
-                'K_490', 'SSMV', 'IOP', 'OC_PRODUCTS', 'RRS', 'SEC', 'SSTdepth', 'SWH', 'AAI', 'AOD', 'GLL', 'LCCS',
-                'SICONC', 'SSMS', 'SSS', 'AEX', 'NP', 'TC', 'WB']),
-            sensor=JsonStringSchema(enum=[
-                'ATSR-2', 'AATSR', 'TANSO-FTS', 'RA-2', 'SCIAMACHY', 'SIRAL', 'MODIS', 'ATSR', 'AVHRR-2', 'AVHRR-3',
-                'GOMOS', 'MERIS', 'RA', 'SMR', 'ACE-FTS', 'AMI-SCAT', 'ASAR', 'AltiKa', 'GFO-RA', 'MIPAS', 'OSIRIS',
-                'Poseidon-2', 'Poseidon-3']),
-            platform=JsonStringSchema(enum=[
-                'Envisat', 'ERS-2', 'GOSAT', 'CryoSat-2', 'GRACE', 'ERS-1', 'Metop-A', 'NOAA-11', 'NOAA-12', 'NOAA-14',
-                'NOAA-15', 'NOAA-16', 'NOAA-17', 'NOAA-18', 'NOAA-19', 'NOAA-7', 'NOAA-9', 'ODIN', 'Terra', 'GFO',
-                'Jason-1', 'Jason-2', 'SARAL', 'Aqua', 'RadarSat-2'])
+            processing_level=JsonStringSchema(enum=processing_levels),
+            product_string=JsonStringSchema(enum=product_strings),
+            product_version=JsonStringSchema(enum=product_versions),
+            data_type=JsonStringSchema(enum=data_types),
+            sensor=JsonStringSchema(enum=sensors),
+            platform=JsonStringSchema(enum=platforms)
         )
         search_schema = JsonObjectSchema(
             properties=dict(**search_params),
