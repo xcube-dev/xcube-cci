@@ -135,7 +135,20 @@ class CciOdpDataOpener(DataOpener):
                              dataset_info['temporal_coverage_end'].split('T')[0])
         var_infos = ds_metadata.get('variable_infos', {})
         var_descriptors = self._get_variable_descriptors(dataset_info['var_names'], var_infos)
-        coord_descriptors = self._get_variable_descriptors(dataset_info['coord_names'], var_infos)
+        coord_descriptors = self._get_variable_descriptors(dataset_info['coord_names'],
+                                                           var_infos,
+                                                           normalize_dims=False)
+        if 'time' not in coord_descriptors.keys() and 't' not in coord_descriptors.keys():
+            time_attrs = {
+                "units": "seconds since 1970-01-01T00:00:00Z",
+                "calendar": "proleptic_gregorian",
+                "standard_name": "time"
+            }
+            coord_descriptors['time'] = VariableDescriptor('time',
+                                                           dtype='int64',
+                                                           dims=('time',),
+                                                           attrs=time_attrs)
+
         if 'variables' in ds_metadata:
             ds_metadata.pop('variables')
         ds_metadata.pop('dimensions')
@@ -158,18 +171,20 @@ class CciOdpDataOpener(DataOpener):
         descriptor.open_params_schema = data_schema
         return descriptor
 
-    def _get_variable_descriptors(self, var_names: str, var_infos: dict) \
+    def _get_variable_descriptors(self,
+                                  var_names: str,
+                                  var_infos: dict,
+                                  normalize_dims: bool=True) \
             -> Dict[str, VariableDescriptor]:
         var_descriptors = {}
         for var_name in var_names:
             if var_name in var_infos:
                 var_info = var_infos[var_name]
                 var_dtype = var_info['data_type']
-                var_dims = self._normalize_var_dims(var_info['dimensions'])
-                if var_dims:
-                    var_descriptors[var_name] = \
-                        VariableDescriptor(var_name, var_dtype, var_dims,
-                                           attrs=var_info)
+                var_dims = self._normalize_var_dims(var_info['dimensions']) \
+                    if normalize_dims else var_info['dimensions']
+                var_descriptors[var_name] = \
+                    VariableDescriptor(var_name, var_dtype, var_dims, attrs=var_info)
             else:
                 var_descriptors[var_name] = VariableDescriptor(var_name, '', '')
         return var_descriptors
@@ -274,7 +289,7 @@ class CciOdpDatasetOpener(CciOdpDataOpener):
     def _normalize_var_dims(self, var_dims: List[str]) -> Optional[List[str]]:
         new_var_dims = var_dims.copy()
         if 'time' not in new_var_dims:
-            new_var_dims.append('time')
+            new_var_dims.insert(0, 'time')
         return new_var_dims
 
 
