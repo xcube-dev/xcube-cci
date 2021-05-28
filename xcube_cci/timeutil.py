@@ -19,55 +19,13 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-import pandas as pd
-import re
-from typing import Optional
-from typing import Tuple
+from xcube.core.timecoord import get_timestamps_from_string
 
-_TIMESTAMP_FORMAT = "%Y-%m-%dT%H:%M:%S"
-
-_RE_TO_DATETIME_FORMATS = patterns = [(re.compile(14 * '\\d'), '%Y%m%d%H%M%S'),
-                                      (re.compile(12 * '\\d'), '%Y%m%d%H%M'),
-                                      (re.compile(8 * '\\d'), '%Y%m%d'),
-                                      (re.compile(6 * '\\d'), '%Y%m'),
-                                      (re.compile(4 * '\\d'), '%Y')]
-
-def find_datetime_format(filename: str) -> Tuple[Optional[str], int, int]:
-    for regex, time_format in _RE_TO_DATETIME_FORMATS:
-        searcher = regex.search(filename)
-        if searcher:
-            p1, p2 = searcher.span()
-            return time_format, p1, p2
-    return None, -1, -1
-
-def get_timestamp_from_string(string: str) -> pd.Timestamp:
-    time_format, p1, p2 = find_datetime_format(string)
-    if not time_format:
-        return None
-    try:
-        return pd.to_datetime(string[p1:p2], format=time_format)
-    except ValueError:
-        return None
-
-def get_timestamps_from_string(string: str) -> (pd.Timestamp, pd.Timestamp):
-    first_time = None
-    second_time = None
-    time_format, p1, p2 = find_datetime_format(string)
-    try:
-        if time_format:
-            first_time = pd.to_datetime(string[p1:p2], format=time_format)
-        string_rest = string[p2:]
-        time_format, p1, p2 = find_datetime_format(string_rest)
-        if time_format:
-            second_time = pd.to_datetime(string_rest[p1:p2], format=time_format)
-    except ValueError:
-        pass
-    return first_time, second_time
 
 def get_timestrings_from_string(string: str) -> (str, str):
     first_time, second_time = get_timestamps_from_string(string)
     if first_time:
-        first_time = first_time.strftime(_TIMESTAMP_FORMAT)
+        first_time = first_time.isoformat()
     if second_time:
-        second_time = second_time.strftime(_TIMESTAMP_FORMAT)
+        second_time = second_time.isoformat()
     return first_time, second_time
