@@ -84,7 +84,7 @@ _RE_TO_DATETIME_FORMATS = \
      (re.compile(6 * '\\d'), '%Y%m', relativedelta(months=1, seconds=-1)),
      (re.compile(4 * '\\d'), '%Y', relativedelta(years=1, seconds=-1))]
 
-_HIGHER_DTYPES = {
+_DTYPES_TO_DTYPES_WITH_MORE_BYTES = {
     'int8': 'int16',
     'int16': 'int32',
     'int32': 'int64',
@@ -1108,7 +1108,7 @@ class CciOdp:
         return _extract_metadata_from_odd(etree.XML(xml_text))
 
     def _maybe_adjust_data_type(self, dtype: str) -> str:
-        adjusted_dtype = _HIGHER_DTYPES.get(dtype, dtype)
+        adjusted_dtype = _DTYPES_TO_DTYPES_WITH_MORE_BYTES.get(dtype, dtype)
         if adjusted_dtype is None:
             raise DataStoreError(f'Cannot convert data type "{dtype}" to higher data type')
         return adjusted_dtype
