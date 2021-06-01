@@ -502,6 +502,26 @@ class CciOdpDataStoreTest(unittest.TestCase):
         self.assertEqual('Data Resource "nonsense" is not available.', f'{dse.exception}')
 
     @skipIf(os.environ.get('XCUBE_DISABLE_WEB_TESTS', None) == '1', 'XCUBE_DISABLE_WEB_TESTS = 1')
+    def test_open_data_all_values_the_same(self):
+        # this test ensures that on multiple calls on the same chunks the same values are retrieved
+        seaice_th_ds = self.store.open_data(
+            "esacci.SEAICE.mon.L3C.SITHICK.SIRAL.CryoSat-2.NH25KMEASE2.2-0.r1")
+        i = 0
+        import numpy as np
+        values = np.empty([4, 78])
+        while i < 4:
+            tmp = seaice_th_ds.sea_ice_thickness * seaice_th_ds.sea_ice_concentration
+            Vseaice = tmp.sum(dim=['xc', 'yc'], skipna=True)
+            values[i] = (list(Vseaice.values))
+            print(Vseaice.values)
+            i+=1
+        values = values.transpose()
+        for i, value_parts in enumerate(values):
+            diffs = np.diff(value_parts)
+            sum = np.sum(diffs)
+            self.assertEqual(0, sum)
+
+    @skipIf(os.environ.get('XCUBE_DISABLE_WEB_TESTS', None) == '1', 'XCUBE_DISABLE_WEB_TESTS = 1')
     def test_open_data(self):
         dataset = self.store.open_data(
             'esacci.AEROSOL.day.L3C.AOD.MERIS.Envisat.MERIS_ENVISAT.2-2.r1',
