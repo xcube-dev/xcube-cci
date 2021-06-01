@@ -1092,6 +1092,12 @@ class CciOdp:
         xml_text = await resp.read()
         return _extract_metadata_from_odd(etree.XML(xml_text))
 
+    def _determine_fill_value(self, dtype):
+        if np.issubdtype(dtype, np.integer):
+            return np.iinfo(dtype).max
+        if np.issubdtype(dtype, np.inexact):
+            return np.nan
+
     async def _get_variable_infos_from_feature(self, feature: dict, session) -> (dict, dict):
         feature_info = _extract_feature_info(feature)
         opendap_url = f"{feature_info[4]['Opendap']}"
@@ -1107,6 +1113,9 @@ class CciOdp:
             if '_FillValue' in variable_infos[fixed_key]:
                 variable_infos[fixed_key]['fill_value'] = variable_infos[fixed_key]['_FillValue']
                 variable_infos[fixed_key].pop('_FillValue')
+            else:
+                variable_infos[fixed_key]['fill_value'] = \
+                    self._determine_fill_value(dataset[key].dtype)
             if '_ChunkSizes' in variable_infos[fixed_key]:
                 variable_infos[fixed_key]['chunk_sizes'] = variable_infos[fixed_key]['_ChunkSizes']
                 if type(variable_infos[fixed_key]['chunk_sizes']) == int:
