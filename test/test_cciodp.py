@@ -27,6 +27,20 @@ class CciOdpTest(unittest.TestCase):
         self.assertEqual(64261, len(data_array))
         self.assertAlmostEqual(1024.4185, data_array[-1], 4)
 
+        # check whether data type has been converted to
+        request = dict(parentIdentifier=id,
+                       startDate='1997-05-01T00:00:00',
+                       endDate='1997-05-01T00:00:00',
+                       varNames=['layers'],
+                       drsId='esacci.OZONE.mon.L3.NP.multi-sensor.multi-platform.MERGED.fv0002.r1'
+                       )
+        dim_indexes = (slice(None, None), slice(0, 179), slice(0, 359))
+        data = cci_odp.get_data_chunk(request, dim_indexes)
+        self.assertIsNotNone(data)
+        data_array = np.frombuffer(data, dtype=np.int64)
+        self.assertEqual(16, len(data_array))
+        self.assertAlmostEqual(15, data_array[-2])
+
     @skipIf(os.environ.get('XCUBE_DISABLE_WEB_TESTS', None) == '1', 'XCUBE_DISABLE_WEB_TESTS = 1')
     def test_dataset_names(self):
         cci_odp = CciOdp()
@@ -190,6 +204,8 @@ class CciOdpTest(unittest.TestCase):
              'size': 186624,
              'shape': [1, 432, 432]},
             datasets_metadata[2].get('variable_infos').get('freeboard'))
+        self.assertEqual('uint16', datasets_metadata[2].get('variable_infos').get('status_flag').
+                         get('data_type'))
 
     @skipIf(os.environ.get('XCUBE_DISABLE_WEB_TESTS', None) == '1', 'XCUBE_DISABLE_WEB_TESTS = 1')
     @skip('Disabled while old archive is set up')
