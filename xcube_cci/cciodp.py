@@ -88,11 +88,11 @@ _DTYPES_TO_DTYPES_WITH_MORE_BYTES = {
     'int8': 'int16',
     'int16': 'int32',
     'int32': 'int64',
-    'int64': None,
     'uint8': 'uint16',
     'uint16': 'uint32',
     'uint32': 'uint64',
-    'uint64': None,
+    'float32': 'float32',
+    'float64': 'float64'
 }
 
 
@@ -359,6 +359,9 @@ def _get_res(nc_attrs: dict, dim: str) -> float:
                 continue
     return -1.0
 
+
+class CciOdpWarning(Warning):
+    pass
 
 class CciOdp:
     """
@@ -889,12 +892,11 @@ class CciOdp:
         if not dataset:
             return None
         await self._ensure_all_info_in_data_sources(session, [request.get('drsId')])
-        data_type = self._data_sources[request['drsId']].get('variable_infos', {}).\
-            get(var_name, {}).get('data_type')
+        data_type = self._data_sources[request['drsId']].get('variable_infos', {})\
+            .get(var_name, {}).get('data_type')
         data = await self._get_data_from_opendap_dataset(dataset, session, var_name, dim_indexes)
-        variable_data = np.array(data, dtype=data_type)
-        result = variable_data.flatten().tobytes()
-        return result
+        data = np.array(data, copy=False, dtype=data_type)
+        return data.flatten().tobytes()
 
     async def _fetch_data_source_list_json(self, session, base_url, query_args,
                                            max_wanted_results=100000) -> Dict:
@@ -1107,12 +1109,6 @@ class CciOdp:
         xml_text = await resp.read()
         return _extract_metadata_from_odd(etree.XML(xml_text))
 
-    def _maybe_adjust_data_type(self, dtype: str) -> str:
-        adjusted_dtype = _DTYPES_TO_DTYPES_WITH_MORE_BYTES.get(dtype, dtype)
-        if adjusted_dtype is None:
-            raise DataStoreError(f'Cannot convert data type "{dtype}" to higher data type')
-        return adjusted_dtype
-
     def _determine_fill_value(self, dtype):
         if np.issubdtype(dtype, np.integer):
             return np.iinfo(dtype).max
@@ -1132,14 +1128,19 @@ class CciOdp:
             fixed_key = key.replace('%2E', '_').replace('.', '_')
             data_type = dataset[key].dtype.name
             variable_infos[fixed_key] = copy.deepcopy(dataset[key].attributes)
+            variable_infos[fixed_key]['orig_data_type'] = data_type
             if '_FillValue' in variable_infos[fixed_key]:
                 variable_infos[fixed_key]['fill_value'] = variable_infos[fixed_key]['_FillValue']
                 variable_infos[fixed_key].pop('_FillValue')
             else:
-                if data_type in np.sctypeDict.keys():
-                    data_type = self._maybe_adjust_data_type(data_type)
+                if data_type in _DTYPES_TO_DTYPES_WITH_MORE_BYTES:
+                    data_type = _DTYPES_TO_DTYPES_WITH_MORE_BYTES[data_type]
                     variable_infos[fixed_key]['fill_value'] = \
                         self._determine_fill_value(np.dtype(data_type))
+                else:
+                    warnings.warn(f'Variable "{fixed_key}" has no fill value, cannot set one.'
+                                  f'You may experience incorrect data values.',
+                                  category=CciOdpWarning)
             if '_ChunkSizes' in variable_infos[fixed_key]:
                 variable_infos[fixed_key]['chunk_sizes'] = variable_infos[fixed_key]['_ChunkSizes']
                 if type(variable_infos[fixed_key]['chunk_sizes']) == int:

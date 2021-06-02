@@ -198,6 +198,7 @@ class CciOdpTest(unittest.TestCase):
              'chunk_sizes': [1, 432, 432],
              'file_chunk_sizes': [1, 432, 432],
              'data_type': 'float32',
+             'orig_data_type': 'float32',
              'dimensions': ['time', 'yc', 'xc'],
              'file_dimensions': ['time', 'yc', 'xc'],
              'fill_value': np.nan,
