@@ -41,14 +41,22 @@ build_script:
   # avoids potential breakage due to changes in mamba behaviour.
   - conda install -c conda-forge mamba=0.7.3
 
+  - git clone git@github.com:dcs4cop/xcube.git
+  - cd xcube
+  - mamba env create
+  - conda activate xcube
+  - python setup.py develop
+  - cd ..
+  - mamba install -c conda-forge lxml pydap aiohttp nest-asyncio
+
   # Environments created by mamba can't be referenced by name from conda
   # (presumably a bug), so we use an explicit path instead.
-  - mamba env create --prefix $HOME/mamba-env --file environment.yml
+#  - mamba env create --prefix $HOME/mamba-env --file environment.yml
   # install pytest for testing
-  - mamba install --prefix $HOME/mamba-env pytest
-  - conda activate $HOME/mamba-env
+#  - mamba install --prefix $HOME/mamba-env pytest
+#  - conda activate $HOME/mamba-env
   - conda list
   - python setup.py install
 
   # Run the test suite.
-  - pytest
+  - pytest -v --cov=cate tests
