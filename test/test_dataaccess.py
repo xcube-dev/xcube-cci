@@ -84,7 +84,7 @@ class CciOdpDatasetOpenerTest(unittest.TestCase):
         self.assertEqual(3, len(descriptor.data_vars))
         self.assertTrue('absorbing_aerosol_index' in descriptor.data_vars)
         self.assertEqual(3, descriptor.data_vars['absorbing_aerosol_index'].ndim)
-        self.assertEqual(('latitude', 'longitude', 'time'),
+        self.assertEqual(('time', 'latitude', 'longitude'),
                          descriptor.data_vars['absorbing_aerosol_index'].dims)
         self.assertEqual('float32', descriptor.data_vars['absorbing_aerosol_index'].dtype)
         self.assertIsNone(descriptor.crs)
@@ -338,12 +338,15 @@ class CciOdpDataStoreTest(unittest.TestCase):
                          'dataset[cube]'))
 
     def test_describe_data(self):
-        descriptor = self.store.describe_data('esacci.OZONE.mon.L3.NP.multi-sensor.multi-platform.MERGED.fv0002.r1')
+        descriptor = self.store.describe_data(
+            'esacci.OZONE.mon.L3.NP.multi-sensor.multi-platform.MERGED.fv0002.r1')
         self.assertIsNotNone(descriptor)
         self.assertIsInstance(descriptor, DatasetDescriptor)
-        self.assertEqual('esacci.OZONE.mon.L3.NP.multi-sensor.multi-platform.MERGED.fv0002.r1', descriptor.data_id)
+        self.assertEqual('esacci.OZONE.mon.L3.NP.multi-sensor.multi-platform.MERGED.fv0002.r1',
+                         descriptor.data_id)
         self.assertEqual('dataset', str(descriptor.type_specifier))
-        self.assertEqual(['lon', 'lat', 'layers', 'air_pressure', 'time'], list(descriptor.dims.keys()))
+        self.assertEqual(['lon', 'lat', 'layers', 'air_pressure', 'time'],
+                         list(descriptor.dims.keys()))
         self.assertEqual(360, descriptor.dims['lon'])
         self.assertEqual(180, descriptor.dims['lat'])
         self.assertEqual(16, descriptor.dims['layers'])
@@ -371,7 +374,7 @@ class CciOdpDataStoreTest(unittest.TestCase):
         self.assertEqual(3, len(descriptor.data_vars))
         self.assertTrue('absorbing_aerosol_index' in descriptor.data_vars)
         self.assertEqual(3, descriptor.data_vars['absorbing_aerosol_index'].ndim)
-        self.assertEqual(('latitude', 'longitude', 'time'),
+        self.assertEqual(('time', 'latitude', 'longitude'),
                          descriptor.data_vars['absorbing_aerosol_index'].dims)
         self.assertEqual('float32', descriptor.data_vars['absorbing_aerosol_index'].dtype)
         self.assertIsNone(descriptor.crs)
@@ -380,14 +383,18 @@ class CciOdpDataStoreTest(unittest.TestCase):
         self.assertEqual('1D', descriptor.time_period)
 
         with self.assertRaises(DataStoreError) as dse:
-            self.store.describe_data('esacci.OZONE.mon.L3.NP.multi-sensor.multi-platform.MERGED.fv0002.r1',
-                                     type_specifier='dataset[cube]')
-        self.assertEqual('Cannot describe metadata of data resource '
-                         '"esacci.OZONE.mon.L3.NP.multi-sensor.multi-platform.MERGED.fv0002.r1", '
-                         'as it cannot be accessed by data accessor "dataset[cube]:zarr:cciodp".', f'{dse.exception}')
+            self.store.describe_data(
+                'esacci.OZONE.mon.L3.NP.multi-sensor.multi-platform.MERGED.fv0002.r1',
+                type_specifier='dataset[cube]')
+        self.assertEqual(
+            'Cannot describe metadata of data resource '
+            '"esacci.OZONE.mon.L3.NP.multi-sensor.multi-platform.MERGED.fv0002.r1", as it cannot '
+            'be accessed by data accessor "dataset[cube]:zarr:cciodp".',
+            f'{dse.exception}')
 
-        descriptor = self.store.describe_data('esacci.AEROSOL.day.L3.AAI.multi-sensor.multi-platform.MSAAI.1-7.r1',
-                                              type_specifier='dataset[cube]')
+        descriptor = self.store.describe_data(
+            'esacci.AEROSOL.day.L3.AAI.multi-sensor.multi-platform.MSAAI.1-7.r1',
+            type_specifier='dataset[cube]')
         self.assertIsNotNone(descriptor)
         self.assertIsInstance(descriptor, DatasetDescriptor)
         self.assertEqual('esacci.AEROSOL.day.L3.AAI.multi-sensor.multi-platform.MSAAI.1-7.r1', descriptor.data_id)
