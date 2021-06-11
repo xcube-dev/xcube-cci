@@ -32,8 +32,7 @@ class CciOdpTest(unittest.TestCase):
                        startDate='1997-05-01T00:00:00',
                        endDate='1997-05-01T00:00:00',
                        varNames=['layers'],
-                       drsId='esacci.OZONE.mon.L3.NP.multi-sensor.multi-platform.MERGED.fv0002.r1'
-                       )
+                       drsId='esacci.OZONE.mon.L3.NP.multi-sensor.multi-platform.MERGED.fv0002.r1')
         dim_indexes = (slice(None, None), slice(0, 179), slice(0, 359))
         data = cci_odp.get_data_chunk(request, dim_indexes)
         self.assertIsNotNone(data)
