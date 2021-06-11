@@ -23,9 +23,7 @@
         "verification_flags": []
     },
     "esacci.AEROSOL.day.L3C.AOD.MERIS.Envisat.MERIS_ENVISAT.2-2.r1": {
-        "verification_flags": [
-            "open"
-        ]
+        "verification_flags": []
     },
     "esacci.AEROSOL.mon.L3.AAI.multi-sensor.multi-platform.MSAAI.1-7.r1": {
         "verification_flags": []
@@ -67,9 +65,7 @@
         "verification_flags": []
     },
     "esacci.BIOMASS.yr.L4.AGB.multi-sensor.multi-platform.MERGED.1-0.r1": {
-        "verification_flags": [
-            "open"
-        ]
+        "verification_flags": []
     },
     "esacci.BIOMASS.yr.L4.AGB.multi-sensor.multi-platform.MERGED.2-0.r1": {
         "verification_flags": []
@@ -155,15 +151,13 @@
     "esacci.ICESHEETS.unspecified.L4.IV.SAR-C-(Sentinel-1).multi-platform.UNSPECIFIED.1-1.greenland_s1_250m_20150610_20170321_Helheim": {
         "verification_flags": [
             "open",
-            "constrain_time",
-            "write_zarr"
+            "constrain_time"
         ]
     },
     "esacci.ICESHEETS.unspecified.L4.SEC.multi-sensor.multi-platform.UNSPECIFIED.0-1.greenland_sec_saral_altika": {
         "verification_flags": [
             "open",
-            "constrain_time",
-            "write_zarr"
+            "constrain_time"
         ]
     },
     "esacci.ICESHEETS.unspecified.Unspecified.GLL.multi-sensor.multi-platform.UNSPECIFIED.v1-3.greenland": {
@@ -172,148 +166,127 @@
     "esacci.ICESHEETS.unspecified.Unspecified.IV.AMI-SAR.ERS-1.UNSPECIFIED.1-1.greenland_northern_drainage_basin_winter_1991_1992": {
         "verification_flags": [
             "open",
-            "constrain_time",
-            "write_zarr"
+            "constrain_time"
         ]
     },
     "esacci.ICESHEETS.unspecified.Unspecified.IV.AMI-SAR.ERS-2.UNSPECIFIED.1-1.greenland_margin_1995_1996": {
         "verification_flags": [
             "open",
-            "constrain_time",
-            "write_zarr"
+            "constrain_time"
         ]
     },
     "esacci.ICESHEETS.unspecified.Unspecified.IV.MSI-(Sentinel-2).Sentinel-2A.UNSPECIFIED.1-0.greenland_s2_50m_20160508_20160518_docker_smith": {
         "verification_flags": [
             "open",
-            "constrain_time",
-            "write_zarr"
+            "constrain_time"
         ]
     },
     "esacci.ICESHEETS.unspecified.Unspecified.IV.MSI-(Sentinel-2).multi-platform.UNSPECIFIED.1-1.greenland_s2_50m_seasonal_20170501_20170829_Helheim": {
         "verification_flags": [
             "open",
-            "constrain_time",
-            "write_zarr"
+            "constrain_time"
         ]
     },
     "esacci.ICESHEETS.unspecified.Unspecified.IV.MSI-(Sentinel-2).multi-platform.UNSPECIFIED.1-1.greenland_s2_50m_seasonal_20170501_20170914_Petermann": {
         "verification_flags": [
             "open",
-            "constrain_time",
-            "write_zarr"
+            "constrain_time"
         ]
     },
     "esacci.ICESHEETS.unspecified.Unspecified.IV.MSI-(Sentinel-2).multi-platform.UNSPECIFIED.1-1.greenland_s2_50m_seasonal_20170603_20170908_Jakobshavn": {
         "verification_flags": [
             "open",
-            "constrain_time",
-            "write_zarr"
+            "constrain_time"
         ]
     },
     "esacci.ICESHEETS.unspecified.Unspecified.IV.MSI-(Sentinel-2).multi-platform.UNSPECIFIED.1-1.greenland_s2_50m_seasonal_20170625_20170810_79Fjord": {
         "verification_flags": [
             "open",
-            "constrain_time",
-            "write_zarr"
+            "constrain_time"
         ]
     },
     "esacci.ICESHEETS.unspecified.Unspecified.IV.MSI-(Sentinel-2).multi-platform.UNSPECIFIED.1-1.greenland_s2_50m_seasonal_20170625_20170810_Zachariae": {
         "verification_flags": [
             "open",
-            "constrain_time",
-            "write_zarr"
+            "constrain_time"
         ]
     },
     "esacci.ICESHEETS.unspecified.Unspecified.IV.MSI-(Sentinel-2).multi-platform.UNSPECIFIED.1-1.greenland_s2_50m_seasonal_20170630_20170814_Hagen": {
         "verification_flags": [
             "open",
-            "constrain_time",
-            "write_zarr"
+            "constrain_time"
         ]
     },
     "esacci.ICESHEETS.unspecified.Unspecified.IV.MSI-(Sentinel-2).multi-platform.UNSPECIFIED.1-1.greenland_s2_50m_seasonal_20170715_20170814_Upernavik": {
         "verification_flags": [
             "open",
-            "constrain_time",
-            "write_zarr"
+            "constrain_time"
         ]
     },
     "esacci.ICESHEETS.unspecified.Unspecified.IV.MSI-(Sentinel-2).multi-platform.UNSPECIFIED.1-1.greenland_s2_50m_seasonal_20170721_20170820_Kangerdlugssuaq": {
         "verification_flags": [
             "open",
-            "constrain_time",
-            "write_zarr"
+            "constrain_time"
         ]
     },
     "esacci.ICESHEETS.unspecified.Unspecified.IV.MSI-(Sentinel-2).multi-platform.UNSPECIFIED.1-1.greenland_s2_50m_timeseries_20170501_20170829_Helheim": {
         "verification_flags": [
             "open",
-            "constrain_time",
-            "write_zarr"
+            "constrain_time"
         ]
     },
     "esacci.ICESHEETS.unspecified.Unspecified.IV.MSI-(Sentinel-2).multi-platform.UNSPECIFIED.1-1.greenland_s2_50m_timeseries_20170501_20170914_Petermann": {
         "verification_flags": [
             "open",
-            "constrain_time",
-            "write_zarr"
+            "constrain_time"
         ]
     },
     "esacci.ICESHEETS.unspecified.Unspecified.IV.MSI-(Sentinel-2).multi-platform.UNSPECIFIED.1-1.greenland_s2_50m_timeseries_20170603_20170908_Jakobshavn": {
         "verification_flags": [
             "open",
-            "constrain_time",
-            "write_zarr"
+            "constrain_time"
         ]
     },
     "esacci.ICESHEETS.unspecified.Unspecified.IV.MSI-(Sentinel-2).multi-platform.UNSPECIFIED.1-1.greenland_s2_50m_timeseries_20170625_20170810_79Fjord": {
         "verification_flags": [
             "open",
-            "constrain_time",
-            "write_zarr"
+            "constrain_time"
         ]
     },
     "esacci.ICESHEETS.unspecified.Unspecified.IV.MSI-(Sentinel-2).multi-platform.UNSPECIFIED.1-1.greenland_s2_50m_timeseries_20170625_20170810_Zachariae": {
         "verification_flags": [
             "open",
-            "constrain_time",
-            "write_zarr"
+            "constrain_time"
         ]
     },
     "esacci.ICESHEETS.unspecified.Unspecified.IV.MSI-(Sentinel-2).multi-platform.UNSPECIFIED.1-1.greenland_s2_50m_timeseries_20170630_20170814_Hagen": {
         "verification_flags": [
             "open",
-            "constrain_time",
-            "write_zarr"
+            "constrain_time"
         ]
     },
     "esacci.ICESHEETS.unspecified.Unspecified.IV.MSI-(Sentinel-2).multi-platform.UNSPECIFIED.1-1.greenland_s2_50m_timeseries_20170715_20170814_Upernavik": {
         "verification_flags": [
             "open",
-            "constrain_time",
-            "write_zarr"
+            "constrain_time"
         ]
     },
     "esacci.ICESHEETS.unspecified.Unspecified.IV.MSI-(Sentinel-2).multi-platform.UNSPECIFIED.1-1.greenland_s2_50m_timeseries_20170721_20170820_Kangerdlugssuaq": {
         "verification_flags": [
             "open",
-            "constrain_time",
-            "write_zarr"
+            "constrain_time"
         ]
     },
     "esacci.ICESHEETS.unspecified.Unspecified.IV.SAR-(RadarSat-2).RadarSat-2.UNSPECIFIED.1-0.greenland_map_winter_2013_2014": {
         "verification_flags": [
             "open",
-            "constrain_time",
-            "write_zarr"
+            "constrain_time"
         ]
     },
     "esacci.ICESHEETS.unspecified.Unspecified.IV.SAR-2000.multi-platform.UNSPECIFIED.1-0.greenland_csk_250m_timeseries_20120604_20141223_Jakobshavn": {
         "verification_flags": [
             "open",
-            "constrain_time",
-            "write_zarr"
+            "constrain_time"
         ]
     },
     "esacci.ICESHEETS.unspecified.Unspecified.IV.SAR-C-(Sentinel-1).Sentinel-1A.UNSPECIFIED.1-0.greenland_map_winter_2014_2015": {
@@ -322,85 +295,73 @@
     "esacci.ICESHEETS.unspecified.Unspecified.IV.SAR-C-(Sentinel-1).Sentinel-1A.UNSPECIFIED.1-2.greenland_map_winter_2015_2016": {
         "verification_flags": [
             "open",
-            "constrain_time",
-            "write_zarr"
+            "constrain_time"
         ]
     },
     "esacci.ICESHEETS.unspecified.Unspecified.IV.SAR-C-(Sentinel-1).multi-platform.UNSPECIFIED.1-0.greenland_map_winter_2016_2017": {
         "verification_flags": [
             "open",
-            "constrain_time",
-            "write_zarr"
+            "constrain_time"
         ]
     },
     "esacci.ICESHEETS.unspecified.Unspecified.IV.SAR-C-(Sentinel-1).multi-platform.UNSPECIFIED.1-0.greenland_map_winter_2017_2018": {
         "verification_flags": [
             "open",
-            "constrain_time",
-            "write_zarr"
+            "constrain_time"
         ]
     },
     "esacci.ICESHEETS.unspecified.Unspecified.IV.SAR-C-(Sentinel-1).multi-platform.UNSPECIFIED.1-1.greenland_s1_250m_20141010_20170317_Upernavik": {
         "verification_flags": [
             "open",
-            "constrain_time",
-            "write_zarr"
+            "constrain_time"
         ]
     },
     "esacci.ICESHEETS.unspecified.Unspecified.IV.SAR-C-(Sentinel-1).multi-platform.UNSPECIFIED.1-1.greenland_s1_250m_20141011_20170317_20150122_20170322_Hagen": {
         "verification_flags": [
             "open",
-            "constrain_time",
-            "write_zarr"
+            "constrain_time"
         ]
     },
     "esacci.ICESHEETS.unspecified.Unspecified.IV.SAR-C-(Sentinel-1).multi-platform.UNSPECIFIED.1-1.greenland_s1_250m_20141011_20170317_Jakobshavn": {
         "verification_flags": [
             "open",
-            "constrain_time",
-            "write_zarr"
+            "constrain_time"
         ]
     },
     "esacci.ICESHEETS.unspecified.Unspecified.IV.SAR-C-(Sentinel-1).multi-platform.UNSPECIFIED.1-1.greenland_s1_250m_20150118_20170321_Kangerlussuaq": {
         "verification_flags": [
             "open",
-            "constrain_time",
-            "write_zarr"
+            "constrain_time"
         ]
     },
     "esacci.ICESHEETS.unspecified.Unspecified.IV.SAR-C-(Sentinel-1).multi-platform.UNSPECIFIED.1-1.greenland_s1_250m_20150122_20170319_Petermann": {
         "verification_flags": [
             "open",
-            "constrain_time",
-            "write_zarr"
+            "constrain_time"
         ]
     },
     "esacci.ICESHEETS.unspecified.Unspecified.IV.SAR-C-(Sentinel-1).multi-platform.UNSPECIFIED.1-1.greenland_s1_250m_20150122_20170322_79-Fjord": {
         "verification_flags": [
             "open",
-            "constrain_time",
-            "write_zarr"
+            "constrain_time"
         ]
     },
     "esacci.ICESHEETS.unspecified.Unspecified.IV.SAR-C-(Sentinel-1).multi-platform.UNSPECIFIED.1-1.greenland_s1_250m_20150124_20170322_Storstroemmen": {
         "verification_flags": [
             "open",
-            "constrain_time",
-            "write_zarr"
+            "constrain_time"
         ]
     },
     "esacci.ICESHEETS.unspecified.Unspecified.IV.SAR-C-(Sentinel-1).multi-platform.UNSPECIFIED.1-1.greenland_s1_250m_20150126_20170322_Zachariae": {
         "verification_flags": [
             "open",
-            "constrain_time",
-            "write_zarr"
+            "constrain_time"
         ]
     },
     "esacci.ICESHEETS.unspecified.Unspecified.IV.multi-sensor.multi-platform.UNSPECIFIED.1-2.greenland_timeseries_Upernarvik": {
         "verification_flags": [
             "open",
-            "constrain_time",
-            "write_zarr"
+            "constrain_time"
         ]
     },
     "esacci.ICESHEETS.yr.Unspecified.GMB.GRACE-instrument.GRACE.UNSPECIFIED.1-2.greenland_gmb_mass_trends": {
@@ -1013,9 +974,7 @@
     "esacci.OZONE.day.L3S.TC.multi-sensor.multi-platform.MERGED.fv0100.r1": {
         "verification_flags": [
             "open",
-            "constrain_time",
-            "constrain_region",
-            "write_zarr"
+            "constrain_time"
         ]
     },
     "esacci.OZONE.mon.L3.LP.GOMOS.Envisat.GOMOS_ENVISAT.v0001.r1": {
@@ -1545,12 +1504,7 @@
         "verification_flags": []
     },
     "esacci.SST.day.L4.SSTskin.Unspecified.Unspecified.GMPE.2-0.r1": {
-        "verification_flags": [
-            "open",
-            "constrain_time",
-            "constrain_region",
-            "write_zarr"
-        ]
+        "verification_flags": []
     },
     "esacci.SST.satellite-orbit-frequency.L2P.SSTskin.AATSR.Envisat.AATSR.2-1.r1": {
         "verification_flags": []
