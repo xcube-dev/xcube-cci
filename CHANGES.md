@@ -1,5 +1,7 @@
 ## Changes in 0.8.1 (in development)
 
+* Fixed an issue that caused that occasionally values returned by open_data consisted 
+  of random numbers where a fill value would have been expected. (#47) 
 * DataDescriptors contain coords
 * Internal virtual file system is built lazily, so opening datasets has become faster.
 
