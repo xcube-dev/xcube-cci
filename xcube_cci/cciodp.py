@@ -44,6 +44,7 @@ from xcube_cci.constants import DEFAULT_RETRY_BACKOFF_MAX
 from xcube_cci.constants import DEFAULT_RETRY_BACKOFF_BASE
 from xcube_cci.constants import OPENSEARCH_CEDA_URL
 from xcube_cci.timeutil import get_timestrings_from_string
+from xcube.core.store import DataStoreError
 
 from pydap.client import Functions
 from pydap.handlers.dap import BaseProxy
@@ -82,6 +83,17 @@ _RE_TO_DATETIME_FORMATS = \
       relativedelta(days=1, seconds=-1)),
      (re.compile(6 * '\\d'), '%Y%m', relativedelta(months=1, seconds=-1)),
      (re.compile(4 * '\\d'), '%Y', relativedelta(years=1, seconds=-1))]
+
+_DTYPES_TO_DTYPES_WITH_MORE_BYTES = {
+    'int8': 'int16',
+    'int16': 'int32',
+    'int32': 'int64',
+    'uint8': 'uint16',
+    'uint16': 'uint32',
+    'uint32': 'uint64',
+    'float32': 'float32',
+    'float64': 'float64'
+}
 
 
 def _convert_time_from_drs_id(time_value: str) -> str:
@@ -347,6 +359,9 @@ def _get_res(nc_attrs: dict, dim: str) -> float:
                 continue
     return -1.0
 
+
+class CciOdpWarning(Warning):
+    pass
 
 class CciOdp:
     """
@@ -876,10 +891,12 @@ class CciOdp:
         dataset = await self._get_opendap_dataset(session, opendap_url)
         if not dataset:
             return None
+        await self._ensure_all_info_in_data_sources(session, [request.get('drsId')])
+        data_type = self._data_sources[request['drsId']].get('variable_infos', {})\
+            .get(var_name, {}).get('data_type')
         data = await self._get_data_from_opendap_dataset(dataset, session, var_name, dim_indexes)
-        variable_data = np.array(data, dtype=dataset[var_name].dtype.type)
-        result = variable_data.flatten().tobytes()
-        return result
+        data = np.array(data, copy=False, dtype=data_type)
+        return data.flatten().tobytes()
 
     async def _fetch_data_source_list_json(self, session, base_url, query_args,
                                            max_wanted_results=100000) -> Dict:
@@ -1109,13 +1126,21 @@ class CciOdp:
         variable_infos = {}
         for key in dataset.keys():
             fixed_key = key.replace('%2E', '_').replace('.', '_')
+            data_type = dataset[key].dtype.name
             variable_infos[fixed_key] = copy.deepcopy(dataset[key].attributes)
+            variable_infos[fixed_key]['orig_data_type'] = data_type
             if '_FillValue' in variable_infos[fixed_key]:
                 variable_infos[fixed_key]['fill_value'] = variable_infos[fixed_key]['_FillValue']
                 variable_infos[fixed_key].pop('_FillValue')
             else:
-                variable_infos[fixed_key]['fill_value'] = \
-                    self._determine_fill_value(dataset[key].dtype)
+                if data_type in _DTYPES_TO_DTYPES_WITH_MORE_BYTES:
+                    data_type = _DTYPES_TO_DTYPES_WITH_MORE_BYTES[data_type]
+                    variable_infos[fixed_key]['fill_value'] = \
+                        self._determine_fill_value(np.dtype(data_type))
+                else:
+                    warnings.warn(f'Variable "{fixed_key}" has no fill value, cannot set one.'
+                                  f'You may experience incorrect data values.',
+                                  category=CciOdpWarning)
             if '_ChunkSizes' in variable_infos[fixed_key]:
                 variable_infos[fixed_key]['chunk_sizes'] = variable_infos[fixed_key]['_ChunkSizes']
                 if type(variable_infos[fixed_key]['chunk_sizes']) == int:
@@ -1125,7 +1150,7 @@ class CciOdp:
                     variable_infos[fixed_key]['file_chunk_sizes'] = \
                         copy.deepcopy(variable_infos[fixed_key]['chunk_sizes'])
                 variable_infos[fixed_key].pop('_ChunkSizes')
-            variable_infos[fixed_key]['data_type'] = dataset[key].dtype.name
+            variable_infos[fixed_key]['data_type'] = data_type
             variable_infos[fixed_key]['dimensions'] = list(dataset[key].dimensions)
             variable_infos[fixed_key]['file_dimensions'] = \
                 copy.deepcopy(variable_infos[fixed_key]['dimensions'])

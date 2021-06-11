@@ -520,7 +520,6 @@ class CciOdpDataStoreTest(unittest.TestCase):
             tmp = seaice_th_ds.sea_ice_thickness * seaice_th_ds.sea_ice_concentration
             Vseaice = tmp.sum(dim=['xc', 'yc'], skipna=True)
             values[i] = (list(Vseaice.values))
-            print(Vseaice.values)
             i+=1
         values = values.transpose()
         for i, value_parts in enumerate(values):
