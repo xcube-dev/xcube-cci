@@ -41,7 +41,7 @@ build_script:
   # avoids potential breakage due to changes in mamba behaviour.
   - conda install -c conda-forge mamba=0.7.3
 
-  - git clone git@github.com:dcs4cop/xcube.git
+  - git clone https://github.com/dcs4cop/xcube.git
   - cd xcube
   - mamba env create
   - conda activate xcube
