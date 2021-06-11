@@ -59,4 +59,4 @@ build_script:
   - python setup.py install
 
   # Run the test suite.
-  - pytest -v --cov=cate tests
+  - pytest -v --cov=xcube-cci test
