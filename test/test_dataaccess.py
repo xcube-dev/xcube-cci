@@ -118,6 +118,7 @@ class CciOdpDatasetOpenerTest(unittest.TestCase):
         self.assertFalse(schema['additionalProperties'])
 
     @skipIf(os.environ.get('XCUBE_DISABLE_WEB_TESTS', None) == '1', 'XCUBE_DISABLE_WEB_TESTS = 1')
+    @skip('Data cannot be accessed temporarily')
     def test_open_data(self):
         dataset = self.opener.open_data(
             'esacci.AEROSOL.day.L3C.AOD.MERIS.Envisat.MERIS_ENVISAT.2-2.r1',
@@ -293,17 +294,17 @@ class CciOdpDataStoreTest(unittest.TestCase):
 
     @skipIf(os.environ.get('XCUBE_DISABLE_WEB_TESTS', None) == '1', 'XCUBE_DISABLE_WEB_TESTS = 1')
     def test_search(self):
-        cube_search_result = list(self.store.search_data('dataset[cube]', ecv='FIRE', product_string='MODIS_TERRA'))
+        cube_search_result = list(self.store.search_data('dataset', ecv='FIRE', product_string='MODIS_TERRA'))
         self.assertIsNotNone(cube_search_result)
-        self.assertEqual(1, len(cube_search_result))
-        self.assertIsInstance(cube_search_result[0], DatasetDescriptor)
-        self.assertEqual(5, len(cube_search_result[0].dims))
-        self.assertEqual(6, len(cube_search_result[0].data_vars))
-        self.assertEqual('esacci.FIRE.mon.L4.BA.MODIS.Terra.MODIS_TERRA.v5-1.grid', cube_search_result[0].data_id)
-        self.assertEqual('1M', cube_search_result[0].time_period)
-        self.assertEqual(0.25, cube_search_result[0].spatial_res)
-        self.assertEqual('dataset[cube]', cube_search_result[0].type_specifier)
-        self.assertEqual(('2001-01-01', '2019-12-31'), cube_search_result[0].time_range)
+        self.assertEqual(2, len(cube_search_result))
+        self.assertIsInstance(cube_search_result[1], DatasetDescriptor)
+        self.assertEqual(5, len(cube_search_result[1].dims))
+        self.assertEqual(6, len(cube_search_result[1].data_vars))
+        self.assertEqual('esacci.FIRE.mon.L4.BA.MODIS.Terra.MODIS_TERRA.v5-1.grid', cube_search_result[1].data_id)
+        self.assertEqual('1M', cube_search_result[1].time_period)
+        self.assertEqual(0.25, cube_search_result[1].spatial_res)
+        self.assertEqual('dataset', cube_search_result[1].type_specifier)
+        self.assertEqual(('2001-01-01', '2019-12-31'), cube_search_result[1].time_range)
 
         dataset_search_result = list(self.store.search_data('dataset', ecv='FIRE', product_string='MODIS_TERRA'))
         self.assertIsNotNone(dataset_search_result)
@@ -329,7 +330,7 @@ class CciOdpDataStoreTest(unittest.TestCase):
         self.assertTrue(self.store.has_data('esacci.OZONE.mon.L3.NP.multi-sensor.multi-platform.MERGED.fv0002.r1',
                          'dataset'))
 
-        self.assertTrue(self.store.has_data('esacci.FIRE.mon.L4.BA.MODIS.Terra.MODIS_TERRA.v5-1.grid', 'dataset[cube]'))
+        self.assertTrue(self.store.has_data('esacci.FIRE.mon.L4.BA.MODIS.Terra.MODIS_TERRA.v5-1.grid', 'dataset'))
         self.assertFalse(self.store.has_data('esacci.WIND.mon.L4.BA.MODIS.Terra.MODIS_TERRA.v5-1.grid',
                          'dataset[cube]'))
         self.assertTrue(self.store.has_data('esacci.AEROSOL.day.L3.AAI.multi-sensor.multi-platform.MSAAI.1-7.r1',
@@ -528,6 +529,7 @@ class CciOdpDataStoreTest(unittest.TestCase):
             self.assertEqual(0, sum)
 
     @skipIf(os.environ.get('XCUBE_DISABLE_WEB_TESTS', None) == '1', 'XCUBE_DISABLE_WEB_TESTS = 1')
+    @skip('Data cannot be accessed temporarily')
     def test_open_data(self):
         dataset = self.store.open_data(
             'esacci.AEROSOL.day.L3C.AOD.MERIS.Envisat.MERIS_ENVISAT.2-2.r1',

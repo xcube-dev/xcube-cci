@@ -63,12 +63,12 @@ class CciOdpTest(unittest.TestCase):
         list(dataset_names)
         self.assertTrue(len(dataset_names) > 120)
         self.assertTrue(len(dataset_names) < 250)
-        self.assertTrue('esacci.AEROSOL.day.L3C.AER_PRODUCTS.AATSR.Envisat.ORAC.04-01-.r1'
+        self.assertTrue('esacci.AEROSOL.mon.L3C.AER_PRODUCTS.AATSR.Envisat.SU.4-3.r1'
                         in dataset_names)
-        self.assertFalse(
+        self.assertTrue(
             'esacci.OC.day.L3S.K_490.multi-sensor.multi-platform.MERGED.3-1.sinusoidal'
             in dataset_names)
-        self.assertTrue(
+        self.assertFalse(
             'esacci.SST.satellite-orbit-frequency.L3U.SSTskin.AVHRR-3.NOAA-19.AVHRR19_G.2-1.r1'
             in dataset_names)
 
