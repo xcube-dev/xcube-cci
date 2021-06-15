@@ -32,6 +32,7 @@ import click
 import xarray as xr
 import zarr.storage
 
+from xcube.core.normalize import cubify_dataset
 from xcube_cci.cciodp import CciOdp
 from xcube_cci.chunkstore import CciChunkStore
 
@@ -101,7 +102,10 @@ def gen_report(output_dir: str,
 
     logging.info(f'Running tests for {len(selected_ds_ids)} datasets...')
 
+    id_to_ts = dict()
+
     for i, ds_id in enumerate(selected_ds_ids):
+        type_specifier = ''
         observer, obs_fp = new_observer(output_dir, ds_id) if observe else (None, None)
 
         logging.info(f'Attempting to open #{i+1} of {len(selected_ds_ids)}: {ds_id}')
@@ -111,7 +115,7 @@ def gen_report(output_dir: str,
         try:
             store = CciChunkStore(odp, ds_id, observer=observer, trace_store_calls=True)
         except Exception as e:
-            report_error(output_dir, ds_id, t0, 'CciChunkStore()', e)
+            report_error(output_dir, ds_id, t0, 'CciChunkStore()', e, type_specifier)
             continue
 
         if cache_size > 0:
@@ -120,12 +124,22 @@ def gen_report(output_dir: str,
         try:
             logging.info('Attempting to open zarr ...')
             ds = xr.open_zarr(store)
-            report_success(output_dir, ds_id, t0, ds)
+            type_specifier = 'dataset'
+            try:
+                ds = cubify_dataset(ds)
+                type_specifier = 'dataset[cube]'
+            except ValueError as ve:
+                pass
+            report_success(output_dir, ds_id, t0, ds, type_specifier)
         except Exception as e:
-            report_error(output_dir, ds_id, t0, 'xr.open_zarr()', e)
+            report_error(output_dir, ds_id, t0, 'xr.open_zarr()', e, type_specifier)
+
+        id_to_ts[ds_id] = type_specifier
 
         if obs_fp is not None:
             obs_fp.close()
+
+    report_type_specifiers(output_dir, ts_dict=id_to_ts)
 
     logging.info(f'Tests completed.')
 
@@ -159,8 +173,8 @@ def new_observer(output_dir, ds_id):
     return observer, fp
 
 
-def report_success(output_dir: str, ds_id: str, t0: float, ds: xr.Dataset):
-    obj = ds_to_dict(ds_id, time.perf_counter() - t0, ds)
+def report_success(output_dir: str, ds_id: str, t0: float, ds: xr.Dataset, type_specifier: str):
+    obj = ds_to_dict(ds_id, time.perf_counter() - t0, ds, type_specifier)
     path = os.path.join(output_dir, f'SUCCESS@{ds_id}.json')
     try:
         with open(path, 'w') as fp:
@@ -172,8 +186,8 @@ def report_success(output_dir: str, ds_id: str, t0: float, ds: xr.Dataset):
         report_error(output_dir, ds_id, time.perf_counter() - t0, 'to_json()', e)
 
 
-def report_error(output_dir: str, ds_id: str, t0: float, stage: str, e: Exception):
-    obj = error_to_dict(ds_id, stage, time.perf_counter() - t0, e)
+def report_error(output_dir: str, ds_id: str, t0: float, stage: str, e: Exception, type_specifier: str):
+    obj = error_to_dict(ds_id, stage, time.perf_counter() - t0, e, type_specifier)
     json_path = os.path.join(output_dir, f'ERROR@{ds_id}.json')
     text_path = os.path.join(output_dir, f'ERROR@{ds_id}.txt')
     with open(json_path, 'w') as fp:
@@ -183,9 +197,16 @@ def report_error(output_dir: str, ds_id: str, t0: float, stage: str, e: Exceptio
     logging.error(f'{stage}: {ds_id} took {format_millis(obj["duration"])}: {e}')
 
 
-def ds_to_dict(ds_id: str, duration: float, ds: xr.Dataset) -> dict:
+def report_type_specifiers(output_dir: str, ts_dict: dict):
+    json_path = os.path.join(output_dir, f'type_specifiers.json')
+    with open(json_path, 'w') as fp:
+        json.dump(ts_dict, fp, indent=2)
+
+
+def ds_to_dict(ds_id: str, duration: float, ds: xr.Dataset, type_specifier: str) -> dict:
     return dict(ds_id=ds_id,
                 status='ok',
+                type_specifier=type_specifier,
                 duration=duration,
                 dataset=dict(sizes=dict(ds.sizes),
                              coord_vars=vars_to_list(ds.coords),
@@ -193,8 +214,9 @@ def ds_to_dict(ds_id: str, duration: float, ds: xr.Dataset) -> dict:
                              attrs=dict(ds.attrs)))
 
 
-def error_to_dict(ds_id: str, stage: str, duration: float, e: Exception) -> dict:
+def error_to_dict(ds_id: str, stage: str, duration: float, e: Exception, type_specifier: str) -> dict:
     return dict(ds_id=ds_id,
+                typeSpecifier=type_specifier,
                 status='error',
                 duration=duration,
                 error=dict(type=str(type(e)),
