@@ -4,6 +4,9 @@
   of random numbers where a fill value would have been expected. (#47) 
 * DataDescriptors contain coords
 * Internal virtual file system is built lazily, so opening datasets has become faster.
+* Store parameter method `get_search_params_schema` has been revised to correctly support 
+  all parameter values.
+* Support more datasets from ODP.  
 
 ## Changes in 0.8.0
 
