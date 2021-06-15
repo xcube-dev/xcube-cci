@@ -161,9 +161,12 @@ esacci.SNOW.day.L3C.SCFG.multi-sensor.multi-platform.AVHRR_MERGED.1-0.r1
 esacci.SNOW.day.L3C.SCFV.MODIS.Terra.MODIS_TERRA.1-0.r1
 esacci.SNOW.day.L3C.SCFV.multi-sensor.multi-platform.AVHRR_MERGED.1-0.r1
 esacci.SNOW.day.L3C.SWE.multi-sensor.multi-platform.MERGED.1-0.r1
+esacci.SOILMOISTURE.day.L3S.SSMS.multi-sensor.multi-platform.ACTIVE.05-2.r1
 esacci.SOILMOISTURE.day.L3S.SSMS.multi-sensor.multi-platform.ACTIVE.v06-1.r1
+esacci.SOILMOISTURE.day.L3S.SSMV.multi-sensor.multi-platform.COMBINED.05-2.r1
 esacci.SOILMOISTURE.day.L3S.SSMV.multi-sensor.multi-platform.COMBINED.v05-3.r1
 esacci.SOILMOISTURE.day.L3S.SSMV.multi-sensor.multi-platform.COMBINED.v06-1.r1
+esacci.SOILMOISTURE.day.L3S.SSMV.multi-sensor.multi-platform.PASSIVE.05-2.r1
 esacci.SOILMOISTURE.day.L3S.SSMV.multi-sensor.multi-platform.PASSIVE.v05-3.r1
 esacci.SOILMOISTURE.day.L3S.SSMV.multi-sensor.multi-platform.PASSIVE.v06-1.r1
 esacci.SST.climatology.L4.SSTdepth.multi-sensor.multi-platform.OSTIA.2-1.r1
