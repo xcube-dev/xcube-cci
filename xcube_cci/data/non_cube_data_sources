@@ -130,6 +130,14 @@ esacci.OZONE.mon.L3.LP.SCIAMACHY.Envisat.SCIAMACHY_ENVISAT.v0001.r1
 esacci.OZONE.mon.L3.LP.SMR.ODIN.MZM.v0001.r1
 esacci.OZONE.mon.L3.LP.SMR.ODIN.SMR_ODIN.v0001.r1
 esacci.OZONE.mon.L3.NP.multi-sensor.multi-platform.MERGED.fv0002.r1
+esacci.SEAICE.day.L4.SICONC.multi-sensor.multi-platform.AMSR_25kmEASE2.2-1.NH
+esacci.SEAICE.day.L4.SICONC.multi-sensor.multi-platform.AMSR_25kmEASE2.2-1.SH
+esacci.SEAICE.day.L4.SICONC.multi-sensor.multi-platform.AMSR_50kmEASE2.2-1.NH
+esacci.SEAICE.day.L4.SICONC.multi-sensor.multi-platform.AMSR_50kmEASE2.2-1.SH
+esacci.SEAICE.mon.L3C.SITHICK.RA-2.Envisat.NH25KMEASE2.2-0.r1
+esacci.SEAICE.mon.L3C.SITHICK.RA-2.Envisat.SH50KMEASE2.2-0.r1
+esacci.SEAICE.mon.L3C.SITHICK.SIRAL.CryoSat-2.NH25KMEASE2.2-0.r1
+esacci.SEAICE.mon.L3C.SITHICK.SIRAL.CryoSat-2.SH50KMEASE2.2-0.r1
 esacci.SEAICE.satellite-orbit-frequency.L2P.SITHICK.RA-2.Envisat.NH.2-0.r1
 esacci.SEAICE.satellite-orbit-frequency.L2P.SITHICK.RA-2.Envisat.SH.2-0.r1
 esacci.SEAICE.satellite-orbit-frequency.L2P.SITHICK.SIRAL.CryoSat-2.NH.2-0.r1
