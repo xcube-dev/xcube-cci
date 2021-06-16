@@ -50,7 +50,10 @@
     "esacci.AEROSOL.day.L3C.AER_PRODUCTS.ATSR-2.ERS-2.ORAC.04-01_seg-.r1": {
         "type_specifier": "dataset",
         "verification_flags": [
-            "open"
+            "open",
+            "constrain_time",
+            "constrain_region",
+            "write_zarr"
         ]
     },
     "esacci.AEROSOL.day.L3C.AER_PRODUCTS.ATSR-2.ERS-2.SU.4-3.r1": {
