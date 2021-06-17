@@ -1,4 +1,11 @@
 {
+    "esacci.AEROSOL.5-days.L3C.AEX.GOMOS.Envisat.AERGOM.3-00.r1": {
+        "type_specifier": "dataset",
+        "verification_flags": [
+            "open",
+            "constrain_time"
+        ]
+    },
     "esacci.AEROSOL.climatology.L3.AAI.multi-sensor.multi-platform.MSAAI.1-7.r1": {
         "type_specifier": "dataset",
         "verification_flags": []
@@ -23,7 +30,21 @@
     },
     "esacci.AEROSOL.day.L3C.AER_PRODUCTS.AATSR.Envisat.ORAC.04-01-.r1": {
         "type_specifier": "dataset",
-        "verification_flags": []
+        "verification_flags": [
+            "open",
+            "constrain_time",
+            "constrain_region",
+            "write_zarr"
+        ]
+    },
+    "esacci.AEROSOL.day.L3C.AER_PRODUCTS.AATSR.Envisat.ORAC.04-01_seg-.r1": {
+        "type_specifier": "dataset",
+        "verification_flags": [
+            "open",
+            "constrain_time",
+            "constrain_region",
+            "write_zarr"
+        ]
     },
     "esacci.AEROSOL.day.L3C.AER_PRODUCTS.AATSR.Envisat.SU.4-3.r1": {
         "type_specifier": "dataset",
@@ -45,7 +66,12 @@
     },
     "esacci.AEROSOL.day.L3C.AER_PRODUCTS.ATSR-2.ERS-2.ORAC.04-01-.r1": {
         "type_specifier": "dataset",
-        "verification_flags": []
+        "verification_flags": [
+            "open",
+            "constrain_time",
+            "constrain_region",
+            "write_zarr"
+        ]
     },
     "esacci.AEROSOL.day.L3C.AER_PRODUCTS.ATSR-2.ERS-2.ORAC.04-01_seg-.r1": {
         "type_specifier": "dataset",
@@ -76,7 +102,10 @@
     },
     "esacci.AEROSOL.day.L3C.AER_PRODUCTS.multi-sensor.multi-platform.ATSR2-ENVISAT-ENS_DAILY.v2-6.r1": {
         "type_specifier": "dataset",
-        "verification_flags": []
+        "verification_flags": [
+            "open",
+            "constrain_time"
+        ]
     },
     "esacci.AEROSOL.day.L3C.AOD.MERIS.Envisat.MERIS_ENVISAT.2-2.r1": {
         "type_specifier": "dataset",
@@ -103,7 +132,10 @@
     "esacci.AEROSOL.mon.L3C.AER_PRODUCTS.AATSR.Envisat.ORAC.04-01-.r1": {
         "type_specifier": "dataset",
         "verification_flags": [
-            "open"
+            "open",
+            "constrain_time",
+            "constrain_region",
+            "write_zarr"
         ]
     },
     "esacci.AEROSOL.mon.L3C.AER_PRODUCTS.AATSR.Envisat.ORAC.04-01_seg-.r1": {
@@ -136,7 +168,19 @@
     "esacci.AEROSOL.mon.L3C.AER_PRODUCTS.ATSR-2.ERS-2.ORAC.04-01-.r1": {
         "type_specifier": "dataset",
         "verification_flags": [
-            "open"
+            "open",
+            "constrain_time",
+            "constrain_region",
+            "write_zarr"
+        ]
+    },
+    "esacci.AEROSOL.mon.L3C.AER_PRODUCTS.ATSR-2.ERS-2.ORAC.04-01_seg-.r1": {
+        "type_specifier": "dataset",
+        "verification_flags": [
+            "open",
+            "constrain_time",
+            "constrain_region",
+            "write_zarr"
         ]
     },
     "esacci.AEROSOL.mon.L3C.AER_PRODUCTS.multi-sensor.multi-platform.AATSR-ENVISAT-ENS_MONTHLY.v2-6.r1": {
