@@ -278,7 +278,7 @@ class CciOdpDatasetOpener(CciOdpDataOpener):
         return ds
 
     def _normalize_dims(self, dims: dict) -> dict:
-        return dims
+        return dims.copy()
 
     def _normalize_var_dims(self, var_dims: List[str]) -> Optional[List[str]]:
         new_var_dims = var_dims.copy()

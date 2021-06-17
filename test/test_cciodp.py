@@ -27,6 +27,19 @@ class CciOdpTest(unittest.TestCase):
         self.assertEqual(64261, len(data_array))
         self.assertAlmostEqual(1024.4185, data_array[-1], 4)
 
+        # check whether data type has been converted to
+        request = dict(parentIdentifier=id,
+                       startDate='1997-05-01T00:00:00',
+                       endDate='1997-05-01T00:00:00',
+                       varNames=['layers'],
+                       drsId='esacci.OZONE.mon.L3.NP.multi-sensor.multi-platform.MERGED.fv0002.r1')
+        dim_indexes = (slice(None, None), slice(0, 179), slice(0, 359))
+        data = cci_odp.get_data_chunk(request, dim_indexes)
+        self.assertIsNotNone(data)
+        data_array = np.frombuffer(data, dtype=np.int64)
+        self.assertEqual(16, len(data_array))
+        self.assertAlmostEqual(15, data_array[-2])
+
     @skipIf(os.environ.get('XCUBE_DISABLE_WEB_TESTS', None) == '1', 'XCUBE_DISABLE_WEB_TESTS = 1')
     def test_dataset_names(self):
         cci_odp = CciOdp()
@@ -50,12 +63,12 @@ class CciOdpTest(unittest.TestCase):
         list(dataset_names)
         self.assertTrue(len(dataset_names) > 120)
         self.assertTrue(len(dataset_names) < 250)
-        self.assertTrue('esacci.AEROSOL.day.L3C.AER_PRODUCTS.AATSR.Envisat.ORAC.04-01-.r1'
+        self.assertTrue('esacci.AEROSOL.mon.L3C.AER_PRODUCTS.AATSR.Envisat.SU.4-3.r1'
                         in dataset_names)
-        self.assertFalse(
+        self.assertTrue(
             'esacci.OC.day.L3S.K_490.multi-sensor.multi-platform.MERGED.3-1.sinusoidal'
             in dataset_names)
-        self.assertTrue(
+        self.assertFalse(
             'esacci.SST.satellite-orbit-frequency.L3U.SSTskin.AVHRR-3.NOAA-19.AVHRR19_G.2-1.r1'
             in dataset_names)
 
@@ -184,12 +197,15 @@ class CciOdpTest(unittest.TestCase):
              'chunk_sizes': [1, 432, 432],
              'file_chunk_sizes': [1, 432, 432],
              'data_type': 'float32',
+             'orig_data_type': 'float32',
              'dimensions': ['time', 'yc', 'xc'],
              'file_dimensions': ['time', 'yc', 'xc'],
              'fill_value': np.nan,
              'size': 186624,
              'shape': [1, 432, 432]},
             datasets_metadata[2].get('variable_infos').get('freeboard'))
+        self.assertEqual('uint16', datasets_metadata[2].get('variable_infos').get('status_flag').
+                         get('data_type'))
 
     @skipIf(os.environ.get('XCUBE_DISABLE_WEB_TESTS', None) == '1', 'XCUBE_DISABLE_WEB_TESTS = 1')
     @skip('Disabled while old archive is set up')
