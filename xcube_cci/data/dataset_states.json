@@ -748,7 +748,20 @@
         "type_specifier": "dataset",
         "verification_flags": []
     },
+    "esacci.LAKES.day.L3S.LK_PRODUCTS.multi-sensor.multi-platform.MERGED.v1-0.r1": {
+        "type_specifier": "dataset",
+        "verification_flags": []
+    },
     "esacci.LC.13-yrs.L4.WB.ASAR.Envisat.Map.4-0.r1": {
+        "type_specifier": "dataset",
+        "verification_flags": [
+            "open",
+            "constrain_time",
+            "constrain_region",
+            "write_zarr"
+        ]
+    },
+    "esacci.LC.yr.L4.LCCS.multi-sensor.multi-platform.Map.2-0-7.r1": {
         "type_specifier": "dataset",
         "verification_flags": [
             "open",
