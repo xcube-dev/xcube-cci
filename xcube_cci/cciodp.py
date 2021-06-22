@@ -758,8 +758,10 @@ class CciOdp:
                                                       self._extract_times_and_opendap_url, request)
             if len(feature_list) == 0:
                 # try without dates. For some data sets, this works better
-                request.pop('startDate')
-                request.pop('endDate')
+                if 'startDate' in request:
+                    request.pop('startDate')
+                if 'endDate' in request:
+                    request.pop('endDate')
                 await self._fetch_opensearch_feature_list(session,
                                                           self._opensearch_url,
                                                           feature_list,
