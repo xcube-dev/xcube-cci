@@ -6,7 +6,8 @@
 * Internal virtual file system is built lazily, so opening datasets has become faster.
 * Store parameter method `get_search_params_schema` has been revised to correctly support 
   all parameter values.
-* Support more datasets from ODP.  
+* Support more datasets from ODP.
+* Fixed support of `user_agent` parameter
 
 ## Changes in 0.8.0
 

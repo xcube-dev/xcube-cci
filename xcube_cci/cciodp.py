@@ -388,7 +388,7 @@ class CciOdp:
         self._num_retries = num_retries
         self._retry_backoff_max = retry_backoff_max
         self._retry_backoff_base = retry_backoff_base
-        self._headers = {'User_Agent': user_agent} if user_agent else None
+        self._headers = {'User-Agent': user_agent} if user_agent else None
         self._drs_ids = None
         self._data_sources = {}
         self._features = {}
