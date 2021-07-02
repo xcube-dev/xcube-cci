@@ -44,9 +44,7 @@ from xcube_cci.constants import DEFAULT_RETRY_BACKOFF_MAX
 from xcube_cci.constants import DEFAULT_RETRY_BACKOFF_BASE
 from xcube_cci.constants import OPENSEARCH_CEDA_URL
 from xcube_cci.timeutil import get_timestrings_from_string
-from xcube.core.store import DataStoreError
 
-from pydap.client import Functions
 from pydap.handlers.dap import BaseProxy
 from pydap.handlers.dap import SequenceProxy
 from pydap.handlers.dap import unpack_data
@@ -392,7 +390,7 @@ class CciOdp:
         self._drs_ids = None
         self._data_sources = {}
         self._features = {}
-        self._datasets = {}
+        self._result_dicts = {}
         eds_file = os.path.join(os.path.dirname(os.path.abspath(__file__)),
                                 'data/excluded_data_sources')
         with open(eds_file, 'r') as eds:
@@ -1163,14 +1161,22 @@ class CciOdp:
     def get_opendap_dataset(self, url: str):
         return self._run_with_session(self._get_opendap_dataset, url)
 
-    async def _get_opendap_dataset(self, session, url: str):
-        if url in self._datasets:
-            return self._datasets[url]
+    async def _get_result_dict(self, session, url: str):
+        if url in self._result_dicts:
+            return self._result_dicts[url]
         tasks = []
         res_dict = {}
         tasks.append(self._get_content_from_opendap_url(url, 'dds', res_dict, session))
         tasks.append(self._get_content_from_opendap_url(url, 'das', res_dict, session))
         await asyncio.gather(*tasks)
+        if 'das' in res_dict:
+            res_dict['das'] = res_dict['das'].replace('        Float32 valid_min -Infinity;\n', '')
+            res_dict['das'] = res_dict['das'].replace('        Float32 valid_max Infinity;\n', '')
+        self._result_dicts[url] = res_dict
+        return res_dict
+
+    async def _get_opendap_dataset(self, session, url: str):
+        res_dict = await self._get_result_dict(session, url)
         if 'dds' not in res_dict or 'das' not in res_dict:
             _LOG.warning('Could not open opendap url. No dds or das file provided.')
             return
@@ -1178,8 +1184,6 @@ class CciOdp:
             _LOG.warning('Could not open opendap url. dds file is empty.')
             return
         dataset = build_dataset(res_dict['dds'])
-        res_dict['das'] = res_dict['das'].replace('        Float32 valid_min -Infinity;\n', '')
-        res_dict['das'] = res_dict['das'].replace('        Float32 valid_max Infinity;\n', '')
         add_attributes(dataset, parse_das(res_dict['das']))
 
         # remove any projection from the url, leaving selections
@@ -1214,8 +1218,6 @@ class CciOdp:
         for var in walk(dataset, GridType):
             var.set_output_grid(True)
 
-        dataset.functions = Functions(url)
-        self._datasets[url] = dataset
         return dataset
 
     async def _get_content_from_opendap_url(self, url: str, part: str, res_dict: dict, session):
