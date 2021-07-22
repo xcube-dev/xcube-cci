@@ -8,6 +8,7 @@
   all parameter values.
 * Support more datasets from ODP.
 * Fixed support of `user_agent` parameter
+* Added CCI Zarr Store as convenience store to access cci zarr datasets
 
 ## Changes in 0.8.0
 
