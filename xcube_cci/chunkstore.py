@@ -100,6 +100,7 @@ class RemoteChunkStore(MutableMapping, metaclass=ABCMeta):
         lon_size = -1
         lat_size = -1
         self._dimension_chunk_offsets = {}
+        self._dimensions = self.get_dimensions()
         self._dimension_data = self.get_dimension_data(data_id)
         logging.debug('Determined dimensionalities')
         self._dimension_data['time'] = {}
@@ -194,7 +195,10 @@ class RemoteChunkStore(MutableMapping, metaclass=ABCMeta):
             self._time_indexes[variable_name] = -1
             time_dimension = -1
             for i, dimension_name in enumerate(dimensions):
-                sizes.append(self._dimension_data[dimension_name]['size'])
+                if dimension_name in self._dimension_data:
+                    sizes.append(self._dimension_data[dimension_name]['size'])
+                else:
+                    sizes.append(self._dimensions.get(dimension_name))
                 if dimension_name == 'time':
                     self._time_indexes[variable_name] = i
                     time_dimension = i
@@ -386,6 +390,10 @@ class RemoteChunkStore(MutableMapping, metaclass=ABCMeta):
 
     # def get_spatial_lon_res(self):
     #     return self._cube_config.spatial_res
+
+    @abstractmethod
+    def get_dimensions(self) -> Mapping[str, int]:
+        pass
 
     @abstractmethod
     def get_dimension_data(self, dataset_id: str) -> dict:
@@ -723,6 +731,9 @@ class CciChunkStore(RemoteChunkStore):
 
     def get_all_variable_names(self) -> List[str]:
         return [variable['name'] for variable in self._metadata['variables']]
+
+    def get_dimensions(self) -> Mapping[str, int]:
+        return self._metadata['dimensions']
 
     def get_dimension_data(self, dataset_id: str):
         dimensions = self._metadata['dimensions']
