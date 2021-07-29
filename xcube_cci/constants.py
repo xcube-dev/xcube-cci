@@ -24,6 +24,8 @@ CUBE_OPENER_ID = f'dataset[cube]:zarr:{DATA_STORE_ID}'
 DATASET_OPENER_ID = f'dataset:zarr:{DATA_STORE_ID}'
 DATA_ARRAY_NAME = 'var_data'
 
+ZARR_DATA_STORE_ID = 'ccizarr'
+
 OPENSEARCH_CEDA_URL = "https://archive.opensearch.ceda.ac.uk/opensearch/request"
 CCI_ODD_URL = 'https://archive.opensearch.ceda.ac.uk/opensearch/description.xml?parentIdentifier=cci'
 # to test with opensearch test, use the following two lines instead the upper two

@@ -24,6 +24,7 @@ from xcube.constants import EXTENSION_POINT_DATA_STORES
 from xcube_cci.constants import DATA_STORE_ID
 from xcube_cci.constants import CUBE_OPENER_ID
 from xcube_cci.constants import DATASET_OPENER_ID
+from xcube_cci.constants import ZARR_DATA_STORE_ID
 from xcube.util import extension
 
 
@@ -89,5 +90,5 @@ def init_plugin(ext_registry: extension.ExtensionRegistry):
         loader=extension.import_component(
             'xcube_cci.zarraccess:CciZarrDataStore'),
         point=EXTENSION_POINT_DATA_STORES,
-        name=DATA_STORE_ID,
+        name=ZARR_DATA_STORE_ID,
         description='ESA CCI Zarr Store')
