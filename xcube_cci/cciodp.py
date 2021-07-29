@@ -1138,8 +1138,11 @@ class CciOdp:
                     variable_infos[fixed_key]['fill_value'] = \
                         self._determine_fill_value(np.dtype(data_type))
                 else:
-                    warnings.warn(f'Variable "{fixed_key}" has no fill value, cannot set one.'
-                                  f'You may experience incorrect data values.',
+                    warnings.warn(f'Variable "{fixed_key}" has no fill value, '
+                                  f'cannot set one. For parts where no data is'
+                                  f'available you will see random values. This'
+                                  f'is usually the case when data is missing '
+                                  f'for a time step.',
                                   category=CciOdpWarning)
             if '_ChunkSizes' in variable_infos[fixed_key]:
                 variable_infos[fixed_key]['chunk_sizes'] = variable_infos[fixed_key]['_ChunkSizes']
