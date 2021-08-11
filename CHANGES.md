@@ -1,4 +1,4 @@
-## Changes in 0.8.1 (in development)
+## Changes in 0.8.1
 
 * Fixed an issue that caused that occasionally values returned by open_data consisted 
   of random numbers where a fill value would have been expected. (#47) 
