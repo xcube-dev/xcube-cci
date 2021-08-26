@@ -52,7 +52,7 @@ class CciZarrDataStoreTest(unittest.TestCase):
                          self.store.get_data_opener_ids(type_specifier='*'))
         with self.assertRaises(ValueError) as cm:
             self.store.get_data_opener_ids(type_specifier='dataset[cube]')
-        self.assertEqual("type_specifier must be one of ('dataset',)",
+        self.assertEqual("data_type must be one of ('dataset',)",
                          f'{cm.exception}')
 
     def test_get_open_data_params_schema(self):

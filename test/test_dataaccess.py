@@ -55,7 +55,7 @@ class CciOdpDatasetOpenerTest(unittest.TestCase):
         self.assertIsNotNone(descriptor)
         self.assertIsInstance(descriptor, DatasetDescriptor)
         self.assertEqual('esacci.OZONE.mon.L3.NP.multi-sensor.multi-platform.MERGED.fv0002.r1', descriptor.data_id)
-        self.assertEqual('dataset', str(descriptor.type_specifier))
+        self.assertEqual('dataset', str(descriptor.data_type))
         self.assertEqual(['lon', 'lat', 'layers', 'air_pressure', 'time'], list(descriptor.dims.keys()))
         self.assertEqual(360, descriptor.dims['lon'])
         self.assertEqual(180, descriptor.dims['lat'])
@@ -76,7 +76,7 @@ class CciOdpDatasetOpenerTest(unittest.TestCase):
         self.assertIsNotNone(descriptor)
         self.assertIsInstance(descriptor, DatasetDescriptor)
         self.assertEqual('esacci.AEROSOL.day.L3.AAI.multi-sensor.multi-platform.MSAAI.1-7.r1', descriptor.data_id)
-        self.assertEqual('dataset', str(descriptor.type_specifier))
+        self.assertEqual('dataset', str(descriptor.data_type))
         self.assertEqual(['longitude', 'latitude', 'time'], list(descriptor.dims.keys()))
         self.assertEqual(360, descriptor.dims['longitude'])
         self.assertEqual(180, descriptor.dims['latitude'])
@@ -168,7 +168,7 @@ class CciOdpCubeOpenerTest(unittest.TestCase):
         self.assertIsNotNone(descriptor)
         self.assertIsInstance(descriptor, DatasetDescriptor)
         self.assertEqual('esacci.AEROSOL.day.L3.AAI.multi-sensor.multi-platform.MSAAI.1-7.r1', descriptor.data_id)
-        self.assertEqual('dataset[cube]', str(descriptor.type_specifier))
+        self.assertEqual('dataset', str(descriptor.data_type))
         self.assertEqual(['lat', 'lon', 'time'], list(descriptor.dims.keys()))
         self.assertEqual(360, descriptor.dims['lon'])
         self.assertEqual(180, descriptor.dims['lat'])
@@ -261,19 +261,19 @@ class CciOdpDataStoreTest(unittest.TestCase):
         self.assertTrue('user_agent' in cci_store_params_schema['properties'])
 
     def test_get_type_specifiers(self):
-        self.assertEqual(('dataset', 'dataset[cube]'), CciOdpDataStore.get_type_specifiers())
+        self.assertEqual(('dataset',), CciOdpDataStore.get_data_types())
 
     def test_get_type_specifiers_for_data(self):
-        type_specifiers_for_data = self.store.get_type_specifiers_for_data(
+        type_specifiers_for_data = self.store.get_data_types_for_data(
             'esacci.AEROSOL.day.L3.AAI.multi-sensor.multi-platform.MSAAI.1-7.r1')
-        self.assertEqual(('dataset', 'dataset[cube]'), type_specifiers_for_data)
+        self.assertEqual(('dataset', ), type_specifiers_for_data)
 
-        type_specifiers_for_data = self.store.get_type_specifiers_for_data(
+        type_specifiers_for_data = self.store.get_data_types_for_data(
             'esacci.OZONE.mon.L3.NP.multi-sensor.multi-platform.MERGED.fv0002.r1')
         self.assertEqual(('dataset', ), type_specifiers_for_data)
 
         with self.assertRaises(DataStoreError) as dse:
-            self.store.get_type_specifiers_for_data('nonsense')
+            self.store.get_data_types_for_data('nonsense')
         self.assertEqual('Data resource "nonsense" does not exist in store', f'{dse.exception}')
 
     def test_get_search_params(self):
@@ -303,14 +303,14 @@ class CciOdpDataStoreTest(unittest.TestCase):
         self.assertEqual('esacci.FIRE.mon.L4.BA.MODIS.Terra.MODIS_TERRA.v5-1.grid', cube_search_result[1].data_id)
         self.assertEqual('1M', cube_search_result[1].time_period)
         self.assertEqual(0.25, cube_search_result[1].spatial_res)
-        self.assertEqual('dataset', cube_search_result[1].type_specifier)
+        self.assertEqual('dataset', cube_search_result[1].data_type)
         self.assertEqual(('2001-01-01', '2019-12-31'), cube_search_result[1].time_range)
 
         dataset_search_result = list(self.store.search_data('dataset', ecv='FIRE', product_string='MODIS_TERRA'))
         self.assertIsNotNone(dataset_search_result)
         self.assertEqual(2, len(dataset_search_result))
-        self.assertEqual('dataset', dataset_search_result[0].type_specifier)
-        self.assertEqual('dataset', dataset_search_result[1].type_specifier)
+        self.assertEqual('dataset', dataset_search_result[0].data_type)
+        self.assertEqual('dataset', dataset_search_result[1].data_type)
 
         geodataframe_search_result = list(self.store.search_data('geodataframe'))
         self.assertIsNotNone(geodataframe_search_result)
@@ -345,7 +345,7 @@ class CciOdpDataStoreTest(unittest.TestCase):
         self.assertIsInstance(descriptor, DatasetDescriptor)
         self.assertEqual('esacci.OZONE.mon.L3.NP.multi-sensor.multi-platform.MERGED.fv0002.r1',
                          descriptor.data_id)
-        self.assertEqual('dataset', str(descriptor.type_specifier))
+        self.assertEqual('dataset', str(descriptor.data_type))
         self.assertEqual(['lon', 'lat', 'layers', 'air_pressure', 'time'],
                          list(descriptor.dims.keys()))
         self.assertEqual(360, descriptor.dims['lon'])
@@ -367,7 +367,7 @@ class CciOdpDataStoreTest(unittest.TestCase):
         self.assertIsNotNone(descriptor)
         self.assertIsInstance(descriptor, DatasetDescriptor)
         self.assertEqual('esacci.AEROSOL.day.L3.AAI.multi-sensor.multi-platform.MSAAI.1-7.r1', descriptor.data_id)
-        self.assertEqual('dataset', str(descriptor.type_specifier))
+        self.assertEqual('dataset', str(descriptor.data_type))
         self.assertEqual(['longitude', 'latitude', 'time'], list(descriptor.dims.keys()))
         self.assertEqual(360, descriptor.dims['longitude'])
         self.assertEqual(180, descriptor.dims['latitude'])
@@ -386,7 +386,7 @@ class CciOdpDataStoreTest(unittest.TestCase):
         with self.assertRaises(DataStoreError) as dse:
             self.store.describe_data(
                 'esacci.OZONE.mon.L3.NP.multi-sensor.multi-platform.MERGED.fv0002.r1',
-                type_specifier='dataset[cube]')
+                data_type='dataset[cube]')
         self.assertEqual(
             'Cannot describe metadata of data resource '
             '"esacci.OZONE.mon.L3.NP.multi-sensor.multi-platform.MERGED.fv0002.r1", as it cannot '
@@ -395,11 +395,11 @@ class CciOdpDataStoreTest(unittest.TestCase):
 
         descriptor = self.store.describe_data(
             'esacci.AEROSOL.day.L3.AAI.multi-sensor.multi-platform.MSAAI.1-7.r1',
-            type_specifier='dataset[cube]')
+            data_type='dataset')
         self.assertIsNotNone(descriptor)
         self.assertIsInstance(descriptor, DatasetDescriptor)
         self.assertEqual('esacci.AEROSOL.day.L3.AAI.multi-sensor.multi-platform.MSAAI.1-7.r1', descriptor.data_id)
-        self.assertEqual('dataset[cube]', str(descriptor.type_specifier))
+        self.assertEqual('dataset', str(descriptor.data_type))
         self.assertEqual(['lat', 'lon', 'time'], list(descriptor.dims.keys()))
         self.assertEqual(360, descriptor.dims['lon'])
         self.assertEqual(180, descriptor.dims['lat'])
@@ -424,10 +424,10 @@ class CciOdpDataStoreTest(unittest.TestCase):
         for dataset_id in dataset_ids:
             self.assertIsInstance(dataset_id, str)
 
-        dataset_ids_iter = self.store.get_data_ids(type_specifier='dataset[cube]',
+        dataset_ids_iter = self.store.get_data_ids(data_type='dataset[cube]',
                                                    include_attrs=['title',
                                                                   'verification_flags',
-                                                                  'type_specifier'])
+                                                                  'data_type_alias'])
         self.assertIsNotNone(dataset_ids_iter)
         dataset_ids = list(dataset_ids_iter)
         self.assertTrue(len(dataset_ids) < 200)

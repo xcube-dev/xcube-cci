@@ -28,14 +28,12 @@ import xarray as xr
 import zarr
 
 from xcube.core.normalize import cubify_dataset
+from xcube.core.store import DATASET_TYPE
 from xcube.core.store import DataDescriptor
 from xcube.core.store import DataOpener
 from xcube.core.store import DataStore
 from xcube.core.store import DataStoreError
 from xcube.core.store import DatasetDescriptor
-from xcube.core.store import TYPE_SPECIFIER_CUBE
-from xcube.core.store import TYPE_SPECIFIER_DATASET
-from xcube.core.store import TypeSpecifier
 from xcube.core.store import VariableDescriptor
 from xcube.util.jsonschema import JsonArraySchema
 from xcube.util.jsonschema import JsonBooleanSchema
@@ -167,7 +165,7 @@ class CciOdpDataOpener(DataOpener):
     def _get_variable_descriptors(self,
                                   var_names: str,
                                   var_infos: dict,
-                                  normalize_dims: bool=True) \
+                                  normalize_dims: bool = True) \
             -> Dict[str, VariableDescriptor]:
         var_descriptors = {}
         for var_name in var_names:
@@ -345,37 +343,37 @@ class CciOdpDataStore(DataStore):
         )
 
     @classmethod
-    def get_type_specifiers(cls) -> Tuple[str, ...]:
+    def get_data_types(cls) -> Tuple[str, ...]:
         return TYPE_SPECIFIER_DATASET, TYPE_SPECIFIER_CUBE
 
-    def get_type_specifiers_for_data(self, data_id: str) -> Tuple[str, ...]:
-        if self.has_data(data_id, type_specifier=str(TYPE_SPECIFIER_CUBE)):
+    def get_data_types_for_data(self, data_id: str) -> Tuple[str, ...]:
+        if self.has_data(data_id, data_type=str(TYPE_SPECIFIER_CUBE)):
             return str(TYPE_SPECIFIER_DATASET), str(TYPE_SPECIFIER_CUBE)
-        if self.has_data(data_id, type_specifier=str(TYPE_SPECIFIER_DATASET)):
+        if self.has_data(data_id, data_type=str(TYPE_SPECIFIER_DATASET)):
             return str(TYPE_SPECIFIER_DATASET),
         raise DataStoreError(f'Data resource "{data_id}" does not exist in store')
 
-    def _get_opener(self, opener_id: str = None, type_specifier: str = None) -> CciOdpDataOpener:
+    def _get_opener(self, opener_id: str = None, data_type: str = None) -> CciOdpDataOpener:
         self._assert_valid_opener_id(opener_id)
-        self._assert_valid_type_specifier(type_specifier)
-        if type_specifier:
-            if TYPE_SPECIFIER_CUBE.is_satisfied_by(type_specifier):
+        self._assert_valid_data_type(data_type)
+        if data_type:
+            if DATASET_TYPE.is_super_type_of(data_type):
                 type_opener_id = CUBE_OPENER_ID
             else:
                 type_opener_id = DATASET_OPENER_ID
             if opener_id and opener_id != type_opener_id:
                 raise DataStoreError(f'Invalid combination of opener_id "{opener_id}" '
-                                     f'and type_specifier "{type_specifier}"')
+                                     f'and data_type "{data_type}"')
             opener_id = type_opener_id
         if opener_id == CUBE_OPENER_ID:
             return self._cube_opener
         return self._dataset_opener
 
     def get_data_ids(self,
-                     type_specifier: str = None,
+                     data_type: str = None,
                      include_attrs: Container[str] = None) -> \
             Union[Iterator[str], Iterator[Tuple[str, Dict[str, Any]]]]:
-        data_ids = self._get_opener(type_specifier=type_specifier).dataset_names
+        data_ids = self._get_opener(data_type=data_type).dataset_names
 
         for data_id in data_ids:
             if include_attrs is None:
@@ -388,15 +386,15 @@ class CciOdpDataStore(DataStore):
                         attrs[attr] = value
                 yield data_id, attrs
 
-    def has_data(self, data_id: str, type_specifier: str = None) -> bool:
-        return data_id in self._get_opener(type_specifier=type_specifier).dataset_names
+    def has_data(self, data_id: str, data_type: str = None) -> bool:
+        return data_id in self._get_opener(data_type=data_type).dataset_names
 
-    def describe_data(self, data_id: str, type_specifier: str = None) -> DataDescriptor:
-        return self._get_opener(type_specifier=type_specifier).describe_data(data_id)
+    def describe_data(self, data_id: str, data_type: str = None) -> DataDescriptor:
+        return self._get_opener(data_type=data_type).describe_data(data_id)
 
     @classmethod
-    def get_search_params_schema(cls, type_specifier: str = None) -> JsonObjectSchema:
-        cls._assert_valid_type_specifier(type_specifier)
+    def get_search_params_schema(cls, data_type: str = None) -> JsonObjectSchema:
+        cls._assert_valid_data_type(data_type)
         data_ids = CciOdp().dataset_names
         ecvs = set([data_id.split('.')[1] for data_id in data_ids])
         frequencies = set([data_id.split('.')[2].replace('-days', ' days').replace('mon', 'month')
@@ -442,24 +440,24 @@ class CciOdpDataStore(DataStore):
             additional_properties=False)
         return search_schema
 
-    def search_data(self, type_specifier: str = None, **search_params) -> Iterator[DatasetDescriptor]:
-        if not self._is_valid_type_specifier(type_specifier):
+    def search_data(self, data_type: str = None, **search_params) -> Iterator[DatasetDescriptor]:
+        if not self._is_valid_data_type(data_type):
             return iter([])
         search_schema = self.get_search_params_schema()
         search_schema.validate_instance(search_params)
-        opener = self._get_opener(type_specifier=type_specifier)
+        opener = self._get_opener(data_type=data_type)
         return opener.search_data(**search_params)
 
-    def get_data_opener_ids(self, data_id: str = None, type_specifier: str = None, ) -> Tuple[str, ...]:
-        self._assert_valid_type_specifier(type_specifier)
+    def get_data_opener_ids(self, data_id: str = None, data_type: str = None, ) -> Tuple[str, ...]:
+        self._assert_valid_data_type(data_type)
         if data_id is not None and not self.has_data(data_id):
             raise DataStoreError(f'Data Resource "{data_id}" is not available.')
         may_be_cube = data_id is None or self.has_data(data_id, str(TYPE_SPECIFIER_CUBE))
-        if type_specifier:
-            if TYPE_SPECIFIER_CUBE.is_satisfied_by(type_specifier):
+        if data_type:
+            if TYPE_SPECIFIER_CUBE.is_super_type_of(data_type):
                 if not may_be_cube:
                     raise DataStoreError(f'Data Resource "{data_id}" is not available '
-                                         f'as specified type "{type_specifier}".')
+                                         f'as specified type "{data_type}".')
                 return CUBE_OPENER_ID,
         if may_be_cube:
             return DATASET_OPENER_ID, CUBE_OPENER_ID
@@ -475,15 +473,15 @@ class CciOdpDataStore(DataStore):
     # Implementation helpers
 
     @classmethod
-    def _is_valid_type_specifier(cls, type_specifier: str) -> bool:
-        return type_specifier is None or TYPE_SPECIFIER_CUBE.satisfies(type_specifier)
+    def _is_valid_data_type(cls, data_type: str) -> bool:
+        return data_type is None or DATASET_TYPE.is_sub_type_of(data_type)
 
     @classmethod
-    def _assert_valid_type_specifier(cls, type_specifier):
-        if not cls._is_valid_type_specifier(type_specifier):
+    def _assert_valid_data_type(cls, data_type):
+        if not cls._is_valid_data_type(data_type):
             raise DataStoreError(
-                f'Type Specifier must be "{TYPE_SPECIFIER_DATASET}" or "{TYPE_SPECIFIER_CUBE}", '
-                f'but got "{type_specifier}"')
+                f'Data type must be {DATASET_TYPE!r},'
+                f' but got {data_type!r}')
 
     def _assert_valid_opener_id(self, opener_id):
         if opener_id is not None and opener_id != DATASET_OPENER_ID and opener_id != CUBE_OPENER_ID:
