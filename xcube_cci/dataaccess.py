@@ -21,7 +21,6 @@
 
 import json
 import os
-from abc import abstractmethod
 from typing import Any, Iterator, List, Tuple, Optional, Dict, Union, Container
 
 import xarray as xr
@@ -33,6 +32,7 @@ from xcube.core.store import DataDescriptor
 from xcube.core.store import DataOpener
 from xcube.core.store import DataStore
 from xcube.core.store import DataStoreError
+from xcube.core.store import DataType
 from xcube.core.store import DatasetDescriptor
 from xcube.core.store import VariableDescriptor
 from xcube.util.jsonschema import JsonArraySchema
@@ -45,7 +45,6 @@ from xcube.util.jsonschema import JsonStringSchema
 from xcube_cci.cciodp import CciOdp
 from xcube_cci.chunkstore import CciChunkStore
 from xcube_cci.constants import CCI_ODD_URL
-from xcube_cci.constants import CUBE_OPENER_ID
 from xcube_cci.constants import DATASET_OPENER_ID
 from xcube_cci.constants import DEFAULT_NUM_RETRIES
 from xcube_cci.constants import DEFAULT_RETRY_BACKOFF_BASE
@@ -83,10 +82,15 @@ def _get_temporal_resolution_from_id(data_id: str) -> Optional[str]:
 class CciOdpDataOpener(DataOpener):
 
     # noinspection PyShadowingBuiltins
-    def __init__(self, cci_odp: CciOdp, id: str, type_specifier: TypeSpecifier):
+    def __init__(self,
+                 cci_odp: CciOdp,
+                 id: str,
+                 data_type: DataType,
+                 normalize_data: bool = True):
         self._cci_odp = cci_odp
         self._id = id
-        self._type_specifier = type_specifier
+        self._data_type = data_type
+        self._normalize_data = normalize_data
 
     @property
     def dataset_names(self) -> List[str]:
@@ -149,7 +153,7 @@ class CciOdpDataOpener(DataOpener):
         attrs.update(ds_metadata)
         self._remove_irrelevant_metadata_attributes(attrs)
         descriptor = DatasetDescriptor(data_id,
-                                       type_specifier=self._type_specifier,
+                                       data_type=self._data_type,
                                        dims=dims,
                                        coords=coord_descriptors,
                                        data_vars=var_descriptors,
@@ -206,7 +210,8 @@ class CciOdpDataOpener(DataOpener):
         min_date = dsd.time_range[0] if dsd and dsd.time_range else None
         max_date = dsd.time_range[1] if dsd and dsd.time_range else None
         # noinspection PyUnresolvedReferences
-        cube_params = dict(
+        dataset_params = dict(
+            normalize_data=JsonBooleanSchema(default=True),
             variable_names=JsonArraySchema(items=JsonStringSchema(
                 enum=dsd.data_vars.keys() if dsd and dsd.data_vars else None)),
             time_range=JsonDateSchema.new_range(min_date, max_date)
@@ -222,9 +227,9 @@ class CciOdpDataOpener(DataOpener):
                 JsonNumberSchema(minimum=min_lat, maximum=max_lat),
                 JsonNumberSchema(minimum=min_lon, maximum=max_lon),
                 JsonNumberSchema(minimum=min_lat, maximum=max_lat)))
-            cube_params['bbox'] = bbox
+            dataset_params['bbox'] = bbox
         cci_schema = JsonObjectSchema(
-            properties=dict(**cube_params),
+            properties=dict(**dataset_params),
             required=[
             ],
             additional_properties=False
@@ -252,62 +257,44 @@ class CciOdpDataOpener(DataOpener):
             raise DataStoreError(f'Cannot describe metadata of data resource "{data_id}", '
                                  f'as it cannot be accessed by data accessor "{self._id}".')
 
-    @abstractmethod
     def _normalize_dataset(self, ds: xr.Dataset, cci_schema: JsonObjectSchema, **open_params) \
             -> xr.Dataset:
-        pass
-
-    @abstractmethod
-    def _normalize_dims(self, dims: dict) -> dict:
-        pass
-
-    @abstractmethod
-    def _normalize_var_dims(self, var_dims: List[str]) -> Optional[List[str]]:
-        pass
-
-
-class CciOdpDatasetOpener(CciOdpDataOpener):
-
-    def __init__(self, **store_params):
-        super().__init__(CciOdp(only_consider_cube_ready=False, **store_params), DATASET_OPENER_ID,
-                         TYPE_SPECIFIER_DATASET)
-
-    def _normalize_dataset(self, ds: xr.Dataset, cci_schema: JsonObjectSchema, **open_params) -> xr.Dataset:
+        if self._normalize_data:
+            return cubify_dataset(ds)
         return ds
 
     def _normalize_dims(self, dims: dict) -> dict:
+        if self._normalize_data:
+            return normalize_dims_description(dims)
         return dims.copy()
 
     def _normalize_var_dims(self, var_dims: List[str]) -> Optional[List[str]]:
+        if self._normalize_data:
+            return normalize_variable_dims_description(var_dims)
         new_var_dims = var_dims.copy()
         if 'time' not in new_var_dims:
             new_var_dims.insert(0, 'time')
         return new_var_dims
 
 
-class CciOdpCubeOpener(CciOdpDataOpener):
+class CciOdpDatasetOpener(CciOdpDataOpener):
 
-    def __init__(self, **store_params):
-        super().__init__(CciOdp(only_consider_cube_ready=True, **store_params), CUBE_OPENER_ID, TYPE_SPECIFIER_CUBE)
-
-    def _normalize_dataset(self, ds: xr.Dataset, cci_schema: JsonObjectSchema, **open_params) \
-            -> xr.Dataset:
-        ds = cubify_dataset(ds)
-        return ds
-
-    def _normalize_dims(self, dims: dict) -> dict:
-        return normalize_dims_description(dims)
-
-    def _normalize_var_dims(self, var_dims: List[str]) -> Optional[List[str]]:
-        return normalize_variable_dims_description(var_dims)
+    def __init__(self, normalize_data: bool = True, **odp_params):
+        super().__init__(
+            # CciOdp(only_consider_cube_ready=normalize_data, **odp_params),
+            CciOdp(only_consider_cube_ready=False, **odp_params),
+            DATASET_OPENER_ID,
+            DATASET_TYPE,
+            normalize_data=normalize_data,
+        )
 
 
 class CciOdpDataStore(DataStore):
 
-    def __init__(self, **store_params):
+    def __init__(self, normalize_data=True, **store_params):
         cci_schema = self.get_data_store_params_schema()
         cci_schema.validate_instance(store_params)
-        store_kwargs, store_params = cci_schema.process_kwargs_subset(store_params, (
+        odp_kwargs, store_params = cci_schema.process_kwargs_subset(store_params, (
             'endpoint_url',
             'endpoint_description_url',
             'enable_warnings',
@@ -316,8 +303,10 @@ class CciOdpDataStore(DataStore):
             'retry_backoff_base',
             'user_agent'
         ))
-        self._dataset_opener = CciOdpDatasetOpener(**store_kwargs)
-        self._cube_opener = CciOdpCubeOpener(**store_kwargs)
+        self._dataset_opener = CciOdpDatasetOpener(
+            normalize_data=normalize_data,
+            **odp_kwargs
+        )
         dataset_states_file = os.path.join(os.path.dirname(os.path.abspath(__file__)),
                                            'data/dataset_states.json')
         with open(dataset_states_file, 'r') as fp:
@@ -344,29 +333,28 @@ class CciOdpDataStore(DataStore):
 
     @classmethod
     def get_data_types(cls) -> Tuple[str, ...]:
-        return TYPE_SPECIFIER_DATASET, TYPE_SPECIFIER_CUBE
+        return DATASET_TYPE.alias,
 
     def get_data_types_for_data(self, data_id: str) -> Tuple[str, ...]:
-        if self.has_data(data_id, data_type=str(TYPE_SPECIFIER_CUBE)):
-            return str(TYPE_SPECIFIER_DATASET), str(TYPE_SPECIFIER_CUBE)
-        if self.has_data(data_id, data_type=str(TYPE_SPECIFIER_DATASET)):
-            return str(TYPE_SPECIFIER_DATASET),
-        raise DataStoreError(f'Data resource "{data_id}" does not exist in store')
+        if self.has_data(data_id, data_type=DATASET_TYPE):
+            return DATASET_TYPE.alias,
+        raise DataStoreError(f'Data resource {data_id!r} does not exist in store')
 
     def _get_opener(self, opener_id: str = None, data_type: str = None) -> CciOdpDataOpener:
         self._assert_valid_opener_id(opener_id)
         self._assert_valid_data_type(data_type)
-        if data_type:
-            if DATASET_TYPE.is_super_type_of(data_type):
-                type_opener_id = CUBE_OPENER_ID
-            else:
-                type_opener_id = DATASET_OPENER_ID
-            if opener_id and opener_id != type_opener_id:
-                raise DataStoreError(f'Invalid combination of opener_id "{opener_id}" '
-                                     f'and data_type "{data_type}"')
-            opener_id = type_opener_id
-        if opener_id == CUBE_OPENER_ID:
-            return self._cube_opener
+        # TODO (Tonio): please check this
+        # if data_type:
+        #     if DATASET_TYPE.is_super_type_of(data_type):
+        #         type_opener_id = CUBE_OPENER_ID
+        #     else:
+        #         type_opener_id = DATASET_OPENER_ID
+        #     if opener_id and opener_id != type_opener_id:
+        #         raise DataStoreError(f'Invalid combination of opener_id "{opener_id}" '
+        #                              f'and data_type "{data_type}"')
+        #     opener_id = type_opener_id
+        # if opener_id == CUBE_OPENER_ID:
+        #     return self._cube_opener
         return self._dataset_opener
 
     def get_data_ids(self,
@@ -450,17 +438,14 @@ class CciOdpDataStore(DataStore):
 
     def get_data_opener_ids(self, data_id: str = None, data_type: str = None, ) -> Tuple[str, ...]:
         self._assert_valid_data_type(data_type)
-        if data_id is not None and not self.has_data(data_id):
-            raise DataStoreError(f'Data Resource "{data_id}" is not available.')
-        may_be_cube = data_id is None or self.has_data(data_id, str(TYPE_SPECIFIER_CUBE))
-        if data_type:
-            if TYPE_SPECIFIER_CUBE.is_super_type_of(data_type):
-                if not may_be_cube:
-                    raise DataStoreError(f'Data Resource "{data_id}" is not available '
-                                         f'as specified type "{data_type}".')
-                return CUBE_OPENER_ID,
-        if may_be_cube:
-            return DATASET_OPENER_ID, CUBE_OPENER_ID
+        if data_id is not None \
+                and not self.has_data(data_id, data_type=data_type):
+            raise DataStoreError(f'Data resource {data_id!r}'
+                                 f' is not available.')
+        if data_type is not None \
+                and not DATASET_TYPE.is_super_type_of(data_type):
+            raise DataStoreError(f'Data resource {data_id!r}'
+                                 f' is not available as type {data_type!r}.')
         return DATASET_OPENER_ID,
 
     def get_open_data_params_schema(self, data_id: str = None, opener_id: str = None) -> JsonObjectSchema:
@@ -474,7 +459,7 @@ class CciOdpDataStore(DataStore):
 
     @classmethod
     def _is_valid_data_type(cls, data_type: str) -> bool:
-        return data_type is None or DATASET_TYPE.is_sub_type_of(data_type)
+        return data_type is None or DATASET_TYPE.is_super_type_of(data_type)
 
     @classmethod
     def _assert_valid_data_type(cls, data_type):
@@ -484,6 +469,8 @@ class CciOdpDataStore(DataStore):
                 f' but got {data_type!r}')
 
     def _assert_valid_opener_id(self, opener_id):
-        if opener_id is not None and opener_id != DATASET_OPENER_ID and opener_id != CUBE_OPENER_ID:
-            raise DataStoreError(f'Data opener identifier must be "{DATASET_OPENER_ID}" or "{CUBE_OPENER_ID}",'
-                                 f'but got "{opener_id}"')
+        if opener_id is not None and opener_id != DATASET_OPENER_ID:
+            raise DataStoreError(
+                f'Data opener identifier must be {DATASET_OPENER_ID!r},'
+                f' but got {opener_id!r}'
+            )

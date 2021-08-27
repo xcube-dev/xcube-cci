@@ -1,18 +1,16 @@
 import datetime as dt
 import os
 import unittest
-
 from unittest import skip
 from unittest import skipIf
 
-from xcube_cci.dataaccess import _get_temporal_resolution_from_id
-from xcube_cci.dataaccess import CciOdpCubeOpener
-from xcube_cci.dataaccess import CciOdpDatasetOpener
-from xcube_cci.dataaccess import CciOdpDataStore
 from xcube.core.normalize import normalize_dataset
+from xcube.core.store import DataStoreError, DATASET_TYPE
 from xcube.core.store.descriptor import DatasetDescriptor
-from xcube.core.store import DataStoreError
 from xcube.core.verify import assert_cube
+from xcube_cci.dataaccess import CciOdpDataStore
+from xcube_cci.dataaccess import CciOdpDatasetOpener
+from xcube_cci.dataaccess import _get_temporal_resolution_from_id
 
 
 class DataAccessTest(unittest.TestCase):
@@ -27,7 +25,8 @@ class DataAccessTest(unittest.TestCase):
         self.assertEqual('1M',
                          _get_temporal_resolution_from_id('esacci.OZONE.month.L3.NP.sensor.platform.MERGED.fv0002.r1'))
         self.assertEqual('3M',
-                         _get_temporal_resolution_from_id('esacci.OZONE.3-months.L3.NP.sensor.platform.MERGED.fv0002.r1'))
+                         _get_temporal_resolution_from_id(
+                             'esacci.OZONE.3-months.L3.NP.sensor.platform.MERGED.fv0002.r1'))
         self.assertEqual('1Y',
                          _get_temporal_resolution_from_id('esacci.OZONE.yr.L3.NP.sensor.platform.MERGED.fv0002.r1'))
         self.assertEqual('1Y',
@@ -35,15 +34,17 @@ class DataAccessTest(unittest.TestCase):
         self.assertEqual('13Y',
                          _get_temporal_resolution_from_id('esacci.OZONE.13-yrs.L3.NP.sensor.platform.MERGED.fv0002.r1'))
         self.assertEqual('1M',
-                         _get_temporal_resolution_from_id('esacci.OZONE.climatology.L3.NP.sensor.platform.MERGED.fv0002.r1'))
+                         _get_temporal_resolution_from_id(
+                             'esacci.OZONE.climatology.L3.NP.sensor.platform.MERGED.fv0002.r1'))
         self.assertIsNone(
-            _get_temporal_resolution_from_id('esacci.OZONE.satellite-orbit-frequency.L3.NP.sensor.platform.MERGED.fv0002.r1'))
+            _get_temporal_resolution_from_id(
+                'esacci.OZONE.satellite-orbit-frequency.L3.NP.sensor.platform.MERGED.fv0002.r1'))
 
 
 class CciOdpDatasetOpenerTest(unittest.TestCase):
 
     def setUp(self) -> None:
-        self.opener = CciOdpDatasetOpener()
+        self.opener = CciOdpDatasetOpener(normalize_data=False)
 
     @skipIf(os.environ.get('XCUBE_DISABLE_WEB_TESTS', None) == '1', 'XCUBE_DISABLE_WEB_TESTS = 1')
     def test_dataset_names(self):
@@ -150,7 +151,7 @@ class CciOdpDatasetOpenerTest(unittest.TestCase):
 class CciOdpCubeOpenerTest(unittest.TestCase):
 
     def setUp(self) -> None:
-        self.opener = CciOdpCubeOpener()
+        self.opener = CciOdpDatasetOpener(normalize_data=True)
 
     @skipIf(os.environ.get('XCUBE_DISABLE_WEB_TESTS', None) == '1', 'XCUBE_DISABLE_WEB_TESTS = 1')
     def test_dataset_names(self):
@@ -163,7 +164,7 @@ class CciOdpCubeOpenerTest(unittest.TestCase):
             self.opener.describe_data('esacci.OZONE.mon.L3.NP.multi-sensor.multi-platform.MERGED.fv0002.r1')
         self.assertEqual('Cannot describe metadata of data resource '
                          '"esacci.OZONE.mon.L3.NP.multi-sensor.multi-platform.MERGED.fv0002.r1", '
-                         'as it cannot be accessed by data accessor "dataset[cube]:zarr:cciodp".', f'{dse.exception}')
+                         'as it cannot be accessed by data accessor "dataset:zarr:cciodp".', f'{dse.exception}')
         descriptor = self.opener.describe_data('esacci.AEROSOL.day.L3.AAI.multi-sensor.multi-platform.MSAAI.1-7.r1')
         self.assertIsNotNone(descriptor)
         self.assertIsInstance(descriptor, DatasetDescriptor)
@@ -178,7 +179,7 @@ class CciOdpCubeOpenerTest(unittest.TestCase):
         self.assertEqual(3, descriptor.data_vars['absorbing_aerosol_index'].ndim)
         self.assertEqual(('time', 'lat', 'lon'),
                          descriptor.data_vars['absorbing_aerosol_index'].dims)
-        self.assertEqual('float32', descriptor.data_vars['absorbing_aerosol_index' ].dtype)
+        self.assertEqual('float32', descriptor.data_vars['absorbing_aerosol_index'].dtype)
         self.assertIsNone(descriptor.crs)
         self.assertEqual(1.0, descriptor.spatial_res)
         self.assertEqual(('1978-11-01', '2015-12-31'), descriptor.time_range)
@@ -198,7 +199,7 @@ class CciOdpCubeOpenerTest(unittest.TestCase):
                 'esacci.OZONE.mon.L3.NP.multi-sensor.multi-platform.MERGED.fv0002.r1').to_dict()
         self.assertEqual('Cannot describe metadata of data resource '
                          '"esacci.OZONE.mon.L3.NP.multi-sensor.multi-platform.MERGED.fv0002.r1", '
-                         'as it cannot be accessed by data accessor "dataset[cube]:zarr:cciodp".', f'{dse.exception}')
+                         'as it cannot be accessed by data accessor "dataset:zarr:cciodp".', f'{dse.exception}')
 
         schema = self.opener.get_open_data_params_schema(
             'esacci.AEROSOL.day.L3.AAI.multi-sensor.multi-platform.MSAAI.1-7.r1').to_dict()
@@ -217,7 +218,7 @@ class CciOdpCubeOpenerTest(unittest.TestCase):
                                   bbox=[-10.0, 40.0, 10.0, 60.0])
         self.assertEqual('Cannot describe metadata of data resource '
                          '"esacci.AEROSOL.day.L3C.AER_PRODUCTS.AATSR.Envisat.ATSR2-ENVISAT-ENS_DAILY.v2-6.r1", '
-                         'as it cannot be accessed by data accessor "dataset[cube]:zarr:cciodp".', f'{dse.exception}')
+                         'as it cannot be accessed by data accessor "dataset:zarr:cciodp".', f'{dse.exception}')
 
     @skipIf(os.environ.get('XCUBE_DISABLE_WEB_TESTS', None) == '1', 'XCUBE_DISABLE_WEB_TESTS = 1')
     @skip('Disabled while time series are not supported')
@@ -250,8 +251,8 @@ def user_agent(ext: str = "") -> str:
 class CciOdpDataStoreTest(unittest.TestCase):
 
     def setUp(self) -> None:
-        params = {'user_agent': user_agent()}
-        self.store = CciOdpDataStore(**params)
+        odp_params = {'user_agent': user_agent()}
+        self.store = CciOdpDataStore(normalize_data=False, **odp_params)
 
     def test_get_data_store_params_schema(self):
         cci_store_params_schema = CciOdpDataStore.get_data_store_params_schema().to_dict()
@@ -266,15 +267,16 @@ class CciOdpDataStoreTest(unittest.TestCase):
     def test_get_type_specifiers_for_data(self):
         type_specifiers_for_data = self.store.get_data_types_for_data(
             'esacci.AEROSOL.day.L3.AAI.multi-sensor.multi-platform.MSAAI.1-7.r1')
-        self.assertEqual(('dataset', ), type_specifiers_for_data)
+        self.assertEqual(('dataset',), type_specifiers_for_data)
 
         type_specifiers_for_data = self.store.get_data_types_for_data(
             'esacci.OZONE.mon.L3.NP.multi-sensor.multi-platform.MERGED.fv0002.r1')
-        self.assertEqual(('dataset', ), type_specifiers_for_data)
+        self.assertEqual(('dataset',), type_specifiers_for_data)
 
         with self.assertRaises(DataStoreError) as dse:
             self.store.get_data_types_for_data('nonsense')
-        self.assertEqual('Data resource "nonsense" does not exist in store', f'{dse.exception}')
+        self.assertEqual("Data resource 'nonsense' does not exist in store",
+                         f'{dse.exception}')
 
     def test_get_search_params(self):
         search_schema = self.store.get_search_params_schema().to_dict()
@@ -303,7 +305,7 @@ class CciOdpDataStoreTest(unittest.TestCase):
         self.assertEqual('esacci.FIRE.mon.L4.BA.MODIS.Terra.MODIS_TERRA.v5-1.grid', cube_search_result[1].data_id)
         self.assertEqual('1M', cube_search_result[1].time_period)
         self.assertEqual(0.25, cube_search_result[1].spatial_res)
-        self.assertEqual('dataset', cube_search_result[1].data_type)
+        self.assertEqual(DATASET_TYPE, cube_search_result[1].data_type)
         self.assertEqual(('2001-01-01', '2019-12-31'), cube_search_result[1].time_range)
 
         dataset_search_result = list(self.store.search_data('dataset', ecv='FIRE', product_string='MODIS_TERRA'))
@@ -326,17 +328,17 @@ class CciOdpDataStoreTest(unittest.TestCase):
         self.assertTrue(self.store.has_data('esacci.FIRE.mon.L4.BA.MODIS.Terra.MODIS_TERRA.v5-1.grid', 'dataset'))
         self.assertFalse(self.store.has_data('esacci.WIND.mon.L4.BA.MODIS.Terra.MODIS_TERRA.v5-1.grid', 'dataset'))
         self.assertTrue(self.store.has_data('esacci.AEROSOL.day.L3.AAI.multi-sensor.multi-platform.MSAAI.1-7.r1',
-                         'dataset'))
+                                            'dataset'))
         self.assertTrue(self.store.has_data('esacci.OZONE.mon.L3.NP.multi-sensor.multi-platform.MERGED.fv0002.r1',
-                         'dataset'))
+                                            'dataset'))
 
         self.assertTrue(self.store.has_data('esacci.FIRE.mon.L4.BA.MODIS.Terra.MODIS_TERRA.v5-1.grid', 'dataset'))
         self.assertFalse(self.store.has_data('esacci.WIND.mon.L4.BA.MODIS.Terra.MODIS_TERRA.v5-1.grid',
-                         'dataset[cube]'))
+                                             'dataset'))
         self.assertTrue(self.store.has_data('esacci.AEROSOL.day.L3.AAI.multi-sensor.multi-platform.MSAAI.1-7.r1',
-                         'dataset[cube]'))
+                                            'dataset'))
         self.assertFalse(self.store.has_data('esacci.OZONE.mon.L3.NP.multi-sensor.multi-platform.MERGED.fv0002.r1',
-                         'dataset[cube]'))
+                                             'dataset'))
 
     def test_describe_data(self):
         descriptor = self.store.describe_data(
@@ -386,11 +388,11 @@ class CciOdpDataStoreTest(unittest.TestCase):
         with self.assertRaises(DataStoreError) as dse:
             self.store.describe_data(
                 'esacci.OZONE.mon.L3.NP.multi-sensor.multi-platform.MERGED.fv0002.r1',
-                data_type='dataset[cube]')
+                data_type='geodataframe')
         self.assertEqual(
             'Cannot describe metadata of data resource '
             '"esacci.OZONE.mon.L3.NP.multi-sensor.multi-platform.MERGED.fv0002.r1", as it cannot '
-            'be accessed by data accessor "dataset[cube]:zarr:cciodp".',
+            'be accessed by data accessor "dataset:zarr:cciodp".',
             f'{dse.exception}')
 
         descriptor = self.store.describe_data(
@@ -424,7 +426,7 @@ class CciOdpDataStoreTest(unittest.TestCase):
         for dataset_id in dataset_ids:
             self.assertIsInstance(dataset_id, str)
 
-        dataset_ids_iter = self.store.get_data_ids(data_type='dataset[cube]',
+        dataset_ids_iter = self.store.get_data_ids(data_type='dataset',
                                                    include_attrs=['title',
                                                                   'verification_flags',
                                                                   'data_type_alias'])
@@ -466,13 +468,13 @@ class CciOdpDataStoreTest(unittest.TestCase):
         with self.assertRaises(DataStoreError) as dse:
             self.store.get_open_data_params_schema(
                 'esacci.OZONE.mon.L3.NP.multi-sensor.multi-platform.MERGED.fv0002.r1',
-                'dataset[cube]:zarr:cciodp').to_dict()
-        self.assertEqual('Cannot describe metadata of data resource '
-                         '"esacci.OZONE.mon.L3.NP.multi-sensor.multi-platform.MERGED.fv0002.r1", '
-                         'as it cannot be accessed by data accessor "dataset[cube]:zarr:cciodp".', f'{dse.exception}')
+                'geodataframe:zarr:cciodp').to_dict()
+        self.assertEqual("Data opener identifier must be"
+                         " 'dataset:zarr:cciodp', but got"
+                         " 'geodataframe:zarr:cciodp'", f'{dse.exception}')
 
         schema = self.store.get_open_data_params_schema(
-            'esacci.AEROSOL.day.L3.AAI.multi-sensor.multi-platform.MSAAI.1-7.r1', 'dataset[cube]:zarr:cciodp').to_dict()
+            'esacci.AEROSOL.day.L3.AAI.multi-sensor.multi-platform.MSAAI.1-7.r1', 'dataset:zarr:cciodp').to_dict()
         self.assertIsNotNone(schema)
         self.assertTrue('variable_names' in schema['properties'])
         self.assertTrue('time_range' in schema['properties'])
@@ -480,33 +482,33 @@ class CciOdpDataStoreTest(unittest.TestCase):
         self.assertFalse(schema['additionalProperties'])
 
     def test_get_data_opener_ids(self):
-        self.assertEqual(('dataset:zarr:cciodp', 'dataset[cube]:zarr:cciodp'),
+        self.assertEqual(('dataset:zarr:cciodp',),
                          self.store.get_data_opener_ids())
-        self.assertEqual(('dataset:zarr:cciodp', ),
+        self.assertEqual(('dataset:zarr:cciodp',),
                          self.store.get_data_opener_ids(
                              'esacci.OZONE.mon.L3.NP.multi-sensor.multi-platform.MERGED.fv0002.r1'))
-        self.assertEqual(('dataset:zarr:cciodp', ),
+        self.assertEqual(('dataset:zarr:cciodp',),
                          self.store.get_data_opener_ids(
                              'esacci.OZONE.mon.L3.NP.multi-sensor.multi-platform.MERGED.fv0002.r1', 'dataset'))
 
         with self.assertRaises(DataStoreError) as dse:
             self.store.get_data_opener_ids(
-                'esacci.OZONE.mon.L3.NP.multi-sensor.multi-platform.MERGED.fv0002.r1', 'dataset[cube]')
+                'esacci.OZONE.mon.L3.NP.multi-sensor.multi-platform.MERGED.fv0002.r1', 'dataset')
         self.assertEqual('Data Resource "esacci.OZONE.mon.L3.NP.multi-sensor.multi-platform.MERGED.fv0002.r1" '
-                         'is not available as specified type "dataset[cube]".', f'{dse.exception}')
+                         'is not available as specified type "dataset".', f'{dse.exception}')
 
-        self.assertEqual(('dataset:zarr:cciodp', 'dataset[cube]:zarr:cciodp'),
+        self.assertEqual(('dataset:zarr:cciodp',),
                          self.store.get_data_opener_ids(
                              'esacci.AEROSOL.day.L3.AAI.multi-sensor.multi-platform.MSAAI.1-7.r1'))
-        self.assertEqual(('dataset:zarr:cciodp', 'dataset[cube]:zarr:cciodp'),
+        self.assertEqual(('dataset:zarr:cciodp',),
                          self.store.get_data_opener_ids(
                              'esacci.AEROSOL.day.L3.AAI.multi-sensor.multi-platform.MSAAI.1-7.r1', 'dataset'))
-        self.assertEqual(('dataset[cube]:zarr:cciodp', ),
+        self.assertEqual(('dataset:zarr:cciodp',),
                          self.store.get_data_opener_ids(
-                             'esacci.AEROSOL.day.L3.AAI.multi-sensor.multi-platform.MSAAI.1-7.r1', 'dataset[cube]'))
+                             'esacci.AEROSOL.day.L3.AAI.multi-sensor.multi-platform.MSAAI.1-7.r1', 'dataset'))
 
         with self.assertRaises(DataStoreError) as dse:
-            self.store.get_data_opener_ids('nonsense', 'dataset[cube]')
+            self.store.get_data_opener_ids('nonsense', data_type='dataset')
         self.assertEqual('Data Resource "nonsense" is not available.', f'{dse.exception}')
 
     @skipIf(os.environ.get('XCUBE_DISABLE_WEB_TESTS', None) == '1', 'XCUBE_DISABLE_WEB_TESTS = 1')
@@ -521,7 +523,7 @@ class CciOdpDataStoreTest(unittest.TestCase):
             tmp = seaice_th_ds.sea_ice_thickness * seaice_th_ds.sea_ice_concentration
             Vseaice = tmp.sum(dim=['xc', 'yc'], skipna=True)
             values[i] = (list(Vseaice.values))
-            i+=1
+            i += 1
         values = values.transpose()
         for i, value_parts in enumerate(values):
             diffs = np.diff(value_parts)
@@ -543,13 +545,13 @@ class CciOdpDataStoreTest(unittest.TestCase):
 
         with self.assertRaises(DataStoreError) as dse:
             self.store.open_data('esacci.AEROSOL.day.L3C.AOD.MERIS.Envisat.MERIS_ENVISAT.2-2.r1',
-                                 'dataset[cube]:zarr:cciodp',
-                                  variable_names=['AOD550', 'R_eff'],
-                                  time_range=['2009-07-02', '2009-07-05'],
-                                  bbox=[-10.0, 40.0, 10.0, 60.0])
+                                 'dataset:zarr:cciodp',
+                                 variable_names=['AOD550', 'R_eff'],
+                                 time_range=['2009-07-02', '2009-07-05'],
+                                 bbox=[-10.0, 40.0, 10.0, 60.0])
         self.assertEqual('Cannot describe metadata of data resource '
                          '"esacci.AEROSOL.day.L3C.AOD.MERIS.Envisat.MERIS_ENVISAT.2-2.r1", '
-                         'as it cannot be accessed by data accessor "dataset[cube]:zarr:cciodp".',
+                         'as it cannot be accessed by data accessor "dataset:zarr:cciodp".',
                          f'{dse.exception}')
 
     @skipIf(os.environ.get('XCUBE_DISABLE_WEB_TESTS', None) == '1', 'XCUBE_DISABLE_WEB_TESTS = 1')
@@ -557,11 +559,11 @@ class CciOdpDataStoreTest(unittest.TestCase):
     def test_open_data_with_time_series_and_latitude_centers(self):
         dataset = self.store.open_data('esacci.OZONE.mon.L3.LP.SCIAMACHY.Envisat.SCIAMACHY_ENVISAT.v0001.r1',
                                        'dataset:zarr:cciodp',
-                                        variable_names=['approximate_altitude', 'ozone_mixing_ratio',
-                                                        'sample_standard_deviation'],
-                                        time_range=['2009-05-02', '2009-08-31'],
-                                        bbox=[-10.0, 40.0, 10.0, 60.0]
-                                        )
+                                       variable_names=['approximate_altitude', 'ozone_mixing_ratio',
+                                                       'sample_standard_deviation'],
+                                       time_range=['2009-05-02', '2009-08-31'],
+                                       bbox=[-10.0, 40.0, 10.0, 60.0]
+                                       )
         self.assertIsNotNone(dataset)
         self.assertEqual({'approximate_altitude', 'ozone_mixing_ratio', 'sample_standard_deviation'},
                          set(dataset.data_vars))
@@ -569,12 +571,12 @@ class CciOdpDataStoreTest(unittest.TestCase):
                          set(dataset.ozone_mixing_ratio.dims))
         self.assertEqual({1, 32, 18}, set(dataset.ozone_mixing_ratio.chunk_sizes))
         dataset = self.store.open_data('esacci.OZONE.mon.L3.LP.SCIAMACHY.Envisat.SCIAMACHY_ENVISAT.v0001.r1',
-                                       'dataset[cube]:zarr:cciodp',
-                                        variable_names=['standard_error_of_the_mean', 'ozone_mixing_ratio',
-                                                        'sample_standard_deviation'],
-                                        time_range=['2009-05-02', '2009-08-31'],
-                                        bbox=[-10.0, 40.0, 10.0, 60.0]
-                                        )
+                                       'dataset:zarr:cciodp',
+                                       variable_names=['standard_error_of_the_mean', 'ozone_mixing_ratio',
+                                                       'sample_standard_deviation'],
+                                       time_range=['2009-05-02', '2009-08-31'],
+                                       bbox=[-10.0, 40.0, 10.0, 60.0]
+                                       )
         self.assertIsNotNone(dataset)
         self.assertEqual({'standard_error_of_the_mean', 'ozone_mixing_ratio', 'sample_standard_deviation'},
                          set(dataset.data_vars))
@@ -587,7 +589,7 @@ class CciDataNormalizationTest(unittest.TestCase):
 
     @skip('Execute to test whether all data sets can be normalized')
     def test_normalization(self):
-        store = CciOdpDataStore()
+        store = CciOdpDataStore(normalize_data=True)
         all_data = store.search_data()
         datasets_without_variables = []
         datasets_with_unsupported_frequencies = []
@@ -613,9 +615,9 @@ class CciDataNormalizationTest(unittest.TestCase):
             range_start = (dt.datetime.fromtimestamp(center_time) - delta).strftime('%Y-%m-%d')
             range_end = (dt.datetime.fromtimestamp(center_time) + delta).strftime('%Y-%m-%d')
             dataset = store.open_data(data_id=data.data_id,
-                                           variable_names=variable_names,
-                                           time_range=[range_start, range_end]
-                                           )
+                                      variable_names=variable_names,
+                                      time_range=[range_start, range_end]
+                                      )
             print(f'Attempting to normalize {data.data_id} ...')
             cube = normalize_dataset(dataset)
             try:

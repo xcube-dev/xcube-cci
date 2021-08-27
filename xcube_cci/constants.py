@@ -20,7 +20,6 @@
 # SOFTWARE.
 
 DATA_STORE_ID = 'cciodp'
-CUBE_OPENER_ID = f'dataset[cube]:zarr:{DATA_STORE_ID}'
 DATASET_OPENER_ID = f'dataset:zarr:{DATA_STORE_ID}'
 DATA_ARRAY_NAME = 'var_data'
 

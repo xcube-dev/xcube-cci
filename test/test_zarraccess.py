@@ -37,28 +37,44 @@ class CciZarrDataStoreTest(unittest.TestCase):
     def test_get_data_store_params_schema(self):
         data_store_params_schema = self.store.get_data_store_params_schema()
         self.assertIsNotNone(data_store_params_schema)
-        self.assertEqual(JsonObjectSchema().to_dict(),
+        self.assertEqual(JsonObjectSchema(additional_properties=False).to_dict(),
                          data_store_params_schema.to_dict())
 
-    def test_get_type_specifiers(self):
-        self.assertEqual(('dataset',), self.store.get_type_specifiers())
+    def test_get_data_types(self):
+        self.assertEqual({'mldataset', 'geodataframe', 'dataset'},
+                         set(self.store.get_data_types()))
 
     def test_get_data_opener_ids(self):
-        self.assertEqual(('dataset:zarr:s3',), self.store.get_data_opener_ids())
-        self.assertEqual(('dataset:zarr:s3',),
-                         self.store.get_data_opener_ids(
-                             type_specifier='dataset'))
-        self.assertEqual(('dataset:zarr:s3',),
-                         self.store.get_data_opener_ids(type_specifier='*'))
-        with self.assertRaises(ValueError) as cm:
-            self.store.get_data_opener_ids(type_specifier='dataset[cube]')
-        self.assertEqual("data_type must be one of ('dataset',)",
-                         f'{cm.exception}')
+        self.assertEqual({'dataset:netcdf:s3',
+                          'dataset:zarr:s3',
+                          'dataset:levels:s3',
+                          'mldataset:levels:s3',
+                          'geodataframe:shapefile:s3',
+                          'geodataframe:geojson:s3'},
+                         set(self.store.get_data_opener_ids()))
+        self.assertEqual({'dataset:netcdf:s3',
+                          'dataset:zarr:s3',
+                          'dataset:levels:s3'},
+                         set(self.store.get_data_opener_ids(
+                             data_type='dataset'
+                         )))
+        self.assertEqual({'dataset:netcdf:s3',
+                          'dataset:zarr:s3',
+                          'dataset:levels:s3',
+                          'mldataset:levels:s3',
+                          'geodataframe:shapefile:s3',
+                          'geodataframe:geojson:s3'},
+                         set(self.store.get_data_opener_ids(
+                             data_type='*'
+                         )))
+        self.assertEqual((), self.store.get_data_opener_ids(data_type=int))
 
     def test_get_open_data_params_schema(self):
         schema = self.store.get_open_data_params_schema()
         self.assertEqual(
-            {'chunks',
+            {'log_access',
+             'cache_size',
+             'chunks',
              'consolidated',
              'decode_cf',
              'decode_coords',
@@ -74,7 +90,7 @@ class CciZarrDataStoreTest(unittest.TestCase):
         self.assertEqual((), self.store.get_data_writer_ids())
 
     def test_get_write_data_params_schema(self):
-        self.assertEqual(JsonObjectSchema().to_dict(),
+        self.assertEqual(JsonObjectSchema(additional_properties=False).to_dict(),
                          self.store.get_write_data_params_schema().to_dict())
 
     def test_write_data(self):
