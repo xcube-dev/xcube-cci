@@ -51,6 +51,35 @@ class CciOdpDatasetOpenerTest(unittest.TestCase):
         self.assertTrue(len(self.opener.dataset_names) > 275)
 
     @skipIf(os.environ.get('XCUBE_DISABLE_WEB_TESTS', None) == '1', 'XCUBE_DISABLE_WEB_TESTS = 1')
+    def test_has_data(self):
+        self.assertTrue(self.opener.has_data(
+            'esacci.FIRE.mon.L4.BA.MODIS.Terra.MODIS_TERRA.v5-1.grid'))
+        self.assertFalse(self.opener.has_data(
+            'esacci.WIND.mon.L4.BA.MODIS.Terra.MODIS_TERRA.v5-1.grid'))
+        self.assertTrue(self.opener.has_data(
+            'esacci.AEROSOL.day.L3.AAI.multi-sensor.multi-platform.MSAAI.1-7.r1'))
+        self.assertTrue(self.opener.has_data(
+            'esacci.OZONE.mon.L3.NP.multi-sensor.multi-platform.MERGED.fv0002.r1'))
+
+        self.assertTrue(self.opener.has_data(
+            'esacci.FIRE.mon.L4.BA.MODIS.Terra.MODIS_TERRA.v5-1.grid'))
+        self.assertFalse(self.opener.has_data(
+            'esacci.WIND.mon.L4.BA.MODIS.Terra.MODIS_TERRA.v5-1.grid'))
+        self.assertTrue(self.opener.has_data(
+            'esacci.AEROSOL.day.L3.AAI.multi-sensor.multi-platform.MSAAI.1-7.r1'))
+        self.assertTrue(self.opener.has_data(
+            'esacci.OZONE.mon.L3.NP.multi-sensor.multi-platform.MERGED.fv0002.r1'))
+
+        self.assertTrue(self.opener.has_data(
+            'esacci.FIRE.mon.L4.BA.MODIS.Terra.MODIS_TERRA.v5-1.grid'))
+        self.assertFalse(self.opener.has_data(
+            'esacci.WIND.mon.L4.BA.MODIS.Terra.MODIS_TERRA.v5-1.grid'))
+        self.assertTrue(self.opener.has_data(
+            'esacci.AEROSOL.day.L3.AAI.multi-sensor.multi-platform.MSAAI.1-7.r1'))
+        self.assertTrue(self.opener.has_data(
+            'esacci.OZONE.mon.L3.NP.multi-sensor.multi-platform.MERGED.fv0002.r1'))
+
+    @skipIf(os.environ.get('XCUBE_DISABLE_WEB_TESTS', None) == '1', 'XCUBE_DISABLE_WEB_TESTS = 1')
     def test_describe_data(self):
         descriptor = self.opener.describe_data('esacci.OZONE.mon.L3.NP.multi-sensor.multi-platform.MERGED.fv0002.r1')
         self.assertIsNotNone(descriptor)
@@ -147,8 +176,29 @@ class CciOdpDatasetOpenerTest(unittest.TestCase):
                          dataset.ozone_mixing_ratio.dims)
         self.assertEqual({1, 32, 18}, dataset.ozone_mixing_ratio.chunk_sizes)
 
+    @skipIf(os.environ.get('XCUBE_DISABLE_WEB_TESTS', None) == '1', 'XCUBE_DISABLE_WEB_TESTS = 1')
+    def test_search(self):
+        search_result = list(self.opener.search_data(
+            ecv='FIRE',
+            product_string='MODIS_TERRA'))
+        self.assertIsNotNone(search_result)
+        self.assertEqual(2, len(search_result))
+        self.assertIsInstance(search_result[1], DatasetDescriptor)
+        self.assertEqual(5, len(search_result[1].dims))
+        self.assertEqual(6, len(search_result[1].data_vars))
+        self.assertEqual(
+            'esacci.FIRE.mon.L4.BA.MODIS.Terra.MODIS_TERRA.v5-1.grid',
+            search_result[1].data_id)
+        self.assertEqual('1M', search_result[1].time_period)
+        self.assertEqual(0.25, search_result[1].spatial_res)
+        self.assertEqual(DATASET_TYPE, search_result[1].data_type)
+        self.assertEqual(('2001-01-01', '2019-12-31'),
+                         search_result[1].time_range)
+        self.assertEqual('dataset', search_result[0].data_type.alias)
+        self.assertEqual('dataset', search_result[1].data_type.alias)
 
-class CciOdpCubeOpenerTest(unittest.TestCase):
+
+class CciOdpDatasetOpenerNormalizeTest(unittest.TestCase):
 
     def setUp(self) -> None:
         self.opener = CciOdpDatasetOpener(normalize_data=True)
@@ -157,6 +207,35 @@ class CciOdpCubeOpenerTest(unittest.TestCase):
     def test_dataset_names(self):
         self.assertTrue(len(self.opener.dataset_names) < 200)
         self.assertTrue(len(self.opener.dataset_names) > 100)
+
+    @skipIf(os.environ.get('XCUBE_DISABLE_WEB_TESTS', None) == '1', 'XCUBE_DISABLE_WEB_TESTS = 1')
+    def test_has_data(self):
+        self.assertFalse(self.opener.has_data(
+            'esacci.FIRE.mon.L4.BA.MODIS.Terra.MODIS_TERRA.v5-1.grid'))
+        self.assertFalse(self.opener.has_data(
+            'esacci.WIND.mon.L4.BA.MODIS.Terra.MODIS_TERRA.v5-1.grid'))
+        self.assertTrue(self.opener.has_data(
+            'esacci.AEROSOL.day.L3.AAI.multi-sensor.multi-platform.MSAAI.1-7.r1'))
+        self.assertFalse(self.opener.has_data(
+            'esacci.OZONE.mon.L3.NP.multi-sensor.multi-platform.MERGED.fv0002.r1'))
+
+        self.assertFalse(self.opener.has_data(
+            'esacci.FIRE.mon.L4.BA.MODIS.Terra.MODIS_TERRA.v5-1.grid'))
+        self.assertFalse(self.opener.has_data(
+            'esacci.WIND.mon.L4.BA.MODIS.Terra.MODIS_TERRA.v5-1.grid'))
+        self.assertTrue(self.opener.has_data(
+            'esacci.AEROSOL.day.L3.AAI.multi-sensor.multi-platform.MSAAI.1-7.r1'))
+        self.assertFalse(self.opener.has_data(
+            'esacci.OZONE.mon.L3.NP.multi-sensor.multi-platform.MERGED.fv0002.r1'))
+
+        self.assertFalse(self.opener.has_data(
+            'esacci.FIRE.mon.L4.BA.MODIS.Terra.MODIS_TERRA.v5-1.grid'))
+        self.assertFalse(self.opener.has_data(
+            'esacci.WIND.mon.L4.BA.MODIS.Terra.MODIS_TERRA.v5-1.grid'))
+        self.assertTrue(self.opener.has_data(
+            'esacci.AEROSOL.day.L3.AAI.multi-sensor.multi-platform.MSAAI.1-7.r1'))
+        self.assertFalse(self.opener.has_data(
+            'esacci.OZONE.mon.L3.NP.multi-sensor.multi-platform.MERGED.fv0002.r1'))
 
     @skipIf(os.environ.get('XCUBE_DISABLE_WEB_TESTS', None) == '1', 'XCUBE_DISABLE_WEB_TESTS = 1')
     def test_describe_dataset(self):
@@ -235,6 +314,26 @@ class CciOdpCubeOpenerTest(unittest.TestCase):
         self.assertEqual({'time', 'air_pressure', 'lat', 'lon'}, dataset.ozone_mixing_ratio.dims)
         self.assertEqual({1, 32, 18, 36}, set(dataset.ozone_mixing_ratio.chunk_sizes))
 
+    @skipIf(os.environ.get('XCUBE_DISABLE_WEB_TESTS', None) == '1', 'XCUBE_DISABLE_WEB_TESTS = 1')
+    def test_search(self):
+        search_result = list(self.opener.search_data(
+            ecv='LAKES'))
+        self.assertIsNotNone(search_result)
+        self.assertEqual(2, len(search_result))
+        self.assertIsInstance(search_result[1], DatasetDescriptor)
+        self.assertEqual(4, len(search_result[1].dims))
+        self.assertEqual(52, len(search_result[1].data_vars))
+        self.assertEqual(
+            'esacci.LAKES.day.L3S.LK_PRODUCTS.multi-sensor.multi-platform.'
+            'MERGED.v1-1.r1',
+            search_result[1].data_id)
+        self.assertEqual('1D', search_result[1].time_period)
+        self.assertEqual(0.008333333, search_result[1].spatial_res)
+        self.assertEqual(DATASET_TYPE, search_result[1].data_type)
+        self.assertEqual((('1992-09-15', '2019-12-31')),
+                         search_result[1].time_range)
+        self.assertEqual('dataset', search_result[0].data_type.alias)
+        self.assertEqual('dataset', search_result[1].data_type.alias)
 
 def user_agent(ext: str = "") -> str:
     from xcube_cci.version import version
@@ -261,17 +360,17 @@ class CciOdpDataStoreTest(unittest.TestCase):
         self.assertTrue('endpoint_description_url' in cci_store_params_schema['properties'])
         self.assertTrue('user_agent' in cci_store_params_schema['properties'])
 
-    def test_get_type_specifiers(self):
+    def test_get_data_types(self):
         self.assertEqual(('dataset',), CciOdpDataStore.get_data_types())
 
-    def test_get_type_specifiers_for_data(self):
-        type_specifiers_for_data = self.store.get_data_types_for_data(
+    def test_get_data_types_for_data(self):
+        data_types_for_data = self.store.get_data_types_for_data(
             'esacci.AEROSOL.day.L3.AAI.multi-sensor.multi-platform.MSAAI.1-7.r1')
-        self.assertEqual(('dataset',), type_specifiers_for_data)
+        self.assertEqual(('dataset',), data_types_for_data)
 
-        type_specifiers_for_data = self.store.get_data_types_for_data(
+        data_types_for_data = self.store.get_data_types_for_data(
             'esacci.OZONE.mon.L3.NP.multi-sensor.multi-platform.MERGED.fv0002.r1')
-        self.assertEqual(('dataset',), type_specifiers_for_data)
+        self.assertEqual(('dataset',), data_types_for_data)
 
         with self.assertRaises(DataStoreError) as dse:
             self.store.get_data_types_for_data('nonsense')
@@ -296,293 +395,9 @@ class CciOdpDataStoreTest(unittest.TestCase):
 
     @skipIf(os.environ.get('XCUBE_DISABLE_WEB_TESTS', None) == '1', 'XCUBE_DISABLE_WEB_TESTS = 1')
     def test_search(self):
-        cube_search_result = list(self.store.search_data('dataset', ecv='FIRE', product_string='MODIS_TERRA'))
-        self.assertIsNotNone(cube_search_result)
-        self.assertEqual(2, len(cube_search_result))
-        self.assertIsInstance(cube_search_result[1], DatasetDescriptor)
-        self.assertEqual(5, len(cube_search_result[1].dims))
-        self.assertEqual(6, len(cube_search_result[1].data_vars))
-        self.assertEqual('esacci.FIRE.mon.L4.BA.MODIS.Terra.MODIS_TERRA.v5-1.grid', cube_search_result[1].data_id)
-        self.assertEqual('1M', cube_search_result[1].time_period)
-        self.assertEqual(0.25, cube_search_result[1].spatial_res)
-        self.assertEqual(DATASET_TYPE, cube_search_result[1].data_type)
-        self.assertEqual(('2001-01-01', '2019-12-31'), cube_search_result[1].time_range)
-
-        dataset_search_result = list(self.store.search_data('dataset', ecv='FIRE', product_string='MODIS_TERRA'))
-        self.assertIsNotNone(dataset_search_result)
-        self.assertEqual(2, len(dataset_search_result))
-        self.assertEqual('dataset', dataset_search_result[0].data_type)
-        self.assertEqual('dataset', dataset_search_result[1].data_type)
-
         geodataframe_search_result = list(self.store.search_data('geodataframe'))
         self.assertIsNotNone(geodataframe_search_result)
         self.assertEqual(0, len(geodataframe_search_result))
-
-    @skipIf(os.environ.get('XCUBE_DISABLE_WEB_TESTS', None) == '1', 'XCUBE_DISABLE_WEB_TESTS = 1')
-    def test_has_data(self):
-        self.assertTrue(self.store.has_data('esacci.FIRE.mon.L4.BA.MODIS.Terra.MODIS_TERRA.v5-1.grid'))
-        self.assertFalse(self.store.has_data('esacci.WIND.mon.L4.BA.MODIS.Terra.MODIS_TERRA.v5-1.grid'))
-        self.assertTrue(self.store.has_data('esacci.AEROSOL.day.L3.AAI.multi-sensor.multi-platform.MSAAI.1-7.r1'))
-        self.assertTrue(self.store.has_data('esacci.OZONE.mon.L3.NP.multi-sensor.multi-platform.MERGED.fv0002.r1'))
-
-        self.assertTrue(self.store.has_data('esacci.FIRE.mon.L4.BA.MODIS.Terra.MODIS_TERRA.v5-1.grid', 'dataset'))
-        self.assertFalse(self.store.has_data('esacci.WIND.mon.L4.BA.MODIS.Terra.MODIS_TERRA.v5-1.grid', 'dataset'))
-        self.assertTrue(self.store.has_data('esacci.AEROSOL.day.L3.AAI.multi-sensor.multi-platform.MSAAI.1-7.r1',
-                                            'dataset'))
-        self.assertTrue(self.store.has_data('esacci.OZONE.mon.L3.NP.multi-sensor.multi-platform.MERGED.fv0002.r1',
-                                            'dataset'))
-
-        self.assertTrue(self.store.has_data('esacci.FIRE.mon.L4.BA.MODIS.Terra.MODIS_TERRA.v5-1.grid', 'dataset'))
-        self.assertFalse(self.store.has_data('esacci.WIND.mon.L4.BA.MODIS.Terra.MODIS_TERRA.v5-1.grid',
-                                             'dataset'))
-        self.assertTrue(self.store.has_data('esacci.AEROSOL.day.L3.AAI.multi-sensor.multi-platform.MSAAI.1-7.r1',
-                                            'dataset'))
-        self.assertFalse(self.store.has_data('esacci.OZONE.mon.L3.NP.multi-sensor.multi-platform.MERGED.fv0002.r1',
-                                             'dataset'))
-
-    def test_describe_data(self):
-        descriptor = self.store.describe_data(
-            'esacci.OZONE.mon.L3.NP.multi-sensor.multi-platform.MERGED.fv0002.r1')
-        self.assertIsNotNone(descriptor)
-        self.assertIsInstance(descriptor, DatasetDescriptor)
-        self.assertEqual('esacci.OZONE.mon.L3.NP.multi-sensor.multi-platform.MERGED.fv0002.r1',
-                         descriptor.data_id)
-        self.assertEqual('dataset', str(descriptor.data_type))
-        self.assertEqual(['lon', 'lat', 'layers', 'air_pressure', 'time'],
-                         list(descriptor.dims.keys()))
-        self.assertEqual(360, descriptor.dims['lon'])
-        self.assertEqual(180, descriptor.dims['lat'])
-        self.assertEqual(16, descriptor.dims['layers'])
-        self.assertEqual(17, descriptor.dims['air_pressure'])
-        self.assertEqual(36, descriptor.dims['time'])
-        self.assertEqual(9, len(descriptor.data_vars))
-        self.assertTrue('surface_pressure' in descriptor.data_vars)
-        self.assertEqual(3, descriptor.data_vars['surface_pressure'].ndim)
-        self.assertEqual(('time', 'lat', 'lon'), descriptor.data_vars['surface_pressure'].dims)
-        self.assertEqual('float32', descriptor.data_vars['surface_pressure'].dtype)
-        self.assertIsNone(descriptor.crs)
-        self.assertEqual(1.0, descriptor.spatial_res)
-        self.assertEqual(('1997-01-01', '2008-12-31'), descriptor.time_range)
-        self.assertEqual('1M', descriptor.time_period)
-
-        descriptor = self.store.describe_data('esacci.AEROSOL.day.L3.AAI.multi-sensor.multi-platform.MSAAI.1-7.r1')
-        self.assertIsNotNone(descriptor)
-        self.assertIsInstance(descriptor, DatasetDescriptor)
-        self.assertEqual('esacci.AEROSOL.day.L3.AAI.multi-sensor.multi-platform.MSAAI.1-7.r1', descriptor.data_id)
-        self.assertEqual('dataset', str(descriptor.data_type))
-        self.assertEqual(['longitude', 'latitude', 'time'], list(descriptor.dims.keys()))
-        self.assertEqual(360, descriptor.dims['longitude'])
-        self.assertEqual(180, descriptor.dims['latitude'])
-        self.assertEqual(12644, descriptor.dims['time'])
-        self.assertEqual(3, len(descriptor.data_vars))
-        self.assertTrue('absorbing_aerosol_index' in descriptor.data_vars)
-        self.assertEqual(3, descriptor.data_vars['absorbing_aerosol_index'].ndim)
-        self.assertEqual(('time', 'latitude', 'longitude'),
-                         descriptor.data_vars['absorbing_aerosol_index'].dims)
-        self.assertEqual('float32', descriptor.data_vars['absorbing_aerosol_index'].dtype)
-        self.assertIsNone(descriptor.crs)
-        self.assertEqual(1.0, descriptor.spatial_res)
-        self.assertEqual(('1978-11-01', '2015-12-31'), descriptor.time_range)
-        self.assertEqual('1D', descriptor.time_period)
-
-        with self.assertRaises(DataStoreError) as dse:
-            self.store.describe_data(
-                'esacci.OZONE.mon.L3.NP.multi-sensor.multi-platform.MERGED.fv0002.r1',
-                data_type='geodataframe')
-        self.assertEqual(
-            'Cannot describe metadata of data resource '
-            '"esacci.OZONE.mon.L3.NP.multi-sensor.multi-platform.MERGED.fv0002.r1", as it cannot '
-            'be accessed by data accessor "dataset:zarr:cciodp".',
-            f'{dse.exception}')
-
-        descriptor = self.store.describe_data(
-            'esacci.AEROSOL.day.L3.AAI.multi-sensor.multi-platform.MSAAI.1-7.r1',
-            data_type='dataset')
-        self.assertIsNotNone(descriptor)
-        self.assertIsInstance(descriptor, DatasetDescriptor)
-        self.assertEqual('esacci.AEROSOL.day.L3.AAI.multi-sensor.multi-platform.MSAAI.1-7.r1', descriptor.data_id)
-        self.assertEqual('dataset', str(descriptor.data_type))
-        self.assertEqual(['lat', 'lon', 'time'], list(descriptor.dims.keys()))
-        self.assertEqual(360, descriptor.dims['lon'])
-        self.assertEqual(180, descriptor.dims['lat'])
-        self.assertEqual(12644, descriptor.dims['time'])
-        self.assertEqual(3, len(descriptor.data_vars))
-        self.assertTrue('absorbing_aerosol_index' in descriptor.data_vars)
-        self.assertEqual(3, descriptor.data_vars['absorbing_aerosol_index'].ndim)
-        self.assertEqual(('time', 'lat', 'lon'),
-                         descriptor.data_vars['absorbing_aerosol_index'].dims)
-        self.assertEqual('float32', descriptor.data_vars['absorbing_aerosol_index'].dtype)
-        self.assertIsNone(descriptor.crs)
-        self.assertEqual(1.0, descriptor.spatial_res)
-        self.assertEqual(('1978-11-01', '2015-12-31'), descriptor.time_range)
-        self.assertEqual('1D', descriptor.time_period)
-
-    @skipIf(os.environ.get('XCUBE_DISABLE_WEB_TESTS', None) == '1', 'XCUBE_DISABLE_WEB_TESTS = 1')
-    def test_get_data_ids(self):
-        dataset_ids_iter = self.store.get_data_ids()
-        self.assertIsNotNone(dataset_ids_iter)
-        dataset_ids = list(dataset_ids_iter)
-        self.assertTrue(len(dataset_ids) > 200)
-        for dataset_id in dataset_ids:
-            self.assertIsInstance(dataset_id, str)
-
-        dataset_ids_iter = self.store.get_data_ids(data_type='dataset',
-                                                   include_attrs=['title',
-                                                                  'verification_flags',
-                                                                  'data_type_alias'])
-        self.assertIsNotNone(dataset_ids_iter)
-        dataset_ids = list(dataset_ids_iter)
-        self.assertTrue(len(dataset_ids) < 200)
-        self.assertTrue(len(dataset_ids) > 100)
-        for dataset_id in dataset_ids:
-            self.assertIsInstance(dataset_id, tuple)
-            self.assertEqual(2, len(dataset_id))
-            self.assertIsInstance(dataset_id[0], str)
-            self.assertIsInstance(dataset_id[1], dict)
-
-    def test_get_open_data_params_schema_no_data(self):
-        schema = self.store.get_open_data_params_schema().to_dict()
-        self.assertIsNotNone(schema)
-        self.assertTrue('variable_names' in schema['properties'])
-        self.assertTrue('time_range' in schema['properties'])
-        self.assertFalse(schema['additionalProperties'])
-
-    @skipIf(os.environ.get('XCUBE_DISABLE_WEB_TESTS', None) == '1', 'XCUBE_DISABLE_WEB_TESTS = 1')
-    def test_get_open_data_params_schema(self):
-        schema = self.store.get_open_data_params_schema(
-            'esacci.OZONE.mon.L3.NP.multi-sensor.multi-platform.MERGED.fv0002.r1').to_dict()
-        self.assertIsNotNone(schema)
-        self.assertTrue('variable_names' in schema['properties'])
-        self.assertTrue('time_range' in schema['properties'])
-        self.assertTrue('bbox' in schema['properties'])
-        self.assertFalse(schema['additionalProperties'])
-
-        schema = self.store.get_open_data_params_schema(
-            'esacci.AEROSOL.day.L3.AAI.multi-sensor.multi-platform.MSAAI.1-7.r1').to_dict()
-        self.assertIsNotNone(schema)
-        self.assertTrue('variable_names' in schema['properties'])
-        self.assertTrue('time_range' in schema['properties'])
-        self.assertTrue('bbox' in schema['properties'])
-        self.assertFalse(schema['additionalProperties'])
-
-        with self.assertRaises(DataStoreError) as dse:
-            self.store.get_open_data_params_schema(
-                'esacci.OZONE.mon.L3.NP.multi-sensor.multi-platform.MERGED.fv0002.r1',
-                'geodataframe:zarr:cciodp').to_dict()
-        self.assertEqual("Data opener identifier must be"
-                         " 'dataset:zarr:cciodp', but got"
-                         " 'geodataframe:zarr:cciodp'", f'{dse.exception}')
-
-        schema = self.store.get_open_data_params_schema(
-            'esacci.AEROSOL.day.L3.AAI.multi-sensor.multi-platform.MSAAI.1-7.r1', 'dataset:zarr:cciodp').to_dict()
-        self.assertIsNotNone(schema)
-        self.assertTrue('variable_names' in schema['properties'])
-        self.assertTrue('time_range' in schema['properties'])
-        self.assertTrue('bbox' in schema['properties'])
-        self.assertFalse(schema['additionalProperties'])
-
-    def test_get_data_opener_ids(self):
-        self.assertEqual(('dataset:zarr:cciodp',),
-                         self.store.get_data_opener_ids())
-        self.assertEqual(('dataset:zarr:cciodp',),
-                         self.store.get_data_opener_ids(
-                             'esacci.OZONE.mon.L3.NP.multi-sensor.multi-platform.MERGED.fv0002.r1'))
-        self.assertEqual(('dataset:zarr:cciodp',),
-                         self.store.get_data_opener_ids(
-                             'esacci.OZONE.mon.L3.NP.multi-sensor.multi-platform.MERGED.fv0002.r1', 'dataset'))
-
-        with self.assertRaises(DataStoreError) as dse:
-            self.store.get_data_opener_ids(
-                'esacci.OZONE.mon.L3.NP.multi-sensor.multi-platform.MERGED.fv0002.r1', 'dataset')
-        self.assertEqual('Data Resource "esacci.OZONE.mon.L3.NP.multi-sensor.multi-platform.MERGED.fv0002.r1" '
-                         'is not available as specified type "dataset".', f'{dse.exception}')
-
-        self.assertEqual(('dataset:zarr:cciodp',),
-                         self.store.get_data_opener_ids(
-                             'esacci.AEROSOL.day.L3.AAI.multi-sensor.multi-platform.MSAAI.1-7.r1'))
-        self.assertEqual(('dataset:zarr:cciodp',),
-                         self.store.get_data_opener_ids(
-                             'esacci.AEROSOL.day.L3.AAI.multi-sensor.multi-platform.MSAAI.1-7.r1', 'dataset'))
-        self.assertEqual(('dataset:zarr:cciodp',),
-                         self.store.get_data_opener_ids(
-                             'esacci.AEROSOL.day.L3.AAI.multi-sensor.multi-platform.MSAAI.1-7.r1', 'dataset'))
-
-        with self.assertRaises(DataStoreError) as dse:
-            self.store.get_data_opener_ids('nonsense', data_type='dataset')
-        self.assertEqual('Data Resource "nonsense" is not available.', f'{dse.exception}')
-
-    @skipIf(os.environ.get('XCUBE_DISABLE_WEB_TESTS', None) == '1', 'XCUBE_DISABLE_WEB_TESTS = 1')
-    def test_open_data_all_values_the_same(self):
-        # this test ensures that on multiple calls on the same chunks the same values are retrieved
-        seaice_th_ds = self.store.open_data(
-            "esacci.SEAICE.mon.L3C.SITHICK.SIRAL.CryoSat-2.NH25KMEASE2.2-0.r1")
-        i = 0
-        import numpy as np
-        values = np.empty([4, 78])
-        while i < 4:
-            tmp = seaice_th_ds.sea_ice_thickness * seaice_th_ds.sea_ice_concentration
-            Vseaice = tmp.sum(dim=['xc', 'yc'], skipna=True)
-            values[i] = (list(Vseaice.values))
-            i += 1
-        values = values.transpose()
-        for i, value_parts in enumerate(values):
-            diffs = np.diff(value_parts)
-            sum = np.sum(diffs)
-            self.assertEqual(0, sum)
-
-    @skipIf(os.environ.get('XCUBE_DISABLE_WEB_TESTS', None) == '1', 'XCUBE_DISABLE_WEB_TESTS = 1')
-    @skip('Data cannot be accessed temporarily')
-    def test_open_data(self):
-        dataset = self.store.open_data(
-            'esacci.AEROSOL.day.L3C.AOD.MERIS.Envisat.MERIS_ENVISAT.2-2.r1',
-            'dataset:zarr:cciodp',
-            variable_names=['AOD550', 'R_eff'],
-            time_range=['2009-07-02', '2009-07-05'],
-            bbox=[-10.0, 40.0, 10.0, 60.0])
-        self.assertEqual({'AOD550', 'R_eff'}, set(dataset.data_vars))
-        self.assertEqual({'latitude', 'longitude', 'time'}, set(dataset.AOD550.dims))
-        self.assertEqual({20, 20, 1}, set(dataset.AOD550.chunk_sizes))
-
-        with self.assertRaises(DataStoreError) as dse:
-            self.store.open_data('esacci.AEROSOL.day.L3C.AOD.MERIS.Envisat.MERIS_ENVISAT.2-2.r1',
-                                 'dataset:zarr:cciodp',
-                                 variable_names=['AOD550', 'R_eff'],
-                                 time_range=['2009-07-02', '2009-07-05'],
-                                 bbox=[-10.0, 40.0, 10.0, 60.0])
-        self.assertEqual('Cannot describe metadata of data resource '
-                         '"esacci.AEROSOL.day.L3C.AOD.MERIS.Envisat.MERIS_ENVISAT.2-2.r1", '
-                         'as it cannot be accessed by data accessor "dataset:zarr:cciodp".',
-                         f'{dse.exception}')
-
-    @skipIf(os.environ.get('XCUBE_DISABLE_WEB_TESTS', None) == '1', 'XCUBE_DISABLE_WEB_TESTS = 1')
-    @skip('Disabled while time series are not supported')
-    def test_open_data_with_time_series_and_latitude_centers(self):
-        dataset = self.store.open_data('esacci.OZONE.mon.L3.LP.SCIAMACHY.Envisat.SCIAMACHY_ENVISAT.v0001.r1',
-                                       'dataset:zarr:cciodp',
-                                       variable_names=['approximate_altitude', 'ozone_mixing_ratio',
-                                                       'sample_standard_deviation'],
-                                       time_range=['2009-05-02', '2009-08-31'],
-                                       bbox=[-10.0, 40.0, 10.0, 60.0]
-                                       )
-        self.assertIsNotNone(dataset)
-        self.assertEqual({'approximate_altitude', 'ozone_mixing_ratio', 'sample_standard_deviation'},
-                         set(dataset.data_vars))
-        self.assertEqual({'time', 'air_pressure', 'latitude_centers'},
-                         set(dataset.ozone_mixing_ratio.dims))
-        self.assertEqual({1, 32, 18}, set(dataset.ozone_mixing_ratio.chunk_sizes))
-        dataset = self.store.open_data('esacci.OZONE.mon.L3.LP.SCIAMACHY.Envisat.SCIAMACHY_ENVISAT.v0001.r1',
-                                       'dataset:zarr:cciodp',
-                                       variable_names=['standard_error_of_the_mean', 'ozone_mixing_ratio',
-                                                       'sample_standard_deviation'],
-                                       time_range=['2009-05-02', '2009-08-31'],
-                                       bbox=[-10.0, 40.0, 10.0, 60.0]
-                                       )
-        self.assertIsNotNone(dataset)
-        self.assertEqual({'standard_error_of_the_mean', 'ozone_mixing_ratio', 'sample_standard_deviation'},
-                         set(dataset.data_vars))
-        self.assertEqual({'time', 'air_pressure', 'lat', 'lon'},
-                         set(dataset.ozone_mixing_ratio.dims))
-        self.assertEqual({1, 32, 18, 36}, set(dataset.ozone_mixing_ratio.chunk_sizes))
 
 
 class CciDataNormalizationTest(unittest.TestCase):

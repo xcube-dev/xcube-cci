@@ -96,6 +96,9 @@ class CciOdpDataOpener(DataOpener):
     def dataset_names(self) -> List[str]:
         return self._cci_odp.dataset_names
 
+    def has_data(self, data_id: str) -> bool:
+        return data_id in self.dataset_names
+
     def _describe_data(self, data_ids: List[str]) -> List[DatasetDescriptor]:
         ds_metadata_list = self._cci_odp.get_datasets_metadata(data_ids)
         data_descriptors = []
@@ -282,7 +285,7 @@ class CciOdpDatasetOpener(CciOdpDataOpener):
     def __init__(self, normalize_data: bool = True, **odp_params):
         super().__init__(
             # CciOdp(only_consider_cube_ready=normalize_data, **odp_params),
-            CciOdp(only_consider_cube_ready=False, **odp_params),
+            CciOdp(only_consider_cube_ready=normalize_data, **odp_params),
             DATASET_OPENER_ID,
             DATASET_TYPE,
             normalize_data=normalize_data,
@@ -375,7 +378,7 @@ class CciOdpDataStore(DataStore):
                 yield data_id, attrs
 
     def has_data(self, data_id: str, data_type: str = None) -> bool:
-        return data_id in self._get_opener(data_type=data_type).dataset_names
+        return self._get_opener(data_type=data_type).has_data(data_id)
 
     def describe_data(self, data_id: str, data_type: str = None) -> DataDescriptor:
         return self._get_opener(data_type=data_type).describe_data(data_id)
