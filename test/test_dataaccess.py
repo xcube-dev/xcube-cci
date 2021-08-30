@@ -311,8 +311,8 @@ class CciOdpDataStoreTest(unittest.TestCase):
         dataset_search_result = list(self.store.search_data('dataset', ecv='FIRE', product_string='MODIS_TERRA'))
         self.assertIsNotNone(dataset_search_result)
         self.assertEqual(2, len(dataset_search_result))
-        self.assertEqual('dataset', dataset_search_result[0].data_type)
-        self.assertEqual('dataset', dataset_search_result[1].data_type)
+        self.assertEqual('dataset', dataset_search_result[0].data_type.alias)
+        self.assertEqual('dataset', dataset_search_result[1].data_type.alias)
 
         geodataframe_search_result = list(self.store.search_data('geodataframe'))
         self.assertIsNotNone(geodataframe_search_result)
