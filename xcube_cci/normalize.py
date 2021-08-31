@@ -37,14 +37,18 @@ def normalize_dims_description(dims: dict) -> dict:
 def normalize_variable_dims_description(var_dims: List[str]) -> Optional[List[str]]:
     if ('lat' in var_dims and 'lon' in var_dims) or \
             ('latitude' in var_dims and 'longitude' in var_dims) or \
-            ('latitude_centers' in var_dims):
-        default_dims = ['time', 'lat', 'lon', 'latitude', 'longitude', 'latitude_centers']
-        if var_dims != ['time', 'lat', 'lon']:
+            ('latitude_centers' in var_dims) or \
+            ('x' in var_dims and 'y' in var_dims):
+        default_dims = ['time', 'lat', 'lon', 'latitude', 'longitude',
+                        'latitude_centers', 'x', 'y']
+        y_dim_name = 'y' if 'y' in var_dims else 'lat'
+        x_dim_name = 'x' if 'x' in var_dims else 'lon'
+        if var_dims != ['time', y_dim_name, x_dim_name]:
             other_dims = []
             for dim in var_dims:
                 if dim not in default_dims:
                     other_dims.append(dim)
-            new_dims = ['time', 'lat', 'lon']
+            new_dims = ['time', y_dim_name, x_dim_name]
             for i in range(len(other_dims)):
                 new_dims.insert(i + 1, other_dims[i])
             var_dims = new_dims
