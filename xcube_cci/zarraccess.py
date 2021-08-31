@@ -19,43 +19,55 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-from typing import Any, Tuple
+from typing import Tuple
 
 from xcube.core.store import DataStoreError
-from xcube.core.store.stores.s3 import S3DataStore
+from xcube.core.store import DataTypeLike
+from xcube.core.store import get_data_store_class
 from xcube.util.jsonschema import JsonObjectSchema
 
 CCI_ZARR_STORE_BUCKET_NAME = 'esacci'
 CCI_ZARR_STORE_ENDPOINT = 'https://cci-ke-o.s3-ext.jc.rl.ac.uk:8443/'
 
+CCI_ZARR_STORE_PARAMS = dict(
+    root=CCI_ZARR_STORE_BUCKET_NAME,
+    fs_params=dict(
+        anon=True,
+        client_kwargs=dict(
+            endpoint_url=CCI_ZARR_STORE_ENDPOINT,
+        )
+    )
+)
+
+S3DataStore = get_data_store_class('s3')
+
 
 class CciZarrDataStore(S3DataStore):
 
     def __init__(self):
-        zarr_store_params = dict(bucket_name=CCI_ZARR_STORE_BUCKET_NAME,
-                                 endpoint_url=CCI_ZARR_STORE_ENDPOINT,
-                                 anon=True)
-        super().__init__(**zarr_store_params)
+        super().__init__(**CCI_ZARR_STORE_PARAMS)
 
     @classmethod
     def get_data_store_params_schema(cls) -> JsonObjectSchema:
-        return JsonObjectSchema()
+        return JsonObjectSchema(additional_properties=False)
 
-    def get_data_writer_ids(self, type_specifier: str = None) -> \
+    # noinspection PyUnusedLocal,PyMethodMayBeStatic
+    def get_data_writer_ids(self, data_type: DataTypeLike = None) -> \
             Tuple[str, ...]:
         return ()
 
-    def get_write_data_params_schema(self, writer_id: str = None) -> \
+    # noinspection PyUnusedLocal,PyMethodMayBeStatic
+    def get_write_data_params_schema(self, **kwargs) -> \
             JsonObjectSchema:
-        return JsonObjectSchema()
+        return JsonObjectSchema(additional_properties=False)
 
-    def write_data(self,
-                   data: Any,
-                   data_id: str = None,
-                   writer_id: str = None,
-                   replace: bool = False,
-                   **write_params) -> str:
+    def write_data(self, *args, **kwargs) -> str:
         raise DataStoreError('The CciZarrDataStore is read-only.')
 
-    def delete_data(self, data_id: str):
+    # noinspection PyUnusedLocal,PyMethodMayBeStatic
+    def get_delete_data_params_schema(self, **kwargs) -> \
+            JsonObjectSchema:
+        return JsonObjectSchema(additional_properties=False)
+
+    def delete_data(self, *args):
         raise DataStoreError('The CciZarrDataStore is read-only.')

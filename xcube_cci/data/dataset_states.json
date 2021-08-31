@@ -1,6 +1,6 @@
 {
     "esacci.AEROSOL.satellite-orbit-frequency.L2P.AER_PRODUCTS.AATSR.Envisat.AATSR-ENVISAT-ENS.v2-6.r1": {
-        "type_specifier": "dataset",
+        "data_type": "dataset",
         "verification_flags": [
             "open",
             "constrain_time"
@@ -8,7 +8,7 @@
         "title": "ESA Aerosol Climate Change Initiative (Aerosol_cci): Level 2 aerosol products from AATSR (ensemble product), Version 2.6"
     },
     "esacci.AEROSOL.satellite-orbit-frequency.L2P.AER_PRODUCTS.AATSR.Envisat.ADV.2-31.r1": {
-        "type_specifier": "dataset",
+        "data_type": "dataset",
         "verification_flags": [
             "open",
             "constrain_time"
@@ -16,7 +16,7 @@
         "title": "ESA Aerosol Climate Change Initiative (Aerosol_cci): Level 2 aerosol products from AATSR (ADV Algorithm), Version 2.31"
     },
     "esacci.AEROSOL.satellite-orbit-frequency.L2P.AER_PRODUCTS.AATSR.Envisat.ORAC.04-01.r1": {
-        "type_specifier": "dataset",
+        "data_type": "dataset",
         "verification_flags": [
             "open",
             "constrain_time"
@@ -24,7 +24,7 @@
         "title": "ESA Aerosol Climate Change Initiative (Aerosol_cci): Level 2 aerosol products from AATSR (ORAC Algorithm), Version 4.01"
     },
     "esacci.AEROSOL.satellite-orbit-frequency.L2P.AER_PRODUCTS.AATSR.Envisat.SU.4-3.r1": {
-        "type_specifier": "dataset",
+        "data_type": "dataset",
         "verification_flags": [
             "open",
             "constrain_time"
@@ -32,7 +32,7 @@
         "title": "ESA Aerosol Climate Change Initiative (Aerosol_cci): Level 2 aerosol products from AATSR (SU Algorithm), Version 4.3"
     },
     "esacci.AEROSOL.satellite-orbit-frequency.L2P.AER_PRODUCTS.ATSR-2.ERS-2.ADV.2-31.r1": {
-        "type_specifier": "dataset",
+        "data_type": "dataset",
         "verification_flags": [
             "open",
             "constrain_time"
@@ -40,7 +40,7 @@
         "title": "ESA Aerosol Climate Change Initiative (Aerosol_cci): Level 2 aerosol products from ATSR-2 (ADV algorithm), Version 2.31"
     },
     "esacci.AEROSOL.satellite-orbit-frequency.L2P.AER_PRODUCTS.ATSR-2.ERS-2.ORAC.04-01.r1": {
-        "type_specifier": "dataset",
+        "data_type": "dataset",
         "verification_flags": [
             "open",
             "constrain_time"
@@ -48,7 +48,7 @@
         "title": "ESA Aerosol Climate Change Initiative (Aerosol_cci): Level 2 aerosol products from ATSR-2 (ORAC algorithm), Version 4.01"
     },
     "esacci.AEROSOL.satellite-orbit-frequency.L2P.AER_PRODUCTS.ATSR-2.ERS-2.SU.4-3.r1": {
-        "type_specifier": "dataset",
+        "data_type": "dataset",
         "verification_flags": [
             "open",
             "constrain_time"
@@ -56,7 +56,7 @@
         "title": "ESA Aerosol Climate Change Initiative (Aerosol_cci): Level 2 aerosol products from ATSR-2 (SU algorithm), Version 4.3"
     },
     "esacci.AEROSOL.satellite-orbit-frequency.L2P.AER_PRODUCTS.multi-sensor.multi-platform.ATSR2-ENVISAT-ENS.v2-6.r1": {
-        "type_specifier": "dataset",
+        "data_type": "dataset",
         "verification_flags": [
             "open",
             "constrain_time"
@@ -64,7 +64,7 @@
         "title": "ESA Aerosol Climate Change Initiative (Aerosol_cci): Level 2 aerosol products from ATSR-2 (ensemble product), Version 2.6"
     },
     "esacci.AEROSOL.satellite-orbit-frequency.L2P.AOD.MERIS.Envisat.MERIS_ENVISAT.2-2.r1": {
-        "type_specifier": "dataset",
+        "data_type": "dataset",
         "verification_flags": [
             "open",
             "constrain_time"
@@ -72,367 +72,367 @@
         "title": "ESA Aerosol Climate Change Initiative (Aerosol CCI): Level 2 aerosol products from MERIS (ALAMO algorithm), Version 2.2"
     },
     "esacci.FIRE.mon.L3S.BA.MODIS.Terra.MODIS_TERRA.v5-1.pixel": {
-        "type_specifier": "geodataframe",
+        "data_type": "geodataframe",
         "verification_flags": [],
         "title": "ESA Fire Climate Change Initiative (Fire_cci): MODIS Fire_cci Burned Area Pixel product, version 5.1"
     },
     "esacci.FIRE.mon.L3S.BA.MSI-(Sentinel-2).Sentinel-2A.MSI.v1-1.pixel": {
-        "type_specifier": "geodataframe",
+        "data_type": "geodataframe",
         "verification_flags": [],
         "title": "ESA Fire Climate Change Initiative (Fire_cci): Small Fire Dataset (SFD) Burned Area pixel product for Sub-Saharan Africa, version 1.1"
     },
     "esacci.ICESHEETS.mon.IND.GMB.GRACE-instrument.GRACE.VARIOUS.1-3.greenland_gmb_time_series": {
-        "type_specifier": "geodataframe",
+        "data_type": "geodataframe",
         "verification_flags": [],
         "title": "ESA Greenland Ice Sheet Climate Change Initiative (Greenland_Ice_Sheet_cci): Greenland Gravimetric Mass Balance from GRACE data (CSR RL06), derived by TU Dresden, v1.3"
     },
     "esacci.ICESHEETS.unspecified.Unspecified.CFL.multi-sensor.multi-platform.UNSPECIFIED.v3-0.greenland": {
-        "type_specifier": "geodataframe",
+        "data_type": "geodataframe",
         "verification_flags": [],
         "title": "ESA Greenland Ice Sheet Climate Change Initiative (Greenland_Ice_Sheet_cci): Greenland Calving Front Locations, v3.0"
     },
     "esacci.ICESHEETS.unspecified.Unspecified.GLL.multi-sensor.multi-platform.UNSPECIFIED.v1-3.greenland": {
-        "type_specifier": "geodataframe",
+        "data_type": "geodataframe",
         "verification_flags": [],
         "title": "ESA Greenland Ice Sheet Climate Change Initiative (Greenland_Ice_Sheet_cci): Grounding Line Locations from SAR Interferometry,  v1.3"
     },
     "esacci.ICESHEETS.yr.Unspecified.GMB.GRACE-instrument.GRACE.UNSPECIFIED.1-2.greenland_gmb_timeseries": {
-        "type_specifier": "geodataframe",
+        "data_type": "geodataframe",
         "verification_flags": [],
         "title": "ESA Greenland Ice Sheet Climate Change Initiative (Greenland_Ice_Sheet_cci): Greenland Gravimetric Mass Balance from GRACE data, derived by TU Dresden, v1.2"
     },
     "esacci.ICESHEETS.yr.Unspecified.GMB.GRACE-instrument.GRACE.UNSPECIFIED.1-4.greenland_gmb_mass_trends": {
-        "type_specifier": "geodataframe",
+        "data_type": "geodataframe",
         "verification_flags": [],
         "title": "ESA Greenland Ice Sheet Climate Change Initiative (Greenland_Ice_Sheet_cci): Greenland Gravimetric Mass Balance from GRACE data, derived by DTU Space,  v1.4"
     },
     "esacci.ICESHEETS.yr.Unspecified.GMB.GRACE-instrument.GRACE.UNSPECIFIED.1-4.greenland_gmb_time_series": {
-        "type_specifier": "geodataframe",
+        "data_type": "geodataframe",
         "verification_flags": [],
         "title": "ESA Greenland Ice Sheet Climate Change Initiative (Greenland_Ice_Sheet_cci): Greenland Gravimetric Mass Balance from GRACE data, derived by DTU Space,  v1.4"
     },
     "esacci.ICESHEETS.yr.Unspecified.GMB.GRACE-instrument.GRACE.UNSPECIFIED.1-5.greenland_gmb_mass_trends": {
-        "type_specifier": "geodataframe",
+        "data_type": "geodataframe",
         "verification_flags": [],
         "title": "ESA Greenland Ice Sheet Climate Change Initiative (Greenland_Ice_Sheet_cci): Greenland Gravimetric Mass Balance from GRACE data (CSR RL06), derived by DTU Space, v1.5"
     },
     "esacci.ICESHEETS.yr.Unspecified.GMB.GRACE-instrument.GRACE.UNSPECIFIED.1-5.greenland_gmb_time_series": {
-        "type_specifier": "geodataframe",
+        "data_type": "geodataframe",
         "verification_flags": [],
         "title": "ESA Greenland Ice Sheet Climate Change Initiative (Greenland_Ice_Sheet_cci): Greenland Gravimetric Mass Balance from GRACE data (CSR RL06), derived by DTU Space, v1.5"
     },
     "esacci.ICESHEETS.yr.Unspecified.SEC.SIRAL.CryoSat-2.UNSPECIFIED.2-2.greenland_sec_cryosat_2yr": {
-        "type_specifier": "geodataframe",
+        "data_type": "geodataframe",
         "verification_flags": [],
         "title": "ESA Greenland Ice Sheet Climate Change Initiative (Greenland_Ice_Sheet_cci): Greenland Surface Elevation Change from Cryosat-2, v2.2"
     },
     "esacci.ICESHEETS.yr.Unspecified.SEC.SIRAL.CryoSat-2.UNSPECIFIED.2-2.greenland_sec_cryosat_5yr": {
-        "type_specifier": "geodataframe",
+        "data_type": "geodataframe",
         "verification_flags": [],
         "title": "ESA Greenland Ice Sheet Climate Change Initiative (Greenland_Ice_Sheet_cci): Greenland Surface Elevation Change from Cryosat-2, v2.2"
     },
     "esacci.OC.5-days.L3S.CHLOR_A.multi-sensor.multi-platform.MERGED.3-1.sinusoidal": {
-        "type_specifier": "dataset",
+        "data_type": "dataset",
         "verification_flags": [],
         "title": "ESA Ocean Colour Climate Change Initiative (Ocean_Colour_cci): Global chlorophyll-a data products gridded on a sinusoidal projection, Version 3.1"
     },
     "esacci.OC.5-days.L3S.CHLOR_A.multi-sensor.multi-platform.MERGED.4-2.sinusoidal": {
-        "type_specifier": "dataset",
+        "data_type": "dataset",
         "verification_flags": [],
         "title": "ESA Ocean Colour Climate Change Initiative (Ocean_Colour_cci): Global chlorophyll-a data products gridded on a sinusoidal projection, Version 4.2"
     },
     "esacci.OC.5-days.L3S.CHLOR_A.multi-sensor.multi-platform.MERGED.5-0.sinusoidal": {
-        "type_specifier": "dataset",
+        "data_type": "dataset",
         "verification_flags": [],
         "title": "ESA Ocean Colour Climate Change Initiative (Ocean_Colour_cci): Global chlorophyll-a data products gridded on a sinusoidal projection, Version 5.0"
     },
     "esacci.OC.5-days.L3S.IOP.multi-sensor.multi-platform.MERGED.3-1.sinusoidal": {
-        "type_specifier": "dataset",
+        "data_type": "dataset",
         "verification_flags": [],
         "title": "ESA Ocean Colour Climate Change Initiative (Ocean_Colour_cci): Global dataset of inherent optical properties (IOP) gridded on a sinusoidal projection, Version 3.1"
     },
     "esacci.OC.5-days.L3S.IOP.multi-sensor.multi-platform.MERGED.4-2.sinusoidal": {
-        "type_specifier": "dataset",
+        "data_type": "dataset",
         "verification_flags": [],
         "title": "ESA Ocean Colour Climate Change Initiative (Ocean_Colour_cci): Global dataset of inherent optical properties (IOP) gridded on a sinusoidal projection, Version 4.2"
     },
     "esacci.OC.5-days.L3S.IOP.multi-sensor.multi-platform.MERGED.5-0.sinusoidal": {
-        "type_specifier": "dataset",
+        "data_type": "dataset",
         "verification_flags": [],
         "title": "ESA Ocean Colour Climate Change Initiative (Ocean_Colour_cci): Global dataset of inherent optical properties (IOP) gridded on a sinusoidal projection, Version 5.0"
     },
     "esacci.OC.5-days.L3S.K_490.multi-sensor.multi-platform.MERGED.3-1.sinusoidal": {
-        "type_specifier": "dataset",
+        "data_type": "dataset",
         "verification_flags": [],
         "title": "ESA Ocean Colour Climate Change Initiative (Ocean_Colour_cci): Global attenuation coefficient for downwelling irradiance (Kd490) gridded on a sinusoidal projection, Version 3.1"
     },
     "esacci.OC.5-days.L3S.K_490.multi-sensor.multi-platform.MERGED.4-2.sinusoidal": {
-        "type_specifier": "dataset",
+        "data_type": "dataset",
         "verification_flags": [],
         "title": "ESA Ocean Colour Climate Change Initiative (Ocean_Colour_cci): Global attenuation coefficient for downwelling irradiance (Kd490) gridded on a sinusoidal projection, Version 4.2"
     },
     "esacci.OC.5-days.L3S.K_490.multi-sensor.multi-platform.MERGED.5-0.sinusoidal": {
-        "type_specifier": "dataset",
+        "data_type": "dataset",
         "verification_flags": [],
         "title": "ESA Ocean Colour Climate Change Initiative (Ocean_Colour_cci): Global attenuation coefficient for downwelling irradiance (Kd490) gridded on a sinusoidal projection, Version 5.0"
     },
     "esacci.OC.5-days.L3S.OC_PRODUCTS.multi-sensor.multi-platform.MERGED.3-1.sinusoidal": {
-        "type_specifier": "dataset",
+        "data_type": "dataset",
         "verification_flags": [],
         "title": "ESA Ocean Colour Climate Change Initiative (Ocean_Colour_cci): Global ocean colour data products gridded on a sinusoidal projection (All Products), Version 3.1"
     },
     "esacci.OC.5-days.L3S.OC_PRODUCTS.multi-sensor.multi-platform.MERGED.4-2.sinusoidal": {
-        "type_specifier": "dataset",
+        "data_type": "dataset",
         "verification_flags": [],
         "title": "ESA Ocean Colour Climate Change Initiative (Ocean_Colour_cci): Global ocean colour data products gridded on a sinusoidal projection (All Products), Version 4.2"
     },
     "esacci.OC.5-days.L3S.OC_PRODUCTS.multi-sensor.multi-platform.MERGED.5-0.sinusoidal": {
-        "type_specifier": "dataset",
+        "data_type": "dataset",
         "verification_flags": [],
         "title": "ESA Ocean Colour Climate Change Initiative (Ocean_Colour_cci): Global ocean colour data products gridded on a sinusoidal projection (All Products), Version 5.0"
     },
     "esacci.OC.5-days.L3S.RRS.multi-sensor.multi-platform.MERGED.3-1.sinusoidal": {
-        "type_specifier": "dataset",
+        "data_type": "dataset",
         "verification_flags": [],
         "title": "ESA Ocean Colour Climate Change Initiative (Ocean_Colour_cci): Global remote sensing reflectance gridded on a sinusoidal projection, Version 3.1"
     },
     "esacci.OC.5-days.L3S.RRS.multi-sensor.multi-platform.MERGED.4-2.sinusoidal": {
-        "type_specifier": "dataset",
+        "data_type": "dataset",
         "verification_flags": [],
         "title": "ESA Ocean Colour Climate Change Initiative (Ocean_Colour_cci): Global remote sensing reflectance gridded on a sinusoidal projection, Version 4.2"
     },
     "esacci.OC.5-days.L3S.RRS.multi-sensor.multi-platform.MERGED.5-0.sinusoidal": {
-        "type_specifier": "dataset",
+        "data_type": "dataset",
         "verification_flags": [],
         "title": "ESA Ocean Colour Climate Change Initiative (Ocean_Colour_cci): Global remote sensing reflectance gridded on a sinusoidal projection, Version 5.0"
     },
     "esacci.OC.8-days.L3S.CHLOR_A.multi-sensor.multi-platform.MERGED.3-1.sinusoidal": {
-        "type_specifier": "dataset",
+        "data_type": "dataset",
         "verification_flags": [],
         "title": "ESA Ocean Colour Climate Change Initiative (Ocean_Colour_cci): Global chlorophyll-a data products gridded on a sinusoidal projection, Version 3.1"
     },
     "esacci.OC.8-days.L3S.CHLOR_A.multi-sensor.multi-platform.MERGED.4-2.sinusoidal": {
-        "type_specifier": "dataset",
+        "data_type": "dataset",
         "verification_flags": [],
         "title": "ESA Ocean Colour Climate Change Initiative (Ocean_Colour_cci): Global chlorophyll-a data products gridded on a sinusoidal projection, Version 4.2"
     },
     "esacci.OC.8-days.L3S.CHLOR_A.multi-sensor.multi-platform.MERGED.5-0.sinusoidal": {
-        "type_specifier": "dataset",
+        "data_type": "dataset",
         "verification_flags": [],
         "title": "ESA Ocean Colour Climate Change Initiative (Ocean_Colour_cci): Global chlorophyll-a data products gridded on a sinusoidal projection, Version 5.0"
     },
     "esacci.OC.8-days.L3S.IOP.multi-sensor.multi-platform.MERGED.3-1.sinusoidal": {
-        "type_specifier": "dataset",
+        "data_type": "dataset",
         "verification_flags": [],
         "title": "ESA Ocean Colour Climate Change Initiative (Ocean_Colour_cci): Global dataset of inherent optical properties (IOP) gridded on a sinusoidal projection, Version 3.1"
     },
     "esacci.OC.8-days.L3S.IOP.multi-sensor.multi-platform.MERGED.4-2.sinusoidal": {
-        "type_specifier": "dataset",
+        "data_type": "dataset",
         "verification_flags": [],
         "title": "ESA Ocean Colour Climate Change Initiative (Ocean_Colour_cci): Global dataset of inherent optical properties (IOP) gridded on a sinusoidal projection, Version 4.2"
     },
     "esacci.OC.8-days.L3S.IOP.multi-sensor.multi-platform.MERGED.5-0.sinusoidal": {
-        "type_specifier": "dataset",
+        "data_type": "dataset",
         "verification_flags": [],
         "title": "ESA Ocean Colour Climate Change Initiative (Ocean_Colour_cci): Global dataset of inherent optical properties (IOP) gridded on a sinusoidal projection, Version 5.0"
     },
     "esacci.OC.8-days.L3S.K_490.multi-sensor.multi-platform.MERGED.3-1.sinusoidal": {
-        "type_specifier": "dataset",
+        "data_type": "dataset",
         "verification_flags": [],
         "title": "ESA Ocean Colour Climate Change Initiative (Ocean_Colour_cci): Global attenuation coefficient for downwelling irradiance (Kd490) gridded on a sinusoidal projection, Version 3.1"
     },
     "esacci.OC.8-days.L3S.K_490.multi-sensor.multi-platform.MERGED.4-2.sinusoidal": {
-        "type_specifier": "dataset",
+        "data_type": "dataset",
         "verification_flags": [],
         "title": "ESA Ocean Colour Climate Change Initiative (Ocean_Colour_cci): Global attenuation coefficient for downwelling irradiance (Kd490) gridded on a sinusoidal projection, Version 4.2"
     },
     "esacci.OC.8-days.L3S.K_490.multi-sensor.multi-platform.MERGED.5-0.sinusoidal": {
-        "type_specifier": "dataset",
+        "data_type": "dataset",
         "verification_flags": [],
         "title": "ESA Ocean Colour Climate Change Initiative (Ocean_Colour_cci): Global attenuation coefficient for downwelling irradiance (Kd490) gridded on a sinusoidal projection, Version 5.0"
     },
     "esacci.OC.8-days.L3S.OC_PRODUCTS.multi-sensor.multi-platform.MERGED.3-1.sinusoidal": {
-        "type_specifier": "dataset",
+        "data_type": "dataset",
         "verification_flags": [],
         "title": "ESA Ocean Colour Climate Change Initiative (Ocean_Colour_cci): Global ocean colour data products gridded on a sinusoidal projection (All Products), Version 3.1"
     },
     "esacci.OC.8-days.L3S.OC_PRODUCTS.multi-sensor.multi-platform.MERGED.4-2.sinusoidal": {
-        "type_specifier": "dataset",
+        "data_type": "dataset",
         "verification_flags": [],
         "title": "ESA Ocean Colour Climate Change Initiative (Ocean_Colour_cci): Global ocean colour data products gridded on a sinusoidal projection (All Products), Version 4.2"
     },
     "esacci.OC.8-days.L3S.OC_PRODUCTS.multi-sensor.multi-platform.MERGED.5-0.sinusoidal": {
-        "type_specifier": "dataset",
+        "data_type": "dataset",
         "verification_flags": [],
         "title": "ESA Ocean Colour Climate Change Initiative (Ocean_Colour_cci): Global ocean colour data products gridded on a sinusoidal projection (All Products), Version 5.0"
     },
     "esacci.OC.8-days.L3S.RRS.multi-sensor.multi-platform.MERGED.3-1.sinusoidal": {
-        "type_specifier": "dataset",
+        "data_type": "dataset",
         "verification_flags": [],
         "title": "ESA Ocean Colour Climate Change Initiative (Ocean_Colour_cci): Global remote sensing reflectance gridded on a sinusoidal projection, Version 3.1"
     },
     "esacci.OC.8-days.L3S.RRS.multi-sensor.multi-platform.MERGED.4-2.sinusoidal": {
-        "type_specifier": "dataset",
+        "data_type": "dataset",
         "verification_flags": [],
         "title": "ESA Ocean Colour Climate Change Initiative (Ocean_Colour_cci): Global remote sensing reflectance gridded on a sinusoidal projection, Version 4.2"
     },
     "esacci.OC.8-days.L3S.RRS.multi-sensor.multi-platform.MERGED.5-0.sinusoidal": {
-        "type_specifier": "dataset",
+        "data_type": "dataset",
         "verification_flags": [],
         "title": "ESA Ocean Colour Climate Change Initiative (Ocean_Colour_cci): Global remote sensing reflectance gridded on a sinusoidal projection, Version 5.0"
     },
     "esacci.OC.day.L3S.CHLOR_A.multi-sensor.multi-platform.MERGED.3-1.sinusoidal": {
-        "type_specifier": "dataset",
+        "data_type": "dataset",
         "verification_flags": [],
         "title": "ESA Ocean Colour Climate Change Initiative (Ocean_Colour_cci): Global chlorophyll-a data products gridded on a sinusoidal projection, Version 3.1"
     },
     "esacci.OC.day.L3S.CHLOR_A.multi-sensor.multi-platform.MERGED.4-2.sinusoidal": {
-        "type_specifier": "dataset",
+        "data_type": "dataset",
         "verification_flags": [],
         "title": "ESA Ocean Colour Climate Change Initiative (Ocean_Colour_cci): Global chlorophyll-a data products gridded on a sinusoidal projection, Version 4.2"
     },
     "esacci.OC.day.L3S.CHLOR_A.multi-sensor.multi-platform.MERGED.5-0.sinusoidal": {
-        "type_specifier": "dataset",
+        "data_type": "dataset",
         "verification_flags": [],
         "title": "ESA Ocean Colour Climate Change Initiative (Ocean_Colour_cci): Global chlorophyll-a data products gridded on a sinusoidal projection, Version 5.0"
     },
     "esacci.OC.day.L3S.IOP.multi-sensor.multi-platform.MERGED.3-1.sinusoidal": {
-        "type_specifier": "dataset",
+        "data_type": "dataset",
         "verification_flags": [],
         "title": "ESA Ocean Colour Climate Change Initiative (Ocean_Colour_cci): Global dataset of inherent optical properties (IOP) gridded on a sinusoidal projection, Version 3.1"
     },
     "esacci.OC.day.L3S.IOP.multi-sensor.multi-platform.MERGED.4-2.sinusoidal": {
-        "type_specifier": "dataset",
+        "data_type": "dataset",
         "verification_flags": [],
         "title": "ESA Ocean Colour Climate Change Initiative (Ocean_Colour_cci): Global dataset of inherent optical properties (IOP) gridded on a sinusoidal projection, Version 4.2"
     },
     "esacci.OC.day.L3S.IOP.multi-sensor.multi-platform.MERGED.5-0.sinusoidal": {
-        "type_specifier": "dataset",
+        "data_type": "dataset",
         "verification_flags": [],
         "title": "ESA Ocean Colour Climate Change Initiative (Ocean_Colour_cci): Global dataset of inherent optical properties (IOP) gridded on a sinusoidal projection, Version 5.0"
     },
     "esacci.OC.day.L3S.K_490.multi-sensor.multi-platform.MERGED.3-1.sinusoidal": {
-        "type_specifier": "dataset",
+        "data_type": "dataset",
         "verification_flags": [],
         "title": "ESA Ocean Colour Climate Change Initiative (Ocean_Colour_cci): Global attenuation coefficient for downwelling irradiance (Kd490) gridded on a sinusoidal projection, Version 3.1"
     },
     "esacci.OC.day.L3S.K_490.multi-sensor.multi-platform.MERGED.4-2.sinusoidal": {
-        "type_specifier": "dataset",
+        "data_type": "dataset",
         "verification_flags": [],
         "title": "ESA Ocean Colour Climate Change Initiative (Ocean_Colour_cci): Global attenuation coefficient for downwelling irradiance (Kd490) gridded on a sinusoidal projection, Version 4.2"
     },
     "esacci.OC.day.L3S.K_490.multi-sensor.multi-platform.MERGED.5-0.sinusoidal": {
-        "type_specifier": "dataset",
+        "data_type": "dataset",
         "verification_flags": [],
         "title": "ESA Ocean Colour Climate Change Initiative (Ocean_Colour_cci): Global attenuation coefficient for downwelling irradiance (Kd490) gridded on a sinusoidal projection, Version 5.0"
     },
     "esacci.OC.day.L3S.OC_PRODUCTS.multi-sensor.multi-platform.MERGED.3-1.sinusoidal": {
-        "type_specifier": "dataset",
+        "data_type": "dataset",
         "verification_flags": [],
         "title": "ESA Ocean Colour Climate Change Initiative (Ocean_Colour_cci): Global ocean colour data products gridded on a sinusoidal projection (All Products), Version 3.1"
     },
     "esacci.OC.day.L3S.OC_PRODUCTS.multi-sensor.multi-platform.MERGED.4-2.sinusoidal": {
-        "type_specifier": "dataset",
+        "data_type": "dataset",
         "verification_flags": [],
         "title": "ESA Ocean Colour Climate Change Initiative (Ocean_Colour_cci): Global ocean colour data products gridded on a sinusoidal projection (All Products), Version 4.2"
     },
     "esacci.OC.day.L3S.OC_PRODUCTS.multi-sensor.multi-platform.MERGED.5-0.sinusoidal": {
-        "type_specifier": "dataset",
+        "data_type": "dataset",
         "verification_flags": [],
         "title": "ESA Ocean Colour Climate Change Initiative (Ocean_Colour_cci): Global ocean colour data products gridded on a sinusoidal projection (All Products), Version 5.0"
     },
     "esacci.OC.day.L3S.RRS.multi-sensor.multi-platform.MERGED.3-1.sinusoidal": {
-        "type_specifier": "dataset",
+        "data_type": "dataset",
         "verification_flags": [],
         "title": "ESA Ocean Colour Climate Change Initiative (Ocean_Colour_cci): Global remote sensing reflectance gridded on a sinusoidal projection, Version 3.1"
     },
     "esacci.OC.day.L3S.RRS.multi-sensor.multi-platform.MERGED.4-2.sinusoidal": {
-        "type_specifier": "dataset",
+        "data_type": "dataset",
         "verification_flags": [],
         "title": "ESA Ocean Colour Climate Change Initiative (Ocean_Colour_cci): Global remote sensing reflectance gridded on a sinusoidal projection, Version 4.2"
     },
     "esacci.OC.day.L3S.RRS.multi-sensor.multi-platform.MERGED.5-0.sinusoidal": {
-        "type_specifier": "dataset",
+        "data_type": "dataset",
         "verification_flags": [],
         "title": "ESA Ocean Colour Climate Change Initiative (Ocean_Colour_cci): Global remote sensing reflectance gridded on a sinusoidal projection, Version 5.0"
     },
     "esacci.OC.mon.L3S.CHLOR_A.multi-sensor.multi-platform.MERGED.3-1.sinusoidal": {
-        "type_specifier": "dataset",
+        "data_type": "dataset",
         "verification_flags": [],
         "title": "ESA Ocean Colour Climate Change Initiative (Ocean_Colour_cci): Global chlorophyll-a data products gridded on a sinusoidal projection, Version 3.1"
     },
     "esacci.OC.mon.L3S.CHLOR_A.multi-sensor.multi-platform.MERGED.4-2.sinusoidal": {
-        "type_specifier": "dataset",
+        "data_type": "dataset",
         "verification_flags": [],
         "title": "ESA Ocean Colour Climate Change Initiative (Ocean_Colour_cci): Global chlorophyll-a data products gridded on a sinusoidal projection, Version 4.2"
     },
     "esacci.OC.mon.L3S.CHLOR_A.multi-sensor.multi-platform.MERGED.5-0.sinusoidal": {
-        "type_specifier": "dataset",
+        "data_type": "dataset",
         "verification_flags": [],
         "title": "ESA Ocean Colour Climate Change Initiative (Ocean_Colour_cci): Global chlorophyll-a data products gridded on a sinusoidal projection, Version 5.0"
     },
     "esacci.OC.mon.L3S.IOP.multi-sensor.multi-platform.MERGED.3-1.sinusoidal": {
-        "type_specifier": "dataset",
+        "data_type": "dataset",
         "verification_flags": [],
         "title": "ESA Ocean Colour Climate Change Initiative (Ocean_Colour_cci): Global dataset of inherent optical properties (IOP) gridded on a sinusoidal projection, Version 3.1"
     },
     "esacci.OC.mon.L3S.IOP.multi-sensor.multi-platform.MERGED.4-2.sinusoidal": {
-        "type_specifier": "dataset",
+        "data_type": "dataset",
         "verification_flags": [],
         "title": "ESA Ocean Colour Climate Change Initiative (Ocean_Colour_cci): Global dataset of inherent optical properties (IOP) gridded on a sinusoidal projection, Version 4.2"
     },
     "esacci.OC.mon.L3S.IOP.multi-sensor.multi-platform.MERGED.5-0.sinusoidal": {
-        "type_specifier": "dataset",
+        "data_type": "dataset",
         "verification_flags": [],
         "title": "ESA Ocean Colour Climate Change Initiative (Ocean_Colour_cci): Global dataset of inherent optical properties (IOP) gridded on a sinusoidal projection, Version 5.0"
     },
     "esacci.OC.mon.L3S.K_490.multi-sensor.multi-platform.MERGED.3-1.sinusoidal": {
-        "type_specifier": "dataset",
+        "data_type": "dataset",
         "verification_flags": [],
         "title": "ESA Ocean Colour Climate Change Initiative (Ocean_Colour_cci): Global attenuation coefficient for downwelling irradiance (Kd490) gridded on a sinusoidal projection, Version 3.1"
     },
     "esacci.OC.mon.L3S.K_490.multi-sensor.multi-platform.MERGED.4-2.sinusoidal": {
-        "type_specifier": "dataset",
+        "data_type": "dataset",
         "verification_flags": [],
         "title": "ESA Ocean Colour Climate Change Initiative (Ocean_Colour_cci): Global attenuation coefficient for downwelling irradiance (Kd490) gridded on a sinusoidal projection, Version 4.2"
     },
     "esacci.OC.mon.L3S.K_490.multi-sensor.multi-platform.MERGED.5-0.sinusoidal": {
-        "type_specifier": "dataset",
+        "data_type": "dataset",
         "verification_flags": [],
         "title": "ESA Ocean Colour Climate Change Initiative (Ocean_Colour_cci): Global attenuation coefficient for downwelling irradiance (Kd490) gridded on a sinusoidal projection, Version 5.0"
     },
     "esacci.OC.mon.L3S.OC_PRODUCTS.multi-sensor.multi-platform.MERGED.3-1.sinusoidal": {
-        "type_specifier": "dataset",
+        "data_type": "dataset",
         "verification_flags": [],
         "title": "ESA Ocean Colour Climate Change Initiative (Ocean_Colour_cci): Global ocean colour data products gridded on a sinusoidal projection (All Products), Version 3.1"
     },
     "esacci.OC.mon.L3S.OC_PRODUCTS.multi-sensor.multi-platform.MERGED.4-2.sinusoidal": {
-        "type_specifier": "dataset",
+        "data_type": "dataset",
         "verification_flags": [],
         "title": "ESA Ocean Colour Climate Change Initiative (Ocean_Colour_cci): Global ocean colour data products gridded on a sinusoidal projection (All Products), Version 4.2"
     },
     "esacci.OC.mon.L3S.OC_PRODUCTS.multi-sensor.multi-platform.MERGED.5-0.sinusoidal": {
-        "type_specifier": "dataset",
+        "data_type": "dataset",
         "verification_flags": [],
         "title": "ESA Ocean Colour Climate Change Initiative (Ocean_Colour_cci): Global ocean colour data products gridded on a sinusoidal projection (All Products), Version 5.0"
     },
     "esacci.OC.mon.L3S.RRS.multi-sensor.multi-platform.MERGED.3-1.sinusoidal": {
-        "type_specifier": "dataset",
+        "data_type": "dataset",
         "verification_flags": [],
         "title": "ESA Ocean Colour Climate Change Initiative (Ocean_Colour_cci): Global remote sensing reflectance gridded on a sinusoidal projection, Version 3.1"
     },
     "esacci.OC.mon.L3S.RRS.multi-sensor.multi-platform.MERGED.4-2.sinusoidal": {
-        "type_specifier": "dataset",
+        "data_type": "dataset",
         "verification_flags": [],
         "title": "ESA Ocean Colour Climate Change Initiative (Ocean_Colour_cci): Global remote sensing reflectance gridded on a sinusoidal projection, Version 4.2"
     },
     "esacci.OC.mon.L3S.RRS.multi-sensor.multi-platform.MERGED.5-0.sinusoidal": {
-        "type_specifier": "dataset",
+        "data_type": "dataset",
         "verification_flags": [],
         "title": "ESA Ocean Colour Climate Change Initiative (Ocean_Colour_cci): Global remote sensing reflectance gridded on a sinusoidal projection, Version 5.0"
     },
     "esacci.SEAICE.satellite-orbit-frequency.L2P.SITHICK.RA-2.Envisat.NH.2-0.r1": {
-        "type_specifier": "dataset",
+        "data_type": "dataset",
         "verification_flags": [
             "open",
             "constrain_time"
@@ -440,7 +440,7 @@
         "title": "ESA Sea Ice Climate Change Initiative (Sea_Ice_cci):  Northern hemisphere sea ice thickness from Envisat on the satellite swath (L2P), v2.0"
     },
     "esacci.SEAICE.satellite-orbit-frequency.L2P.SITHICK.RA-2.Envisat.SH.2-0.r1": {
-        "type_specifier": "dataset",
+        "data_type": "dataset",
         "verification_flags": [
             "open",
             "constrain_time"
@@ -448,7 +448,7 @@
         "title": "ESA Sea Ice Climate Change Initiative (Sea_Ice_cci):  Southern hemisphere sea ice thickness from Envisat on the satellite swath (L2P), v2.0"
     },
     "esacci.SEAICE.satellite-orbit-frequency.L2P.SITHICK.SIRAL.CryoSat-2.NH.2-0.r1": {
-        "type_specifier": "dataset",
+        "data_type": "dataset",
         "verification_flags": [
             "open",
             "constrain_time"
@@ -456,7 +456,7 @@
         "title": "ESA Sea Ice Climate Change Initiative (Sea_Ice_cci):  Northern hemisphere sea ice thickness from CryoSat-2   on the satellite swath (L2P), v2.0"
     },
     "esacci.SEAICE.satellite-orbit-frequency.L2P.SITHICK.SIRAL.CryoSat-2.SH.2-0.r1": {
-        "type_specifier": "dataset",
+        "data_type": "dataset",
         "verification_flags": [
             "open",
             "constrain_time"
@@ -464,7 +464,7 @@
         "title": "ESA Sea Ice Climate Change Initiative (Sea_Ice_cci):  Southern hemisphere sea ice thickness from CryoSat-2 on the satellite swath (L2P), v2.0"
     },
     "esacci.SEASTATE.satellite-orbit-frequency.L2P.SWH.AltiKa.SARAL.Saral.1-1.r1": {
-        "type_specifier": "dataset",
+        "data_type": "dataset",
         "verification_flags": [
             "open",
             "constrain_time"
@@ -472,7 +472,7 @@
         "title": "ESA Sea State Climate Change Initiative (Sea_State_cci): Global remote sensing multi-mission along-track significant wave height, L2P product, version 1.1"
     },
     "esacci.SEASTATE.satellite-orbit-frequency.L2P.SWH.GFO-RA.GFO.GFO.1-1.r1": {
-        "type_specifier": "dataset",
+        "data_type": "dataset",
         "verification_flags": [
             "open",
             "constrain_time"
@@ -480,7 +480,7 @@
         "title": "ESA Sea State Climate Change Initiative (Sea_State_cci): Global remote sensing multi-mission along-track significant wave height, L2P product, version 1.1"
     },
     "esacci.SEASTATE.satellite-orbit-frequency.L2P.SWH.NRA.Topex-Poseidon.Topex-Poseidon.1-1.r1": {
-        "type_specifier": "dataset",
+        "data_type": "dataset",
         "verification_flags": [
             "open",
             "constrain_time"
@@ -488,7 +488,7 @@
         "title": "ESA Sea State Climate Change Initiative (Sea_State_cci): Global remote sensing multi-mission along-track significant wave height, L2P product, version 1.1"
     },
     "esacci.SEASTATE.satellite-orbit-frequency.L2P.SWH.Poseidon-2.Jason-1.Jason-1.1-1.r1": {
-        "type_specifier": "dataset",
+        "data_type": "dataset",
         "verification_flags": [
             "open",
             "constrain_time"
@@ -496,7 +496,7 @@
         "title": "ESA Sea State Climate Change Initiative (Sea_State_cci): Global remote sensing multi-mission along-track significant wave height, L2P product, version 1.1"
     },
     "esacci.SEASTATE.satellite-orbit-frequency.L2P.SWH.Poseidon-3.Jason-2.Jason-2.1-1.r1": {
-        "type_specifier": "dataset",
+        "data_type": "dataset",
         "verification_flags": [
             "open",
             "constrain_time"
@@ -504,7 +504,7 @@
         "title": "ESA Sea State Climate Change Initiative (Sea_State_cci): Global remote sensing multi-mission along-track significant wave height, L2P product, version 1.1"
     },
     "esacci.SEASTATE.satellite-orbit-frequency.L2P.SWH.Poseidon-3B.Jason-3.Jason-3.1-1.r1": {
-        "type_specifier": "dataset",
+        "data_type": "dataset",
         "verification_flags": [
             "open",
             "constrain_time"
@@ -512,7 +512,7 @@
         "title": "ESA Sea State Climate Change Initiative (Sea_State_cci): Global remote sensing multi-mission along-track significant wave height, L2P product, version 1.1"
     },
     "esacci.SEASTATE.satellite-orbit-frequency.L2P.SWH.RA-2.Envisat.Envisat.1-1.r1": {
-        "type_specifier": "dataset",
+        "data_type": "dataset",
         "verification_flags": [
             "open",
             "constrain_time"
@@ -520,7 +520,7 @@
         "title": "ESA Sea State Climate Change Initiative (Sea_State_cci): Global remote sensing multi-mission along-track significant wave height, L2P product, version 1.1"
     },
     "esacci.SEASTATE.satellite-orbit-frequency.L2P.SWH.RA.ERS-1.ERS-1.1-1.r1": {
-        "type_specifier": "dataset",
+        "data_type": "dataset",
         "verification_flags": [
             "open",
             "constrain_time"
@@ -528,7 +528,7 @@
         "title": "ESA Sea State Climate Change Initiative (Sea_State_cci): Global remote sensing multi-mission along-track significant wave height, L2P product, version 1.1"
     },
     "esacci.SEASTATE.satellite-orbit-frequency.L2P.SWH.RA.ERS-2.ERS-2.1-1.r1": {
-        "type_specifier": "dataset",
+        "data_type": "dataset",
         "verification_flags": [
             "open",
             "constrain_time"
@@ -536,7 +536,7 @@
         "title": "ESA Sea State Climate Change Initiative (Sea_State_cci): Global remote sensing multi-mission along-track significant wave height, L2P product, version 1.1"
     },
     "esacci.SEASTATE.satellite-orbit-frequency.L2P.SWH.SIRAL.CryoSat-2.CryoSat-2.1-1.r1": {
-        "type_specifier": "dataset",
+        "data_type": "dataset",
         "verification_flags": [
             "open",
             "constrain_time"
@@ -544,7 +544,7 @@
         "title": "ESA Sea State Climate Change Initiative (Sea_State_cci): Global remote sensing multi-mission along-track significant wave height, L2P product, version 1.1"
     },
     "esacci.SST.satellite-orbit-frequency.L2P.SSTskin.AATSR.Envisat.AATSR.2-1.r1": {
-        "type_specifier": "dataset",
+        "data_type": "dataset",
         "verification_flags": [
             "open",
             "constrain_time"
@@ -552,7 +552,7 @@
         "title": "ESA Sea Surface Temperature Climate Change Initiative (SST_cci): Along-Track Scanning Radiometer (ATSR) Level 2 Preprocessed (L2P) Climate Data Record, version 2.1"
     },
     "esacci.SST.satellite-orbit-frequency.L2P.SSTskin.ATSR-2.ERS-2.ATSR2.2-1.r1": {
-        "type_specifier": "dataset",
+        "data_type": "dataset",
         "verification_flags": [
             "open",
             "constrain_time"
@@ -560,7 +560,7 @@
         "title": "ESA Sea Surface Temperature Climate Change Initiative (SST_cci): Along-Track Scanning Radiometer (ATSR) Level 2 Preprocessed (L2P) Climate Data Record, version 2.1"
     },
     "esacci.SST.satellite-orbit-frequency.L2P.SSTskin.ATSR.ERS-1.ATSR1.2-1.r1": {
-        "type_specifier": "dataset",
+        "data_type": "dataset",
         "verification_flags": [
             "open",
             "constrain_time"
@@ -568,7 +568,7 @@
         "title": "ESA Sea Surface Temperature Climate Change Initiative (SST_cci): Along-Track Scanning Radiometer (ATSR) Level 2 Preprocessed (L2P) Climate Data Record, version 2.1"
     },
     "esacci.SST.satellite-orbit-frequency.L2P.SSTskin.AVHRR-2.NOAA-11.AVHRR11_G.2-1.r1": {
-        "type_specifier": "dataset",
+        "data_type": "dataset",
         "verification_flags": [
             "open",
             "constrain_time"
@@ -576,7 +576,7 @@
         "title": "ESA Sea Surface Temperature Climate Change Initiative (SST_cci): Advanced Very High Resolution Radiometer (AVHRR) Level 2 Preprocessed (L2P) Climate Data Record, version 2.1"
     },
     "esacci.SST.satellite-orbit-frequency.L2P.SSTskin.AVHRR-2.NOAA-12.AVHRR12_G.2-1.r1": {
-        "type_specifier": "dataset",
+        "data_type": "dataset",
         "verification_flags": [
             "open",
             "constrain_time"
@@ -584,7 +584,7 @@
         "title": "ESA Sea Surface Temperature Climate Change Initiative (SST_cci): Advanced Very High Resolution Radiometer (AVHRR) Level 2 Preprocessed (L2P) Climate Data Record, version 2.1"
     },
     "esacci.SST.satellite-orbit-frequency.L2P.SSTskin.AVHRR-2.NOAA-14.AVHRR14_G.2-1.r1": {
-        "type_specifier": "dataset",
+        "data_type": "dataset",
         "verification_flags": [
             "open",
             "constrain_time"
@@ -592,7 +592,7 @@
         "title": "ESA Sea Surface Temperature Climate Change Initiative (SST_cci): Advanced Very High Resolution Radiometer (AVHRR) Level 2 Preprocessed (L2P) Climate Data Record, version 2.1"
     },
     "esacci.SST.satellite-orbit-frequency.L2P.SSTskin.AVHRR-2.NOAA-7.AVHRR07_G.2-1.r1": {
-        "type_specifier": "dataset",
+        "data_type": "dataset",
         "verification_flags": [
             "open",
             "constrain_time"
@@ -600,7 +600,7 @@
         "title": "ESA Sea Surface Temperature Climate Change Initiative (SST_cci): Advanced Very High Resolution Radiometer (AVHRR) Level 2 Preprocessed (L2P) Climate Data Record, version 2.1"
     },
     "esacci.SST.satellite-orbit-frequency.L2P.SSTskin.AVHRR-2.NOAA-9.AVHRR09_G.2-1.r1": {
-        "type_specifier": "dataset",
+        "data_type": "dataset",
         "verification_flags": [
             "open",
             "constrain_time"
@@ -608,7 +608,7 @@
         "title": "ESA Sea Surface Temperature Climate Change Initiative (SST_cci): Advanced Very High Resolution Radiometer (AVHRR) Level 2 Preprocessed (L2P) Climate Data Record, version 2.1"
     },
     "esacci.SST.satellite-orbit-frequency.L2P.SSTskin.AVHRR-3.Metop-A.AVHRRMTA_G.2-1.r1": {
-        "type_specifier": "dataset",
+        "data_type": "dataset",
         "verification_flags": [
             "open",
             "constrain_time"
@@ -616,7 +616,7 @@
         "title": "ESA Sea Surface Temperature Climate Change Initiative (SST_cci): Advanced Very High Resolution Radiometer (AVHRR) Level 2 Preprocessed (L2P) Climate Data Record, version 2.1"
     },
     "esacci.SST.satellite-orbit-frequency.L2P.SSTskin.AVHRR-3.NOAA-15.AVHRR15_G.2-1.r1": {
-        "type_specifier": "dataset",
+        "data_type": "dataset",
         "verification_flags": [
             "open",
             "constrain_time"
@@ -624,7 +624,7 @@
         "title": "ESA Sea Surface Temperature Climate Change Initiative (SST_cci): Advanced Very High Resolution Radiometer (AVHRR) Level 2 Preprocessed (L2P) Climate Data Record, version 2.1"
     },
     "esacci.SST.satellite-orbit-frequency.L2P.SSTskin.AVHRR-3.NOAA-16.AVHRR16_G.2-1.r1": {
-        "type_specifier": "dataset",
+        "data_type": "dataset",
         "verification_flags": [
             "open",
             "constrain_time"
@@ -632,7 +632,7 @@
         "title": "ESA Sea Surface Temperature Climate Change Initiative (SST_cci): Advanced Very High Resolution Radiometer (AVHRR) Level 2 Preprocessed (L2P) Climate Data Record, version 2.1"
     },
     "esacci.SST.satellite-orbit-frequency.L2P.SSTskin.AVHRR-3.NOAA-17.AVHRR17_G.2-1.r1": {
-        "type_specifier": "dataset",
+        "data_type": "dataset",
         "verification_flags": [
             "open",
             "constrain_time"
@@ -640,7 +640,7 @@
         "title": "ESA Sea Surface Temperature Climate Change Initiative (SST_cci): Advanced Very High Resolution Radiometer (AVHRR) Level 2 Preprocessed (L2P) Climate Data Record, version 2.1"
     },
     "esacci.SST.satellite-orbit-frequency.L2P.SSTskin.AVHRR-3.NOAA-18.AVHRR18_G.2-1.r1": {
-        "type_specifier": "dataset",
+        "data_type": "dataset",
         "verification_flags": [
             "open",
             "constrain_time"
@@ -648,7 +648,7 @@
         "title": "ESA Sea Surface Temperature Climate Change Initiative (SST_cci): Advanced Very High Resolution Radiometer (AVHRR) Level 2 Preprocessed (L2P) Climate Data Record, version 2.1"
     },
     "esacci.SST.satellite-orbit-frequency.L2P.SSTskin.AVHRR-3.NOAA-19.AVHRR19_G.2-1.r1": {
-        "type_specifier": "dataset",
+        "data_type": "dataset",
         "verification_flags": [
             "open",
             "constrain_time"
@@ -656,7 +656,7 @@
         "title": "ESA Sea Surface Temperature Climate Change Initiative (SST_cci): Advanced Very High Resolution Radiometer (AVHRR) Level 2 Preprocessed (L2P) Climate Data Record, version 2.1"
     },
     "esacci.AEROSOL.5-days.L3C.AEX.GOMOS.Envisat.AERGOM.3-00.r1": {
-        "type_specifier": "dataset",
+        "data_type": "dataset",
         "verification_flags": [
             "open",
             "constrain_time"
@@ -664,12 +664,12 @@
         "title": "ESA Aerosol Climate Change Initiative (Aerosol_cci): Level 3 aerosol products from GOMOS (AERGOM algorithm), Version 3.00"
     },
     "esacci.AEROSOL.climatology.L3.AAI.multi-sensor.multi-platform.MSAAI.1-7.r1": {
-        "type_specifier": "dataset",
+        "data_type": "dataset",
         "verification_flags": [],
         "title": "ESA Aerosol Climate Change Initiative (Aerosol_cci): Level 3 aerosol products  from the Multi-Sensor UV Absorbing Aerosol Index (MS UVAI) algorithm, Version 1.7"
     },
     "esacci.AEROSOL.day.L3.AAI.multi-sensor.multi-platform.MSAAI.1-7.r1": {
-        "type_specifier": "dataset",
+        "data_type": "dataset",
         "verification_flags": [
             "open",
             "constrain_time",
@@ -679,7 +679,7 @@
         "title": "ESA Aerosol Climate Change Initiative (Aerosol_cci): Level 3 aerosol products  from the Multi-Sensor UV Absorbing Aerosol Index (MS UVAI) algorithm, Version 1.7"
     },
     "esacci.AEROSOL.day.L3C.AER_PRODUCTS.AATSR.Envisat.ADV.2-31.r1": {
-        "type_specifier": "dataset",
+        "data_type": "dataset",
         "verification_flags": [
             "open",
             "constrain_time",
@@ -689,7 +689,7 @@
         "title": "ESA Aerosol Climate Change Initiative (Aerosol_cci): Level 3 aerosol products from AATSR (ADV algorithm), Version 2.31"
     },
     "esacci.AEROSOL.day.L3C.AER_PRODUCTS.AATSR.Envisat.ORAC.04-01-.r1": {
-        "type_specifier": "dataset",
+        "data_type": "dataset",
         "verification_flags": [
             "open",
             "constrain_time",
@@ -699,7 +699,7 @@
         "title": "ESA Aerosol Climate Change Initiative (Aerosol_cci): Level 3 aerosol products from AATSR (ORAC algorithm), Version 4.01"
     },
     "esacci.AEROSOL.day.L3C.AER_PRODUCTS.AATSR.Envisat.ORAC.04-01_seg-.r1": {
-        "type_specifier": "dataset",
+        "data_type": "dataset",
         "verification_flags": [
             "open",
             "constrain_time",
@@ -709,7 +709,7 @@
         "title": "ESA Aerosol Climate Change Initiative (Aerosol_cci): Level 3 aerosol products from AATSR (ORAC algorithm), Version 4.01"
     },
     "esacci.AEROSOL.day.L3C.AER_PRODUCTS.AATSR.Envisat.SU.4-3.r1": {
-        "type_specifier": "dataset",
+        "data_type": "dataset",
         "verification_flags": [
             "open",
             "constrain_time",
@@ -719,7 +719,7 @@
         "title": "ESA Aerosol Climate Change Initiative (Aerosol_cci): Level 3 aerosol products from AATSR (SU algorithm), Version 4.3"
     },
     "esacci.AEROSOL.day.L3C.AER_PRODUCTS.ATSR-2.ERS-2.ADV.2-31.r1": {
-        "type_specifier": "dataset",
+        "data_type": "dataset",
         "verification_flags": [
             "open",
             "constrain_time",
@@ -729,7 +729,7 @@
         "title": "ESA Aerosol Climate Change Initiative (Aerosol_cci): Level 3 aerosol products from ATSR-2 (ADV algorithm), Version 2.31"
     },
     "esacci.AEROSOL.day.L3C.AER_PRODUCTS.ATSR-2.ERS-2.ORAC.04-01-.r1": {
-        "type_specifier": "dataset",
+        "data_type": "dataset",
         "verification_flags": [
             "open",
             "constrain_time",
@@ -739,7 +739,7 @@
         "title": "ESA Aerosol Climate Change Initiative (Aerosol_cci): Level 3 aerosol products from ATSR-2 (ORAC algorithm), Version 4.01"
     },
     "esacci.AEROSOL.day.L3C.AER_PRODUCTS.ATSR-2.ERS-2.ORAC.04-01_seg-.r1": {
-        "type_specifier": "dataset",
+        "data_type": "dataset",
         "verification_flags": [
             "open",
             "constrain_time",
@@ -749,7 +749,7 @@
         "title": "ESA Aerosol Climate Change Initiative (Aerosol_cci): Level 3 aerosol products from ATSR-2 (ORAC algorithm), Version 4.01"
     },
     "esacci.AEROSOL.day.L3C.AER_PRODUCTS.ATSR-2.ERS-2.SU.4-3.r1": {
-        "type_specifier": "dataset",
+        "data_type": "dataset",
         "verification_flags": [
             "open",
             "constrain_time",
@@ -759,7 +759,7 @@
         "title": "ESA Aerosol Climate Change Initiative (Aerosol_cci): Level 3 aerosol products from ATSR-2 (SU algorithm), Version 4.3"
     },
     "esacci.AEROSOL.day.L3C.AER_PRODUCTS.multi-sensor.multi-platform.AATSR-ENVISAT-ENS_DAILY.v2-6.r1": {
-        "type_specifier": "dataset",
+        "data_type": "dataset",
         "verification_flags": [
             "open",
             "constrain_time",
@@ -769,7 +769,7 @@
         "title": "ESA Aerosol Climate Change Initiative (Aerosol_cci): Level 3 aerosol products from AATSR (ensemble product), Version 2.6"
     },
     "esacci.AEROSOL.day.L3C.AER_PRODUCTS.multi-sensor.multi-platform.ATSR2-ENVISAT-ENS_DAILY.v2-6.r1": {
-        "type_specifier": "dataset",
+        "data_type": "dataset",
         "verification_flags": [
             "open",
             "constrain_time"
@@ -777,12 +777,12 @@
         "title": "ESA Aerosol Climate Change Initiative (Aerosol_cci): Level 3 aerosol products from ATSR-2 (ensemble product), Version 2.6"
     },
     "esacci.AEROSOL.day.L3C.AOD.MERIS.Envisat.MERIS_ENVISAT.2-2.r1": {
-        "type_specifier": "dataset",
+        "data_type": "dataset",
         "verification_flags": [],
         "title": "ESA Aerosol Climate Change Initiative (Aerosol CCI): Level 3 aerosol products from MERIS (ALAMO algorithm), Version 2.2"
     },
     "esacci.AEROSOL.mon.L3.AAI.multi-sensor.multi-platform.MSAAI.1-7.r1": {
-        "type_specifier": "dataset",
+        "data_type": "dataset",
         "verification_flags": [
             "open",
             "constrain_time",
@@ -792,7 +792,7 @@
         "title": "ESA Aerosol Climate Change Initiative (Aerosol_cci): Level 3 aerosol products  from the Multi-Sensor UV Absorbing Aerosol Index (MS UVAI) algorithm, Version 1.7"
     },
     "esacci.AEROSOL.mon.L3C.AER_PRODUCTS.AATSR.Envisat.ADV.2-31.r1": {
-        "type_specifier": "dataset",
+        "data_type": "dataset",
         "verification_flags": [
             "open",
             "constrain_time",
@@ -802,7 +802,7 @@
         "title": "ESA Aerosol Climate Change Initiative (Aerosol_cci): Level 3 aerosol products from AATSR (ADV algorithm), Version 2.31"
     },
     "esacci.AEROSOL.mon.L3C.AER_PRODUCTS.AATSR.Envisat.ORAC.04-01-.r1": {
-        "type_specifier": "dataset",
+        "data_type": "dataset",
         "verification_flags": [
             "open",
             "constrain_time",
@@ -812,7 +812,7 @@
         "title": "ESA Aerosol Climate Change Initiative (Aerosol_cci): Level 3 aerosol products from AATSR (ORAC algorithm), Version 4.01"
     },
     "esacci.AEROSOL.mon.L3C.AER_PRODUCTS.AATSR.Envisat.ORAC.04-01_seg-.r1": {
-        "type_specifier": "dataset",
+        "data_type": "dataset",
         "verification_flags": [
             "open",
             "constrain_time",
@@ -822,7 +822,7 @@
         "title": "ESA Aerosol Climate Change Initiative (Aerosol_cci): Level 3 aerosol products from AATSR (ORAC algorithm), Version 4.01"
     },
     "esacci.AEROSOL.mon.L3C.AER_PRODUCTS.AATSR.Envisat.SU.4-3.r1": {
-        "type_specifier": "dataset",
+        "data_type": "dataset",
         "verification_flags": [
             "open",
             "constrain_time",
@@ -832,7 +832,7 @@
         "title": "ESA Aerosol Climate Change Initiative (Aerosol_cci): Level 3 aerosol products from AATSR (SU algorithm), Version 4.3"
     },
     "esacci.AEROSOL.mon.L3C.AER_PRODUCTS.ATSR-2.ERS-2.ADV.2-31.r1": {
-        "type_specifier": "dataset",
+        "data_type": "dataset",
         "verification_flags": [
             "open",
             "constrain_time",
@@ -842,7 +842,7 @@
         "title": "ESA Aerosol Climate Change Initiative (Aerosol_cci): Level 3 aerosol products from ATSR-2 (ADV algorithm), Version 2.31"
     },
     "esacci.AEROSOL.mon.L3C.AER_PRODUCTS.ATSR-2.ERS-2.ORAC.04-01-.r1": {
-        "type_specifier": "dataset",
+        "data_type": "dataset",
         "verification_flags": [
             "open",
             "constrain_time",
@@ -852,7 +852,7 @@
         "title": "ESA Aerosol Climate Change Initiative (Aerosol_cci): Level 3 aerosol products from ATSR-2 (ORAC algorithm), Version 4.01"
     },
     "esacci.AEROSOL.mon.L3C.AER_PRODUCTS.ATSR-2.ERS-2.ORAC.04-01_seg-.r1": {
-        "type_specifier": "dataset",
+        "data_type": "dataset",
         "verification_flags": [
             "open",
             "constrain_time",
@@ -862,7 +862,7 @@
         "title": "ESA Aerosol Climate Change Initiative (Aerosol_cci): Level 3 aerosol products from ATSR-2 (ORAC algorithm), Version 4.01"
     },
     "esacci.AEROSOL.mon.L3C.AER_PRODUCTS.multi-sensor.multi-platform.AATSR-ENVISAT-ENS_MONTHLY.v2-6.r1": {
-        "type_specifier": "dataset",
+        "data_type": "dataset",
         "verification_flags": [
             "open",
             "constrain_time",
@@ -872,7 +872,7 @@
         "title": "ESA Aerosol Climate Change Initiative (Aerosol_cci): Level 3 aerosol products from AATSR (ensemble product), Version 2.6"
     },
     "esacci.AEROSOL.mon.L3C.AER_PRODUCTS.multi-sensor.multi-platform.ATSR2-ENVISAT-ENS_MONTHLY.v2-6.r1": {
-        "type_specifier": "dataset",
+        "data_type": "dataset",
         "verification_flags": [
             "open",
             "constrain_time",
@@ -882,7 +882,7 @@
         "title": "ESA Aerosol Climate Change Initiative (Aerosol_cci): Level 3 aerosol products from ATSR-2 (ensemble product), Version 2.6"
     },
     "esacci.AEROSOL.mon.L3C.AOD.MERIS.Envisat.MERIS_ENVISAT.2-2.r1": {
-        "type_specifier": "dataset",
+        "data_type": "dataset",
         "verification_flags": [
             "open",
             "constrain_time",
@@ -892,7 +892,7 @@
         "title": "ESA Aerosol Climate Change Initiative (Aerosol CCI): Level 3 aerosol products from MERIS (ALAMO algorithm), Version 2.2"
     },
     "esacci.AEROSOL.yr.L3C.AER_PRODUCTS.AATSR.Envisat.AATSR-ENVISAT-ENS_ANNUAL.v2-6.r1": {
-        "type_specifier": "dataset",
+        "data_type": "dataset",
         "verification_flags": [
             "open",
             "constrain_time",
@@ -902,7 +902,7 @@
         "title": "ESA Aerosol Climate Change Initiative (Aerosol_cci): Level 3 aerosol products from AATSR (ensemble product), Version 2.6"
     },
     "esacci.AEROSOL.yr.L3C.AER_PRODUCTS.ATSR-2.Envisat.ATSR2-ENVISAT-ENS_ANNUAL.v2-6.r1": {
-        "type_specifier": "dataset",
+        "data_type": "dataset",
         "verification_flags": [
             "open",
             "constrain_time",
@@ -912,7 +912,7 @@
         "title": "ESA Aerosol Climate Change Initiative (Aerosol_cci): Level 3 aerosol products from ATSR-2 (ensemble product), Version 2.6"
     },
     "esacci.BIOMASS.yr.L4.AGB.multi-sensor.multi-platform.MERGED.1-0.r1": {
-        "type_specifier": "dataset",
+        "data_type": "dataset",
         "verification_flags": [
             "open",
             "constrain_time"
@@ -920,7 +920,7 @@
         "title": "ESA Biomass Climate Change Initiative (Biomass_cci): Global datasets of forest above-ground biomass for the year 2017, v1"
     },
     "esacci.BIOMASS.yr.L4.AGB.multi-sensor.multi-platform.MERGED.2-0.r1": {
-        "type_specifier": "dataset",
+        "data_type": "dataset",
         "verification_flags": [
             "open",
             "constrain_time"
@@ -928,7 +928,7 @@
         "title": "ESA Biomass Climate Change Initiative (Biomass_cci): Global datasets of forest above-ground biomass for the years 2010, 2017 and 2018, v2"
     },
     "esacci.CLOUD.mon.L3C.CLD_PRODUCTS.MODIS.Aqua.MODIS_AQUA.2-0.r1": {
-        "type_specifier": "dataset",
+        "data_type": "dataset",
         "verification_flags": [
             "open",
             "constrain_time",
@@ -938,7 +938,7 @@
         "title": "ESA Cloud Climate Change Initiative (Cloud_cci): MODIS-AQUA monthly gridded cloud properties, version 2.0"
     },
     "esacci.CLOUD.mon.L3C.CLD_PRODUCTS.MODIS.Terra.MODIS_TERRA.2-0.r1": {
-        "type_specifier": "dataset",
+        "data_type": "dataset",
         "verification_flags": [
             "open",
             "constrain_time",
@@ -948,7 +948,7 @@
         "title": "ESA Cloud Climate Change Initiative (Cloud_cci): MODIS-TERRA monthly gridded cloud properties, version 2.0"
     },
     "esacci.CLOUD.mon.L3C.CLD_PRODUCTS.multi-sensor.multi-platform.ATSR2-AATSR.3-0.r1": {
-        "type_specifier": "dataset",
+        "data_type": "dataset",
         "verification_flags": [
             "open",
             "constrain_time",
@@ -958,7 +958,7 @@
         "title": "ESA Cloud Climate Change Initiative (Cloud_cci):  ATSR2-AATSR monthly gridded cloud properties, version 3.0"
     },
     "esacci.CLOUD.mon.L3C.CLD_PRODUCTS.multi-sensor.multi-platform.AVHRR-AM.3-0.r1": {
-        "type_specifier": "dataset",
+        "data_type": "dataset",
         "verification_flags": [
             "open",
             "constrain_time",
@@ -968,7 +968,7 @@
         "title": "ESA Cloud Climate Change Initiative (Cloud CCI): AVHRR-AM monthly gridded cloud properties, version 3.0"
     },
     "esacci.CLOUD.mon.L3C.CLD_PRODUCTS.multi-sensor.multi-platform.AVHRR-PM.3-0.r1": {
-        "type_specifier": "dataset",
+        "data_type": "dataset",
         "verification_flags": [
             "open",
             "constrain_time",
@@ -978,7 +978,7 @@
         "title": "ESA Cloud Climate Change Initiative (Cloud_cci): AVHRR-PM monthly gridded cloud properties, version 3.0"
     },
     "esacci.CLOUD.mon.L3C.CLD_PRODUCTS.multi-sensor.multi-platform.MERIS-AATSR.2-0.r1": {
-        "type_specifier": "dataset",
+        "data_type": "dataset",
         "verification_flags": [
             "open",
             "constrain_time",
@@ -988,7 +988,7 @@
         "title": "ESA Cloud Climate Change Initiative (Cloud_cci): MERIS+AATSR monthly gridded cloud properties,  Version 2.0"
     },
     "esacci.FIRE.mon.L4.BA.MODIS.Terra.MODIS_TERRA.v5-1.grid": {
-        "type_specifier": "dataset",
+        "data_type": "dataset",
         "verification_flags": [
             "open",
             "constrain_time",
@@ -998,7 +998,7 @@
         "title": "ESA Fire Climate Change Initiative (Fire_cci): MODIS Fire_cci Burned Area Grid product, version 5.1"
     },
     "esacci.FIRE.mon.L4.BA.MSI-(Sentinel-2).Sentinel-2A.MSI.v1-1.grid": {
-        "type_specifier": "dataset",
+        "data_type": "dataset",
         "verification_flags": [
             "open",
             "constrain_time",
@@ -1008,7 +1008,7 @@
         "title": "ESA Fire Climate Change Initiative (Fire_cci): Small Fire Database (SFD) Burned Area grid product for Sub-Saharan Africa, version 1.1"
     },
     "esacci.GHG.satellite-orbit-frequency.L2.CH4.SCIAMACHY.Envisat.IMAP.v7-2.r1": {
-        "type_specifier": "dataset",
+        "data_type": "dataset",
         "verification_flags": [
             "open",
             "constrain_time"
@@ -1016,12 +1016,12 @@
         "title": "ESA Greenhouse Gases Climate Change Initiative (GHG_cci): Column-averaged CH4 from SCIAMACHY generated with the IMAP-DOAS algorithm (CH4_SCI_IMAP), v7.2"
     },
     "esacci.GHG.satellite-orbit-frequency.L2.CH4.SCIAMACHY.Envisat.WFMD.v4-0.r1": {
-        "type_specifier": "dataset",
+        "data_type": "dataset",
         "verification_flags": [],
         "title": "ESA Greenhouse Gases Climate Change Initiative (GHG_cci): Column-averaged CH4 from SCIAMACHY generated with the WFMD algorithm (CH4_SCI_WFMD), version 4.0"
     },
     "esacci.GHG.satellite-orbit-frequency.L2.CH4.TANSO-FTS.GOSAT.EMMA.ch4_v1-2.r1": {
-        "type_specifier": "dataset",
+        "data_type": "dataset",
         "verification_flags": [
             "open",
             "constrain_time"
@@ -1029,7 +1029,7 @@
         "title": "ESA Greenhouse Gases Climate Change Initiative (GHG_cci): Column-averaged CH4 Merged Product generated with the EMMA algorithm (CH4_EMMA), version 1.2"
     },
     "esacci.GHG.satellite-orbit-frequency.L2.CH4.TANSO-FTS.GOSAT.OCFP.v2-1.r1": {
-        "type_specifier": "dataset",
+        "data_type": "dataset",
         "verification_flags": [
             "open",
             "constrain_time"
@@ -1037,7 +1037,7 @@
         "title": "ESA Greenhouse Gases Climate Change Initiative (GHG_cci): Column-averaged CH4 from GOSAT generated with the OCFP (UoL-FP) algorithm (CH4_GOS_OCFP), version 2.1"
     },
     "esacci.GHG.satellite-orbit-frequency.L2.CH4.TANSO-FTS.GOSAT.OCPR.v7-0.r1": {
-        "type_specifier": "dataset",
+        "data_type": "dataset",
         "verification_flags": [
             "open",
             "constrain_time"
@@ -1045,7 +1045,7 @@
         "title": "ESA Greenhouse Gases Climate Change Initiative (GHG_cci): Column-averaged CH4 from GOSAT generated with the OCPR (UoL-PR) Proxy algorithm (CH4_GOS_OCPR), v7.0"
     },
     "esacci.GHG.satellite-orbit-frequency.L2.CH4.TANSO-FTS.GOSAT.SRFP.v2-3-8.r1": {
-        "type_specifier": "dataset",
+        "data_type": "dataset",
         "verification_flags": [
             "open",
             "constrain_time"
@@ -1053,7 +1053,7 @@
         "title": "ESA Greenhouse Gases Climate Change Initiative (GHG_cci): Column-averaged CH4 from GOSAT generated with the SRFP (RemoTeC) Full Physics algorithm (CH4_GOS_SRFP), version 2.3.8"
     },
     "esacci.GHG.satellite-orbit-frequency.L2.CH4.TANSO-FTS.GOSAT.SRPR.v2-3-8.r1": {
-        "type_specifier": "dataset",
+        "data_type": "dataset",
         "verification_flags": [
             "open",
             "constrain_time"
@@ -1061,7 +1061,7 @@
         "title": "ESA Greenhouse Gases Climate Change Initiative (GHG_cci): Column-averaged CH4 from GOSAT generated with the SRPR (RemoTeC) Proxy Retrieval algorithm (CH4_GOS_SRPR), version 2.3.8"
     },
     "esacci.GHG.satellite-orbit-frequency.L2.CH4.TROPOMI.Sentinel-5P.WFMD.v1-2.r1": {
-        "type_specifier": "dataset",
+        "data_type": "dataset",
         "verification_flags": [
             "open",
             "constrain_time"
@@ -1069,7 +1069,7 @@
         "title": "ESA Greenhouse Gases Climate Change Initiative (GHG_cci): Column-averaged methane from Sentinel-5P, generated with the WFM-DOAS algorithm, version 1.2"
     },
     "esacci.GHG.satellite-orbit-frequency.L2.CO2.OCO.OCO-2.UNSPECIFIED.v08.r1": {
-        "type_specifier": "dataset",
+        "data_type": "dataset",
         "verification_flags": [
             "open",
             "constrain_time"
@@ -1077,7 +1077,7 @@
         "title": "ESA Greenhouse Gases Climate Change Initiative (GHG_cci): Column averaged carbon dioxide from OCO-2 generated with the FOCAL algorithm, version 08"
     },
     "esacci.GHG.satellite-orbit-frequency.L2.CO2.SCIAMACHY.Envisat.BESD.v02-01-02.r1": {
-        "type_specifier": "dataset",
+        "data_type": "dataset",
         "verification_flags": [
             "open",
             "constrain_time"
@@ -1085,12 +1085,12 @@
         "title": "ESA Greenhouse Gases Climate Change Initiative (GHG_cci): Column-averaged CO2 from SCIAMACHY generated with the BESD algorithm (CO2_SCI_BESD), v02.01.02"
     },
     "esacci.GHG.satellite-orbit-frequency.L2.CO2.SCIAMACHY.Envisat.WFMD.v4-0.r1": {
-        "type_specifier": "dataset",
+        "data_type": "dataset",
         "verification_flags": [],
         "title": "ESA Greenhouse Gases Climate Change Initiative (GHG_cci): Column-averaged CO2 from SCIAMACHY generated with the WFMD algorithm (CO2_SCI_WFMD), v4.0"
     },
     "esacci.GHG.satellite-orbit-frequency.L2.CO2.TANSO-FTS.GOSAT.EMMA.v2-2c.r1": {
-        "type_specifier": "dataset",
+        "data_type": "dataset",
         "verification_flags": [
             "open",
             "constrain_time"
@@ -1098,7 +1098,7 @@
         "title": "ESA Greenhouse Gases Climate Change Initiative (GHG_cci): Column averaged CO2 Merged Product generated with the EMMA algorithm (CO2_EMMA), v2.2"
     },
     "esacci.GHG.satellite-orbit-frequency.L2.CO2.TANSO-FTS.GOSAT.OCFP.v7-0-1.r1": {
-        "type_specifier": "dataset",
+        "data_type": "dataset",
         "verification_flags": [
             "open",
             "constrain_time"
@@ -1106,7 +1106,7 @@
         "title": "ESA Greenhouse Gases Climate Change Initiative (GHG CCI): Column-averaged CO2 from GOSAT generated with the OCFP (UoL-FP) algorithm (CO2_GOS_OCFP), v7.0"
     },
     "esacci.GHG.satellite-orbit-frequency.L2.CO2.TANSO-FTS.GOSAT.SRFP.v2-3-8.r1": {
-        "type_specifier": "dataset",
+        "data_type": "dataset",
         "verification_flags": [
             "open",
             "constrain_time"
@@ -1114,7 +1114,7 @@
         "title": "ESA Greenhouse Gases Climate Change Initiative (GHG_cci): Column-averaged CO2 from GOSAT generated with the SRFP (RemoTeC) algorithm (CO2_GOS_SRFP), v2.3.8"
     },
     "esacci.GHG.satellite-orbit-frequency.L2.CO2.multi-sensor.multi-platform.EMMA.v2-2a.r1": {
-        "type_specifier": "dataset",
+        "data_type": "dataset",
         "verification_flags": [
             "open",
             "constrain_time"
@@ -1122,7 +1122,7 @@
         "title": "ESA Greenhouse Gases Climate Change Initiative (GHG_cci): Column averaged CO2 Merged Product generated with the EMMA algorithm (CO2_EMMA), v2.2"
     },
     "esacci.GHG.satellite-orbit-frequency.L2.CO2.multi-sensor.multi-platform.EMMA.v2-2b.r1": {
-        "type_specifier": "dataset",
+        "data_type": "dataset",
         "verification_flags": [
             "open",
             "constrain_time"
@@ -1130,7 +1130,7 @@
         "title": "ESA Greenhouse Gases Climate Change Initiative (GHG_cci): Column averaged CO2 Merged Product generated with the EMMA algorithm (CO2_EMMA), v2.2"
     },
     "esacci.ICESHEETS.unspecified.L4.IV.SAR-C-(Sentinel-1).multi-platform.UNSPECIFIED.1-1.greenland_s1_250m_20150610_20170321_Helheim": {
-        "type_specifier": "dataset",
+        "data_type": "dataset",
         "verification_flags": [
             "open",
             "constrain_time",
@@ -1139,117 +1139,117 @@
         "title": "ESA Greenland Ice Sheet Climate Change Initiative (Greenland_Ice_Sheet_cci): Ice Velocity time series for the Helheim Glacier for 2015-2017 from Sentinel-1 data, v1.1"
     },
     "esacci.ICESHEETS.unspecified.Unspecified.IV.AMI-SAR.ERS-1.UNSPECIFIED.1-1.greenland_northern_drainage_basin_winter_1991_1992": {
-        "type_specifier": "dataset",
+        "data_type": "dataset",
         "verification_flags": [],
         "title": "ESA Greenland Ice Sheet Climate Change Initiative (Greenland_Ice_Sheet_cci): Ice Velocity data for the Greenland Northern Drainage basin from ERS-1 for winter 1991-1992, v1.1 (June 2016 release)"
     },
     "esacci.ICESHEETS.unspecified.Unspecified.IV.AMI-SAR.ERS-2.UNSPECIFIED.1-1.greenland_margin_1995_1996": {
-        "type_specifier": "dataset",
+        "data_type": "dataset",
         "verification_flags": [],
         "title": "ESA Greenland Ice Sheet Climate Change Initiative (Greenland_Ice_Sheet_cci): Ice Velocity data for the Greenland Margin from ERS-2 for winter 1995-1996, v1.1 (June 2016 release)"
     },
     "esacci.ICESHEETS.unspecified.Unspecified.IV.MSI-(Sentinel-2).Sentinel-2A.UNSPECIFIED.1-0.greenland_s2_50m_20160508_20160518_docker_smith": {
-        "type_specifier": "dataset",
+        "data_type": "dataset",
         "verification_flags": [],
         "title": "ESA Greenland Ice Sheet Climate Change Initiative (Greenland_Ice_Sheet_cci): Optical ice velocity of the D\u00f8cker Smith Glacier between 2016-05-08 and 2016-05-18, generated using Sentinel-2 data, v1.0"
     },
     "esacci.ICESHEETS.unspecified.Unspecified.IV.MSI-(Sentinel-2).multi-platform.UNSPECIFIED.1-1.greenland_s2_50m_seasonal_20170501_20170829_Helheim": {
-        "type_specifier": "dataset",
+        "data_type": "dataset",
         "verification_flags": [],
         "title": "ESA Greenland Ice Sheet Climate Change Initiative (Greenland_Ice_Sheet_cci): Optical ice velocity of the  Helheim Glacier between 2017-05-01 and 2017-08-29, generated using Sentinel-2 data, v1.1"
     },
     "esacci.ICESHEETS.unspecified.Unspecified.IV.MSI-(Sentinel-2).multi-platform.UNSPECIFIED.1-1.greenland_s2_50m_seasonal_20170501_20170914_Petermann": {
-        "type_specifier": "dataset",
+        "data_type": "dataset",
         "verification_flags": [],
         "title": "ESA Greenland Ice Sheet Climate Change Initiative (Greenland_Ice_Sheet_cci): Optical ice velocity of the  Petermann Glacier between 2017-05-01 and 2017-09-14, generated using Sentinel-2 data, v1.1"
     },
     "esacci.ICESHEETS.unspecified.Unspecified.IV.MSI-(Sentinel-2).multi-platform.UNSPECIFIED.1-1.greenland_s2_50m_seasonal_20170603_20170908_Jakobshavn": {
-        "type_specifier": "dataset",
+        "data_type": "dataset",
         "verification_flags": [],
         "title": "ESA Greenland Ice Sheet Climate Change Initiative (Greenland_Ice_Sheet_cci): Optical ice velocity of the  Jakobshavn Glacier between 2017-06-03 and 2017-09-08, generated using Sentinel-2 data, v1.1"
     },
     "esacci.ICESHEETS.unspecified.Unspecified.IV.MSI-(Sentinel-2).multi-platform.UNSPECIFIED.1-1.greenland_s2_50m_seasonal_20170625_20170810_79Fjord": {
-        "type_specifier": "dataset",
+        "data_type": "dataset",
         "verification_flags": [],
         "title": "ESA Greenland Ice Sheet Climate Change Initiative (Greenland_Ice_Sheet_cci): Optical ice velocity of the 79Fjord Glacier between 2017-06-25 and 2017-08-10, generated using Sentinel-2 data, v1.1"
     },
     "esacci.ICESHEETS.unspecified.Unspecified.IV.MSI-(Sentinel-2).multi-platform.UNSPECIFIED.1-1.greenland_s2_50m_seasonal_20170625_20170810_Zachariae": {
-        "type_specifier": "dataset",
+        "data_type": "dataset",
         "verification_flags": [],
         "title": "ESA Greenland Ice Sheet Climate Change Initiative (Greenland_Ice_Sheet_cci): Optical ice velocity of the Zachariae Glacier between 2017-06-25 and 2017-08-10, generated using Sentinel-2 data, v1.1"
     },
     "esacci.ICESHEETS.unspecified.Unspecified.IV.MSI-(Sentinel-2).multi-platform.UNSPECIFIED.1-1.greenland_s2_50m_seasonal_20170630_20170814_Hagen": {
-        "type_specifier": "dataset",
+        "data_type": "dataset",
         "verification_flags": [],
         "title": "ESA Greenland Ice Sheet Climate Change Initiative (Greenland_Ice_Sheet_cci): Optical ice velocity of the Hagen Glacier between 2017-06-30 and 2017-08-14, generated using Sentinel-2 data, v1.1"
     },
     "esacci.ICESHEETS.unspecified.Unspecified.IV.MSI-(Sentinel-2).multi-platform.UNSPECIFIED.1-1.greenland_s2_50m_seasonal_20170715_20170814_Upernavik": {
-        "type_specifier": "dataset",
+        "data_type": "dataset",
         "verification_flags": [],
         "title": "ESA Greenland Ice Sheet Climate Change Initiative (Greenland_Ice_Sheet_cci): Optical ice velocity of the  Upernavik Glacier between 2017-07-15 and 2017-08-14, generated using Sentinel-2 data, v1.1"
     },
     "esacci.ICESHEETS.unspecified.Unspecified.IV.MSI-(Sentinel-2).multi-platform.UNSPECIFIED.1-1.greenland_s2_50m_seasonal_20170721_20170820_Kangerdlugssuaq": {
-        "type_specifier": "dataset",
+        "data_type": "dataset",
         "verification_flags": [],
         "title": "ESA Greenland Ice Sheet Climate Change Initiative (Greenland_Ice_Sheet_cci): Optical ice velocity of the  Kangerlussuaq Glacier between 2017-07-21 and 2017-08-20, generated using Sentinel-2 data, v1.1"
     },
     "esacci.ICESHEETS.unspecified.Unspecified.IV.MSI-(Sentinel-2).multi-platform.UNSPECIFIED.1-1.greenland_s2_50m_timeseries_20170501_20170829_Helheim": {
-        "type_specifier": "dataset",
+        "data_type": "dataset",
         "verification_flags": [],
         "title": "ESA Greenland Ice Sheet Climate Change Initiative (Greenland_Ice_Sheet_cci): Optical ice velocity of the  Helheim Glacier between 2017-05-01 and 2017-08-29, generated using Sentinel-2 data, v1.1"
     },
     "esacci.ICESHEETS.unspecified.Unspecified.IV.MSI-(Sentinel-2).multi-platform.UNSPECIFIED.1-1.greenland_s2_50m_timeseries_20170501_20170914_Petermann": {
-        "type_specifier": "dataset",
+        "data_type": "dataset",
         "verification_flags": [],
         "title": "ESA Greenland Ice Sheet Climate Change Initiative (Greenland_Ice_Sheet_cci): Optical ice velocity of the  Petermann Glacier between 2017-05-01 and 2017-09-14, generated using Sentinel-2 data, v1.1"
     },
     "esacci.ICESHEETS.unspecified.Unspecified.IV.MSI-(Sentinel-2).multi-platform.UNSPECIFIED.1-1.greenland_s2_50m_timeseries_20170603_20170908_Jakobshavn": {
-        "type_specifier": "dataset",
+        "data_type": "dataset",
         "verification_flags": [],
         "title": "ESA Greenland Ice Sheet Climate Change Initiative (Greenland_Ice_Sheet_cci): Optical ice velocity of the  Jakobshavn Glacier between 2017-06-03 and 2017-09-08, generated using Sentinel-2 data, v1.1"
     },
     "esacci.ICESHEETS.unspecified.Unspecified.IV.MSI-(Sentinel-2).multi-platform.UNSPECIFIED.1-1.greenland_s2_50m_timeseries_20170625_20170810_79Fjord": {
-        "type_specifier": "dataset",
+        "data_type": "dataset",
         "verification_flags": [],
         "title": "ESA Greenland Ice Sheet Climate Change Initiative (Greenland_Ice_Sheet_cci): Optical ice velocity of the 79Fjord Glacier between 2017-06-25 and 2017-08-10, generated using Sentinel-2 data, v1.1"
     },
     "esacci.ICESHEETS.unspecified.Unspecified.IV.MSI-(Sentinel-2).multi-platform.UNSPECIFIED.1-1.greenland_s2_50m_timeseries_20170625_20170810_Zachariae": {
-        "type_specifier": "dataset",
+        "data_type": "dataset",
         "verification_flags": [],
         "title": "ESA Greenland Ice Sheet Climate Change Initiative (Greenland_Ice_Sheet_cci): Optical ice velocity of the Zachariae Glacier between 2017-06-25 and 2017-08-10, generated using Sentinel-2 data, v1.1"
     },
     "esacci.ICESHEETS.unspecified.Unspecified.IV.MSI-(Sentinel-2).multi-platform.UNSPECIFIED.1-1.greenland_s2_50m_timeseries_20170630_20170814_Hagen": {
-        "type_specifier": "dataset",
+        "data_type": "dataset",
         "verification_flags": [],
         "title": "ESA Greenland Ice Sheet Climate Change Initiative (Greenland_Ice_Sheet_cci): Optical ice velocity of the Hagen Glacier between 2017-06-30 and 2017-08-14, generated using Sentinel-2 data, v1.1"
     },
     "esacci.ICESHEETS.unspecified.Unspecified.IV.MSI-(Sentinel-2).multi-platform.UNSPECIFIED.1-1.greenland_s2_50m_timeseries_20170715_20170814_Upernavik": {
-        "type_specifier": "dataset",
+        "data_type": "dataset",
         "verification_flags": [],
         "title": "ESA Greenland Ice Sheet Climate Change Initiative (Greenland_Ice_Sheet_cci): Optical ice velocity of the  Upernavik Glacier between 2017-07-15 and 2017-08-14, generated using Sentinel-2 data, v1.1"
     },
     "esacci.ICESHEETS.unspecified.Unspecified.IV.MSI-(Sentinel-2).multi-platform.UNSPECIFIED.1-1.greenland_s2_50m_timeseries_20170721_20170820_Kangerdlugssuaq": {
-        "type_specifier": "dataset",
+        "data_type": "dataset",
         "verification_flags": [],
         "title": "ESA Greenland Ice Sheet Climate Change Initiative (Greenland_Ice_Sheet_cci): Optical ice velocity of the  Kangerlussuaq Glacier between 2017-07-21 and 2017-08-20, generated using Sentinel-2 data, v1.1"
     },
     "esacci.ICESHEETS.unspecified.Unspecified.IV.SAR-(RadarSat-2).RadarSat-2.UNSPECIFIED.1-0.greenland_map_winter_2013_2014": {
-        "type_specifier": "dataset",
+        "data_type": "dataset",
         "verification_flags": [],
         "title": "ESA Greenland Ice Sheet Climate Change Initiative (Greenland_Ice_Sheet_cci): Greenland Ice Velocity Map Winter 2013-2014, v1.0"
     },
     "esacci.ICESHEETS.unspecified.Unspecified.IV.SAR-2000.multi-platform.UNSPECIFIED.1-0.greenland_csk_250m_timeseries_20120604_20141223_Jakobshavn": {
-        "type_specifier": "dataset",
+        "data_type": "dataset",
         "verification_flags": [],
         "title": "ESA Greenland Ice Sheet Climate Change Initiative (Greenland_Ice_Sheet_cci): Ice Velocity time series for the Jakobshavn Glacier from COSMO-SkyMed for 2012-2014, v1.0"
     },
     "esacci.ICESHEETS.unspecified.Unspecified.IV.SAR-C-(Sentinel-1).Sentinel-1A.UNSPECIFIED.1-0.greenland_map_winter_2014_2015": {
-        "type_specifier": "dataset",
+        "data_type": "dataset",
         "verification_flags": [],
         "title": "ESA Greenland Ice Sheet Climate Change Initiative (Greenland_Ice_Sheet_cci): Greenland Ice Velocity Map Winter 2014-2015, v1.0"
     },
     "esacci.ICESHEETS.unspecified.Unspecified.IV.SAR-C-(Sentinel-1).Sentinel-1A.UNSPECIFIED.1-2.greenland_map_winter_2015_2016": {
-        "type_specifier": "dataset",
+        "data_type": "dataset",
         "verification_flags": [
             "open",
             "constrain_time",
@@ -1258,7 +1258,7 @@
         "title": "ESA Greenland Ice Sheet Climate Change Initiative (Greenland_Ice_Sheet_cci): Greenland Ice Velocity Map, Winter 2015-2016, v1.2"
     },
     "esacci.ICESHEETS.unspecified.Unspecified.IV.SAR-C-(Sentinel-1).multi-platform.UNSPECIFIED.1-0.greenland_map_winter_2016_2017": {
-        "type_specifier": "dataset",
+        "data_type": "dataset",
         "verification_flags": [
             "open",
             "constrain_time",
@@ -1267,7 +1267,7 @@
         "title": "ESA Greenland Ice Sheet Climate Change Initiative (Greenland_Ice_Sheet_cci): Greenland Ice Velocity Map, Winter 2016-2017, v1.0"
     },
     "esacci.ICESHEETS.unspecified.Unspecified.IV.SAR-C-(Sentinel-1).multi-platform.UNSPECIFIED.1-0.greenland_map_winter_2017_2018": {
-        "type_specifier": "dataset",
+        "data_type": "dataset",
         "verification_flags": [
             "open",
             "constrain_time",
@@ -1276,7 +1276,7 @@
         "title": "ESA Greenland Ice Sheet Climate Change Initiative (Greenland_Ice_Sheet_cci): Greenland Ice Velocity Map, Winter 2017-2018, v1.0"
     },
     "esacci.ICESHEETS.unspecified.Unspecified.IV.SAR-C-(Sentinel-1).multi-platform.UNSPECIFIED.1-1.greenland_s1_250m_20141010_20170317_Upernavik": {
-        "type_specifier": "dataset",
+        "data_type": "dataset",
         "verification_flags": [
             "open",
             "constrain_time",
@@ -1285,7 +1285,7 @@
         "title": "ESA Greenland Ice Sheet Climate Change Initiative (Greenland_Ice_Sheet_cci): Ice Velocity time series for the Upernavik Glacier for 2014-2017 from Sentinel-1 data, v1.1"
     },
     "esacci.ICESHEETS.unspecified.Unspecified.IV.SAR-C-(Sentinel-1).multi-platform.UNSPECIFIED.1-1.greenland_s1_250m_20141011_20170317_20150122_20170322_Hagen": {
-        "type_specifier": "dataset",
+        "data_type": "dataset",
         "verification_flags": [
             "open",
             "constrain_time",
@@ -1294,7 +1294,7 @@
         "title": "ESA Greenland Ice Sheet Climate Change Initiative (Greenland_Ice_Sheet_cci): Ice Velocity time series for the Hagen Glacier for 2015-2017 from Sentinel-1 data, v1.1"
     },
     "esacci.ICESHEETS.unspecified.Unspecified.IV.SAR-C-(Sentinel-1).multi-platform.UNSPECIFIED.1-1.greenland_s1_250m_20141011_20170317_Jakobshavn": {
-        "type_specifier": "dataset",
+        "data_type": "dataset",
         "verification_flags": [
             "open",
             "constrain_time",
@@ -1303,7 +1303,7 @@
         "title": "ESA Greenland Ice Sheet Climate Change Initiative (Greenland_Ice_Sheet_cci): Ice Velocity time series for the Jakobshavn Glacier for 2014-2017 from Sentinel-1 data, v1.1"
     },
     "esacci.ICESHEETS.unspecified.Unspecified.IV.SAR-C-(Sentinel-1).multi-platform.UNSPECIFIED.1-1.greenland_s1_250m_20150118_20170321_Kangerlussuaq": {
-        "type_specifier": "dataset",
+        "data_type": "dataset",
         "verification_flags": [
             "open",
             "constrain_time",
@@ -1312,7 +1312,7 @@
         "title": "ESA Greenland Ice Sheet Climate Change Initiative (Greenland_Ice_Sheet_cci): Ice Velocity time series for the Kangerlussuaq Glacier for 2015-2017 from Sentinel-1, v1.1"
     },
     "esacci.ICESHEETS.unspecified.Unspecified.IV.SAR-C-(Sentinel-1).multi-platform.UNSPECIFIED.1-1.greenland_s1_250m_20150122_20170319_Petermann": {
-        "type_specifier": "dataset",
+        "data_type": "dataset",
         "verification_flags": [
             "open",
             "constrain_time",
@@ -1321,7 +1321,7 @@
         "title": "ESA Greenland Ice Sheet Climate Change Initiative (Greenland_Ice_Sheet_cci): Ice Velocity time series for the Petermann Glacier for 2015-2017 from Sentinel-1 data, v1.1"
     },
     "esacci.ICESHEETS.unspecified.Unspecified.IV.SAR-C-(Sentinel-1).multi-platform.UNSPECIFIED.1-1.greenland_s1_250m_20150122_20170322_79-Fjord": {
-        "type_specifier": "dataset",
+        "data_type": "dataset",
         "verification_flags": [
             "open",
             "constrain_time",
@@ -1330,7 +1330,7 @@
         "title": "ESA Greenland Ice Sheet Climate Change Initiative (Greenland_Ice_Sheet_cci): Ice Velocity time series for the 79-Fjord Glacier for 2015-2017 from Sentinel-1 data, v1.1"
     },
     "esacci.ICESHEETS.unspecified.Unspecified.IV.SAR-C-(Sentinel-1).multi-platform.UNSPECIFIED.1-1.greenland_s1_250m_20150124_20170322_Storstroemmen": {
-        "type_specifier": "dataset",
+        "data_type": "dataset",
         "verification_flags": [
             "open",
             "constrain_time",
@@ -1339,7 +1339,7 @@
         "title": "ESA Greenland Ice Sheet Climate Change Initiative (Greenland_Ice_Sheet_cci): Ice Velocity time series for the Storstroemmen Glacier for 2015-2017 from Sentinel-1 data, v1.1"
     },
     "esacci.ICESHEETS.unspecified.Unspecified.IV.SAR-C-(Sentinel-1).multi-platform.UNSPECIFIED.1-1.greenland_s1_250m_20150126_20170322_Zachariae": {
-        "type_specifier": "dataset",
+        "data_type": "dataset",
         "verification_flags": [
             "open",
             "constrain_time",
@@ -1348,12 +1348,12 @@
         "title": "ESA Greenland Ice Sheet Climate Change Initiative (Greenland_Ice_Sheet_cci): Ice Velocity time series for the Zachariae Glacier for 2015-2017 from Sentinel-1 data, v1.1"
     },
     "esacci.ICESHEETS.unspecified.Unspecified.IV.multi-sensor.multi-platform.UNSPECIFIED.1-0.greenland_timeseries_Kangerlussuaq": {
-        "type_specifier": "dataset",
+        "data_type": "dataset",
         "verification_flags": [],
         "title": "ESA Greenland Ice Sheet Climate Change Initiative (Greenland_Ice_Sheet_cci): Ice Velocity time series for the Kangerlussuaq glacier from ERS-1, ERS-2, Envisat for 1992-2008, v1.0"
     },
     "esacci.ICESHEETS.unspecified.Unspecified.IV.multi-sensor.multi-platform.UNSPECIFIED.1-1.greenland_timeseries_2002_2010_Jakobshavn": {
-        "type_specifier": "dataset",
+        "data_type": "dataset",
         "verification_flags": [
             "open",
             "constrain_time",
@@ -1362,71 +1362,71 @@
         "title": "ESA Greenland Ice Sheet Climate Change Initiative (Greenland_Ice_Sheet_cci): Ice Velocity time series  for the Jakobshavn glacier from ERS-1, ERS2 and ENVISAT data for 1992-2010, v1.2"
     },
     "esacci.ICESHEETS.unspecified.Unspecified.IV.multi-sensor.multi-platform.UNSPECIFIED.1-1.greenland_timeseries_Hagen": {
-        "type_specifier": "dataset",
+        "data_type": "dataset",
         "verification_flags": [],
         "title": "ESA Greenland Ice Sheet Climate Change Initiative (Greenland_Ice_Sheet_cci): Ice Velocity time series for the Hagen glacier from ERS-1, ERS-2 and Envisat data for 1991-2010, v1.1"
     },
     "esacci.ICESHEETS.unspecified.Unspecified.IV.multi-sensor.multi-platform.UNSPECIFIED.1-1.greenland_timeseries_Helheim": {
-        "type_specifier": "dataset",
+        "data_type": "dataset",
         "verification_flags": [],
         "title": "ESA Greenland Ice Sheet Climate Change Initiative (Greenland_Ice_Sheet_cci): Ice Velocity time series for the Helheim glacier from ERS-1, ERS-2 and Envisat data for 1996-2010, v1.1"
     },
     "esacci.ICESHEETS.unspecified.Unspecified.IV.multi-sensor.multi-platform.UNSPECIFIED.1-1.greenland_timeseries_Petermann": {
-        "type_specifier": "dataset",
+        "data_type": "dataset",
         "verification_flags": [],
         "title": "ESA Greenland Ice Sheet Climate Change Initiative (Greenland_Ice_Sheet_cci): Ice Velocity time series for the Petermann glacier from ERS-1, ERS-2 and Envisat data for 1991-2010, v1.1"
     },
     "esacci.ICESHEETS.unspecified.Unspecified.IV.multi-sensor.multi-platform.UNSPECIFIED.1-1.greenland_timeseries_Storstrommen": {
-        "type_specifier": "dataset",
+        "data_type": "dataset",
         "verification_flags": [],
         "title": "ESA Greenland Ice Sheet Climate Change Initiative (Greenland_Ice_Sheet_cci): Ice Velocity time series of the Storstrommen glacier from ERS-1, ERS-2 and Envisat data for 1991-2010, v1.1"
     },
     "esacci.ICESHEETS.unspecified.Unspecified.IV.multi-sensor.multi-platform.UNSPECIFIED.1-1.greenland_timeseries_Zachariae_79Fjord": {
-        "type_specifier": "dataset",
+        "data_type": "dataset",
         "verification_flags": [],
         "title": "ESA Greenland Ice Sheet Climate Change Initiative (Greenland_Ice_Sheet_cci): Ice Velocity time series for the Zachariae and 79Fjord area from ERS-1, ERS-2 and Envisat data for 1991-2011, v1.1"
     },
     "esacci.ICESHEETS.unspecified.Unspecified.IV.multi-sensor.multi-platform.UNSPECIFIED.1-2.greenland_timeseries_1992_2010_Jakobshavn": {
-        "type_specifier": "dataset",
+        "data_type": "dataset",
         "verification_flags": [],
         "title": "ESA Greenland Ice Sheet Climate Change Initiative (Greenland_Ice_Sheet_cci): Ice Velocity time series  for the Jakobshavn glacier from ERS-1, ERS2 and ENVISAT data for 1992-2010, v1.2"
     },
     "esacci.ICESHEETS.unspecified.Unspecified.IV.multi-sensor.multi-platform.UNSPECIFIED.1-2.greenland_timeseries_Upernarvik": {
-        "type_specifier": "dataset",
+        "data_type": "dataset",
         "verification_flags": [],
         "title": "ESA Greenland Ice Sheet Climate Change Initiative (Greenland_Ice_Sheet_cci): Ice Velocity time series for the Upernavik glacier from ERS-1, ERS-2, Envisat and PALSAR data for 1992-2010, v1.2"
     },
     "esacci.ICESHEETS.yr.Unspecified.GMB.GRACE-instrument.GRACE.UNSPECIFIED.1-2.greenland_gmb_mass_trends": {
-        "type_specifier": "dataset",
+        "data_type": "dataset",
         "verification_flags": [
             "open"
         ],
         "title": "ESA Greenland Ice Sheet Climate Change Initiative (Greenland_Ice_Sheet_cci): Greenland Gravimetric Mass Balance from GRACE data, derived by TU Dresden, v1.2"
     },
     "esacci.ICESHEETS.yr.Unspecified.GMB.GRACE-instrument.GRACE.UNSPECIFIED.1-3.greenland_gmb_mass_trends": {
-        "type_specifier": "dataset",
+        "data_type": "dataset",
         "verification_flags": [
             "open"
         ],
         "title": "ESA Greenland Ice Sheet Climate Change Initiative (Greenland_Ice_Sheet_cci): Greenland Gravimetric Mass Balance from GRACE data (CSR RL06), derived by TU Dresden, v1.3"
     },
     "esacci.ICESHEETS.yr.Unspecified.IV.PALSAR.ALOS.UNSPECIFIED.1-1.greenland_margin_2006_2011": {
-        "type_specifier": "dataset",
+        "data_type": "dataset",
         "verification_flags": [],
         "title": "ESA Greenland Ice Sheet Climate Change Initiative (Greenland_Ice_Sheet_cci): Ice Velocity data for the Greenland Margin from the PALSAR instrument for 2006-2011, v1.1 (June 2016 version)"
     },
     "esacci.ICESHEETS.yr.Unspecified.SEC.multi-sensor.multi-platform.UNSPECIFIED.1-2.r1": {
-        "type_specifier": "dataset",
+        "data_type": "dataset",
         "verification_flags": [],
         "title": "ESA Greenland Ice Sheet Climate Change Initiative (Greenland_Ice_Sheet_cci): Greenland Surface Elevation Change 1992-2014, v1.2"
     },
     "esacci.LAKES.day.L3S.LK_PRODUCTS.multi-sensor.multi-platform.MERGED.v1-0.r1": {
-        "type_specifier": "dataset",
+        "data_type": "dataset",
         "verification_flags": [],
         "title": "ESA Lakes Climate Change Initiative (Lakes_cci):  Lake products, Version 1.0"
     },
     "esacci.LC.13-yrs.L4.WB.ASAR.Envisat.Map.4-0.r1": {
-        "type_specifier": "dataset",
+        "data_type": "dataset",
         "verification_flags": [
             "open",
             "constrain_time",
@@ -1436,7 +1436,7 @@
         "title": "ESA Land Cover Climate Change Initiative (Land_Cover_cci):  Water Bodies Map, v4.0"
     },
     "esacci.LC.yr.L4.LCCS.multi-sensor.multi-platform.Map.2-0-7.r1": {
-        "type_specifier": "dataset",
+        "data_type": "dataset",
         "verification_flags": [
             "open",
             "constrain_time",
@@ -1446,7 +1446,7 @@
         "title": "ESA Land Cover Climate Change Initiative (Land_Cover_cci):  Global Land Cover Maps, Version 2.0.7"
     },
     "esacci.OC.5-days.L3S.CHLOR_A.multi-sensor.multi-platform.MERGED.3-1.geographic": {
-        "type_specifier": "dataset",
+        "data_type": "dataset",
         "verification_flags": [
             "open",
             "constrain_time",
@@ -1456,7 +1456,7 @@
         "title": "ESA Ocean Colour Climate Change Initiative (Ocean_Colour_cci): Global chlorophyll-a data products gridded on a geographic projection, Version 3.1"
     },
     "esacci.OC.5-days.L3S.CHLOR_A.multi-sensor.multi-platform.MERGED.4-2.geographic": {
-        "type_specifier": "dataset",
+        "data_type": "dataset",
         "verification_flags": [
             "open",
             "constrain_time",
@@ -1466,7 +1466,7 @@
         "title": "ESA Ocean Colour Climate Change Initiative (Ocean_Colour_cci): Global chlorophyll-a data products gridded on a geographic projection, Version 4.2"
     },
     "esacci.OC.5-days.L3S.CHLOR_A.multi-sensor.multi-platform.MERGED.5-0.geographic": {
-        "type_specifier": "dataset",
+        "data_type": "dataset",
         "verification_flags": [
             "open",
             "constrain_time",
@@ -1476,7 +1476,7 @@
         "title": "ESA Ocean Colour Climate Change Initiative (Ocean_Colour_cci): Global chlorophyll-a data products gridded on a geographic projection, Version 5.0"
     },
     "esacci.OC.5-days.L3S.IOP.multi-sensor.multi-platform.MERGED.3-1.geographic": {
-        "type_specifier": "dataset",
+        "data_type": "dataset",
         "verification_flags": [
             "open",
             "constrain_time",
@@ -1486,7 +1486,7 @@
         "title": "ESA Ocean Colour Climate Change Initiative (Ocean_Colour_cci): Global dataset of inherent optical properties (IOP) gridded on a geographic projection, Version 3.1"
     },
     "esacci.OC.5-days.L3S.IOP.multi-sensor.multi-platform.MERGED.4-2.geographic": {
-        "type_specifier": "dataset",
+        "data_type": "dataset",
         "verification_flags": [
             "open",
             "constrain_time",
@@ -1496,7 +1496,7 @@
         "title": "ESA Ocean Colour Climate Change Initiative (Ocean_Colour_cci): Global dataset of inherent optical properties (IOP) gridded on a geographic projection, Version 4.2"
     },
     "esacci.OC.5-days.L3S.IOP.multi-sensor.multi-platform.MERGED.5-0.geographic": {
-        "type_specifier": "dataset",
+        "data_type": "dataset",
         "verification_flags": [
             "open",
             "constrain_time",
@@ -1506,7 +1506,7 @@
         "title": "ESA Ocean Colour Climate Change Initiative (Ocean_Colour_cci): Global dataset of inherent optical properties (IOP) gridded on a geographic projection, Version 5.0"
     },
     "esacci.OC.5-days.L3S.K_490.multi-sensor.multi-platform.MERGED.3-1.geographic": {
-        "type_specifier": "dataset",
+        "data_type": "dataset",
         "verification_flags": [
             "open",
             "constrain_time",
@@ -1516,7 +1516,7 @@
         "title": "ESA Ocean Colour Climate Change Initiative (Ocean_Colour_cci): Global attenuation coefficient for downwelling irradiance (Kd490) gridded on a geographic projection, Version 3.1"
     },
     "esacci.OC.5-days.L3S.K_490.multi-sensor.multi-platform.MERGED.4-2.geographic": {
-        "type_specifier": "dataset",
+        "data_type": "dataset",
         "verification_flags": [
             "open",
             "constrain_time",
@@ -1526,7 +1526,7 @@
         "title": "ESA Ocean Colour Climate Change Initiative (Ocean_Colour_cci): Global attenuation coefficient for downwelling irradiance (Kd490) gridded on a geographic projection, Version 4.2"
     },
     "esacci.OC.5-days.L3S.K_490.multi-sensor.multi-platform.MERGED.5-0.geographic": {
-        "type_specifier": "dataset",
+        "data_type": "dataset",
         "verification_flags": [
             "open",
             "constrain_time",
@@ -1536,7 +1536,7 @@
         "title": "ESA Ocean Colour Climate Change Initiative (Ocean_Colour_cci): Global attenuation coefficient for downwelling irradiance (Kd490) gridded on a geographic projection, Version 5.0"
     },
     "esacci.OC.5-days.L3S.OC_PRODUCTS.multi-sensor.multi-platform.MERGED.3-1.geographic": {
-        "type_specifier": "dataset",
+        "data_type": "dataset",
         "verification_flags": [
             "open",
             "constrain_time",
@@ -1546,7 +1546,7 @@
         "title": "ESA Ocean Colour Climate Change Initiative (Ocean_Colour_cci): Global ocean colour data products gridded on a geographic projection (All Products), Version 3.1"
     },
     "esacci.OC.5-days.L3S.OC_PRODUCTS.multi-sensor.multi-platform.MERGED.4-2.geographic": {
-        "type_specifier": "dataset",
+        "data_type": "dataset",
         "verification_flags": [
             "open",
             "constrain_time",
@@ -1556,7 +1556,7 @@
         "title": "ESA Ocean Colour Climate Change Initiative (Ocean_Colour_cci): Global ocean colour data products gridded on a geographic projection (All Products), Version 4.2"
     },
     "esacci.OC.5-days.L3S.OC_PRODUCTS.multi-sensor.multi-platform.MERGED.5-0.geographic": {
-        "type_specifier": "dataset",
+        "data_type": "dataset",
         "verification_flags": [
             "open",
             "constrain_time",
@@ -1566,7 +1566,7 @@
         "title": "ESA Ocean Colour Climate Change Initiative (Ocean_Colour_cci): Global ocean colour data products gridded on a geographic projection (All Products), Version 5.0"
     },
     "esacci.OC.5-days.L3S.RRS.multi-sensor.multi-platform.MERGED.3-1.geographic": {
-        "type_specifier": "dataset",
+        "data_type": "dataset",
         "verification_flags": [
             "open",
             "constrain_time",
@@ -1576,7 +1576,7 @@
         "title": "ESA Ocean Colour Climate Change Initiative (Ocean_Colour_cci): Global remote sensing reflectance gridded on a geographic projection, Version 3.1"
     },
     "esacci.OC.5-days.L3S.RRS.multi-sensor.multi-platform.MERGED.4-2.geographic": {
-        "type_specifier": "dataset",
+        "data_type": "dataset",
         "verification_flags": [
             "open",
             "constrain_time",
@@ -1586,7 +1586,7 @@
         "title": "ESA Ocean Colour Climate Change Initiative (Ocean_Colour_cci): Global remote sensing reflectance gridded on a geographic projection, Version 4.2"
     },
     "esacci.OC.5-days.L3S.RRS.multi-sensor.multi-platform.MERGED.5-0.geographic": {
-        "type_specifier": "dataset",
+        "data_type": "dataset",
         "verification_flags": [
             "open",
             "constrain_time",
@@ -1596,7 +1596,7 @@
         "title": "ESA Ocean Colour Climate Change Initiative (Ocean_Colour_cci): Global remote sensing reflectance gridded on a geographic projection, Version 5.0"
     },
     "esacci.OC.8-days.L3S.CHLOR_A.multi-sensor.multi-platform.MERGED.3-1.geographic": {
-        "type_specifier": "dataset",
+        "data_type": "dataset",
         "verification_flags": [
             "open",
             "constrain_time",
@@ -1606,7 +1606,7 @@
         "title": "ESA Ocean Colour Climate Change Initiative (Ocean_Colour_cci): Global chlorophyll-a data products gridded on a geographic projection, Version 3.1"
     },
     "esacci.OC.8-days.L3S.CHLOR_A.multi-sensor.multi-platform.MERGED.4-2.geographic": {
-        "type_specifier": "dataset",
+        "data_type": "dataset",
         "verification_flags": [
             "open",
             "constrain_time",
@@ -1616,7 +1616,7 @@
         "title": "ESA Ocean Colour Climate Change Initiative (Ocean_Colour_cci): Global chlorophyll-a data products gridded on a geographic projection, Version 4.2"
     },
     "esacci.OC.8-days.L3S.CHLOR_A.multi-sensor.multi-platform.MERGED.5-0.geographic": {
-        "type_specifier": "dataset",
+        "data_type": "dataset",
         "verification_flags": [
             "open",
             "constrain_time",
@@ -1626,7 +1626,7 @@
         "title": "ESA Ocean Colour Climate Change Initiative (Ocean_Colour_cci): Global chlorophyll-a data products gridded on a geographic projection, Version 5.0"
     },
     "esacci.OC.8-days.L3S.IOP.multi-sensor.multi-platform.MERGED.3-1.geographic": {
-        "type_specifier": "dataset",
+        "data_type": "dataset",
         "verification_flags": [
             "open",
             "constrain_time",
@@ -1636,7 +1636,7 @@
         "title": "ESA Ocean Colour Climate Change Initiative (Ocean_Colour_cci): Global dataset of inherent optical properties (IOP) gridded on a geographic projection, Version 3.1"
     },
     "esacci.OC.8-days.L3S.IOP.multi-sensor.multi-platform.MERGED.4-2.geographic": {
-        "type_specifier": "dataset",
+        "data_type": "dataset",
         "verification_flags": [
             "open",
             "constrain_time",
@@ -1646,7 +1646,7 @@
         "title": "ESA Ocean Colour Climate Change Initiative (Ocean_Colour_cci): Global dataset of inherent optical properties (IOP) gridded on a geographic projection, Version 4.2"
     },
     "esacci.OC.8-days.L3S.IOP.multi-sensor.multi-platform.MERGED.5-0.geographic": {
-        "type_specifier": "dataset",
+        "data_type": "dataset",
         "verification_flags": [
             "open",
             "constrain_time",
@@ -1656,7 +1656,7 @@
         "title": "ESA Ocean Colour Climate Change Initiative (Ocean_Colour_cci): Global dataset of inherent optical properties (IOP) gridded on a geographic projection, Version 5.0"
     },
     "esacci.OC.8-days.L3S.K_490.multi-sensor.multi-platform.MERGED.3-1.geographic": {
-        "type_specifier": "dataset",
+        "data_type": "dataset",
         "verification_flags": [
             "open",
             "constrain_time",
@@ -1666,7 +1666,7 @@
         "title": "ESA Ocean Colour Climate Change Initiative (Ocean_Colour_cci): Global attenuation coefficient for downwelling irradiance (Kd490) gridded on a geographic projection, Version 3.1"
     },
     "esacci.OC.8-days.L3S.K_490.multi-sensor.multi-platform.MERGED.4-2.geographic": {
-        "type_specifier": "dataset",
+        "data_type": "dataset",
         "verification_flags": [
             "open",
             "constrain_time",
@@ -1676,7 +1676,7 @@
         "title": "ESA Ocean Colour Climate Change Initiative (Ocean_Colour_cci): Global attenuation coefficient for downwelling irradiance (Kd490) gridded on a geographic projection, Version 4.2"
     },
     "esacci.OC.8-days.L3S.K_490.multi-sensor.multi-platform.MERGED.5-0.geographic": {
-        "type_specifier": "dataset",
+        "data_type": "dataset",
         "verification_flags": [
             "open",
             "constrain_time",
@@ -1686,7 +1686,7 @@
         "title": "ESA Ocean Colour Climate Change Initiative (Ocean_Colour_cci): Global attenuation coefficient for downwelling irradiance (Kd490) gridded on a geographic projection, Version 5.0"
     },
     "esacci.OC.8-days.L3S.OC_PRODUCTS.multi-sensor.multi-platform.MERGED.3-1.geographic": {
-        "type_specifier": "dataset",
+        "data_type": "dataset",
         "verification_flags": [
             "open",
             "constrain_time",
@@ -1696,7 +1696,7 @@
         "title": "ESA Ocean Colour Climate Change Initiative (Ocean_Colour_cci): Global ocean colour data products gridded on a geographic projection (All Products), Version 3.1"
     },
     "esacci.OC.8-days.L3S.OC_PRODUCTS.multi-sensor.multi-platform.MERGED.4-2.geographic": {
-        "type_specifier": "dataset",
+        "data_type": "dataset",
         "verification_flags": [
             "open",
             "constrain_time",
@@ -1706,7 +1706,7 @@
         "title": "ESA Ocean Colour Climate Change Initiative (Ocean_Colour_cci): Global ocean colour data products gridded on a geographic projection (All Products), Version 4.2"
     },
     "esacci.OC.8-days.L3S.OC_PRODUCTS.multi-sensor.multi-platform.MERGED.5-0.geographic": {
-        "type_specifier": "dataset",
+        "data_type": "dataset",
         "verification_flags": [
             "open",
             "constrain_time",
@@ -1716,7 +1716,7 @@
         "title": "ESA Ocean Colour Climate Change Initiative (Ocean_Colour_cci): Global ocean colour data products gridded on a geographic projection (All Products), Version 5.0"
     },
     "esacci.OC.8-days.L3S.RRS.multi-sensor.multi-platform.MERGED.3-1.geographic": {
-        "type_specifier": "dataset",
+        "data_type": "dataset",
         "verification_flags": [
             "open",
             "constrain_time",
@@ -1726,7 +1726,7 @@
         "title": "ESA Ocean Colour Climate Change Initiative (Ocean_Colour_cci): Global remote sensing reflectance gridded on a geographic projection, Version 3.1"
     },
     "esacci.OC.8-days.L3S.RRS.multi-sensor.multi-platform.MERGED.4-2.geographic": {
-        "type_specifier": "dataset",
+        "data_type": "dataset",
         "verification_flags": [
             "open",
             "constrain_time",
@@ -1736,12 +1736,12 @@
         "title": "ESA Ocean Colour Climate Change Initiative (Ocean_Colour_cci): Global remote sensing reflectance gridded on a geographic projection, Version 4.2"
     },
     "esacci.OC.8-days.L3S.RRS.multi-sensor.multi-platform.MERGED.5-0.geographic": {
-        "type_specifier": "dataset",
+        "data_type": "dataset",
         "verification_flags": [],
         "title": "ESA Ocean Colour Climate Change Initiative (Ocean_Colour_cci): Global remote sensing reflectance gridded on a geographic projection, Version 5.0"
     },
     "esacci.OC.climatology.L4.OC_PRODUCTS.multi-sensor.multi-platform.UNSPECIFIED.4-2.r1": {
-        "type_specifier": "dataset",
+        "data_type": "dataset",
         "verification_flags": [
             "open",
             "constrain_time",
@@ -1751,12 +1751,12 @@
         "title": "ESA Ocean Colour Climate Change Initiative (Ocean_Colour_cci): Monthly climatology of global ocean colour data products, Version 4.2"
     },
     "esacci.OC.climatology.L4.OC_PRODUCTS.multi-sensor.multi-platform.UNSPECIFIED.5-0.r1": {
-        "type_specifier": "dataset",
+        "data_type": "dataset",
         "verification_flags": [],
         "title": "ESA Ocean Colour Climate Change Initiative (Ocean_Colour_cci): Monthly climatology of global ocean colour data products, Version 5.0"
     },
     "esacci.OC.day.L3S.CHLOR_A.multi-sensor.multi-platform.MERGED.3-1.geographic": {
-        "type_specifier": "dataset",
+        "data_type": "dataset",
         "verification_flags": [
             "open",
             "constrain_time",
@@ -1766,7 +1766,7 @@
         "title": "ESA Ocean Colour Climate Change Initiative (Ocean_Colour_cci): Global chlorophyll-a data products gridded on a geographic projection, Version 3.1"
     },
     "esacci.OC.day.L3S.CHLOR_A.multi-sensor.multi-platform.MERGED.4-2.geographic": {
-        "type_specifier": "dataset",
+        "data_type": "dataset",
         "verification_flags": [
             "open",
             "constrain_time",
@@ -1776,7 +1776,7 @@
         "title": "ESA Ocean Colour Climate Change Initiative (Ocean_Colour_cci): Global chlorophyll-a data products gridded on a geographic projection, Version 4.2"
     },
     "esacci.OC.day.L3S.CHLOR_A.multi-sensor.multi-platform.MERGED.5-0.geographic": {
-        "type_specifier": "dataset",
+        "data_type": "dataset",
         "verification_flags": [
             "open",
             "constrain_time",
@@ -1786,7 +1786,7 @@
         "title": "ESA Ocean Colour Climate Change Initiative (Ocean_Colour_cci): Global chlorophyll-a data products gridded on a geographic projection, Version 5.0"
     },
     "esacci.OC.day.L3S.IOP.multi-sensor.multi-platform.MERGED.3-1.geographic": {
-        "type_specifier": "dataset",
+        "data_type": "dataset",
         "verification_flags": [
             "open",
             "constrain_time",
@@ -1796,7 +1796,7 @@
         "title": "ESA Ocean Colour Climate Change Initiative (Ocean_Colour_cci): Global dataset of inherent optical properties (IOP) gridded on a geographic projection, Version 3.1"
     },
     "esacci.OC.day.L3S.IOP.multi-sensor.multi-platform.MERGED.4-2.geographic": {
-        "type_specifier": "dataset",
+        "data_type": "dataset",
         "verification_flags": [
             "open",
             "constrain_time",
@@ -1806,7 +1806,7 @@
         "title": "ESA Ocean Colour Climate Change Initiative (Ocean_Colour_cci): Global dataset of inherent optical properties (IOP) gridded on a geographic projection, Version 4.2"
     },
     "esacci.OC.day.L3S.IOP.multi-sensor.multi-platform.MERGED.5-0.geographic": {
-        "type_specifier": "dataset",
+        "data_type": "dataset",
         "verification_flags": [
             "open",
             "constrain_time",
@@ -1816,7 +1816,7 @@
         "title": "ESA Ocean Colour Climate Change Initiative (Ocean_Colour_cci): Global dataset of inherent optical properties (IOP) gridded on a geographic projection, Version 5.0"
     },
     "esacci.OC.day.L3S.K_490.multi-sensor.multi-platform.MERGED.3-1.geographic": {
-        "type_specifier": "dataset",
+        "data_type": "dataset",
         "verification_flags": [
             "open",
             "constrain_time",
@@ -1826,7 +1826,7 @@
         "title": "ESA Ocean Colour Climate Change Initiative (Ocean_Colour_cci): Global attenuation coefficient for downwelling irradiance (Kd490) gridded on a geographic projection, Version 3.1"
     },
     "esacci.OC.day.L3S.K_490.multi-sensor.multi-platform.MERGED.4-2.geographic": {
-        "type_specifier": "dataset",
+        "data_type": "dataset",
         "verification_flags": [
             "open",
             "constrain_time",
@@ -1836,7 +1836,7 @@
         "title": "ESA Ocean Colour Climate Change Initiative (Ocean_Colour_cci): Global attenuation coefficient for downwelling irradiance (Kd490) gridded on a geographic projection, Version 4.2"
     },
     "esacci.OC.day.L3S.K_490.multi-sensor.multi-platform.MERGED.5-0.geographic": {
-        "type_specifier": "dataset",
+        "data_type": "dataset",
         "verification_flags": [
             "open",
             "constrain_time",
@@ -1846,7 +1846,7 @@
         "title": "ESA Ocean Colour Climate Change Initiative (Ocean_Colour_cci): Global attenuation coefficient for downwelling irradiance (Kd490) gridded on a geographic projection, Version 5.0"
     },
     "esacci.OC.day.L3S.OC_PRODUCTS.multi-sensor.multi-platform.MERGED.3-1.geographic": {
-        "type_specifier": "dataset",
+        "data_type": "dataset",
         "verification_flags": [
             "open",
             "constrain_time",
@@ -1856,7 +1856,7 @@
         "title": "ESA Ocean Colour Climate Change Initiative (Ocean_Colour_cci): Global ocean colour data products gridded on a geographic projection (All Products), Version 3.1"
     },
     "esacci.OC.day.L3S.OC_PRODUCTS.multi-sensor.multi-platform.MERGED.4-2.geographic": {
-        "type_specifier": "dataset",
+        "data_type": "dataset",
         "verification_flags": [
             "open",
             "constrain_time",
@@ -1866,7 +1866,7 @@
         "title": "ESA Ocean Colour Climate Change Initiative (Ocean_Colour_cci): Global ocean colour data products gridded on a geographic projection (All Products), Version 4.2"
     },
     "esacci.OC.day.L3S.OC_PRODUCTS.multi-sensor.multi-platform.MERGED.5-0.geographic": {
-        "type_specifier": "dataset",
+        "data_type": "dataset",
         "verification_flags": [
             "open",
             "constrain_time",
@@ -1876,7 +1876,7 @@
         "title": "ESA Ocean Colour Climate Change Initiative (Ocean_Colour_cci): Global ocean colour data products gridded on a geographic projection (All Products), Version 5.0"
     },
     "esacci.OC.day.L3S.RRS.multi-sensor.multi-platform.MERGED.3-1.geographic": {
-        "type_specifier": "dataset",
+        "data_type": "dataset",
         "verification_flags": [
             "open",
             "constrain_time",
@@ -1886,7 +1886,7 @@
         "title": "ESA Ocean Colour Climate Change Initiative (Ocean_Colour_cci): Global remote sensing reflectance gridded on a geographic projection, Version 3.1"
     },
     "esacci.OC.day.L3S.RRS.multi-sensor.multi-platform.MERGED.4-2.geographic": {
-        "type_specifier": "dataset",
+        "data_type": "dataset",
         "verification_flags": [
             "open",
             "constrain_time",
@@ -1896,7 +1896,7 @@
         "title": "ESA Ocean Colour Climate Change Initiative (Ocean_Colour_cci): Global remote sensing reflectance gridded on a geographic projection, Version 4.2"
     },
     "esacci.OC.day.L3S.RRS.multi-sensor.multi-platform.MERGED.5-0.geographic": {
-        "type_specifier": "dataset",
+        "data_type": "dataset",
         "verification_flags": [
             "open",
             "constrain_time",
@@ -1906,7 +1906,7 @@
         "title": "ESA Ocean Colour Climate Change Initiative (Ocean_Colour_cci): Global remote sensing reflectance gridded on a geographic projection, Version 5.0"
     },
     "esacci.OC.mon.L3S.CHLOR_A.multi-sensor.multi-platform.MERGED.3-1.geographic": {
-        "type_specifier": "dataset",
+        "data_type": "dataset",
         "verification_flags": [
             "open",
             "constrain_time",
@@ -1916,7 +1916,7 @@
         "title": "ESA Ocean Colour Climate Change Initiative (Ocean_Colour_cci): Global chlorophyll-a data products gridded on a geographic projection, Version 3.1"
     },
     "esacci.OC.mon.L3S.CHLOR_A.multi-sensor.multi-platform.MERGED.4-2.geographic": {
-        "type_specifier": "dataset",
+        "data_type": "dataset",
         "verification_flags": [
             "open",
             "constrain_time",
@@ -1926,7 +1926,7 @@
         "title": "ESA Ocean Colour Climate Change Initiative (Ocean_Colour_cci): Global chlorophyll-a data products gridded on a geographic projection, Version 4.2"
     },
     "esacci.OC.mon.L3S.CHLOR_A.multi-sensor.multi-platform.MERGED.5-0.geographic": {
-        "type_specifier": "dataset",
+        "data_type": "dataset",
         "verification_flags": [
             "open",
             "constrain_time",
@@ -1936,7 +1936,7 @@
         "title": "ESA Ocean Colour Climate Change Initiative (Ocean_Colour_cci): Global chlorophyll-a data products gridded on a geographic projection, Version 5.0"
     },
     "esacci.OC.mon.L3S.IOP.multi-sensor.multi-platform.MERGED.3-1.geographic": {
-        "type_specifier": "dataset",
+        "data_type": "dataset",
         "verification_flags": [
             "open",
             "constrain_time",
@@ -1946,7 +1946,7 @@
         "title": "ESA Ocean Colour Climate Change Initiative (Ocean_Colour_cci): Global dataset of inherent optical properties (IOP) gridded on a geographic projection, Version 3.1"
     },
     "esacci.OC.mon.L3S.IOP.multi-sensor.multi-platform.MERGED.4-2.geographic": {
-        "type_specifier": "dataset",
+        "data_type": "dataset",
         "verification_flags": [
             "open",
             "constrain_time",
@@ -1956,7 +1956,7 @@
         "title": "ESA Ocean Colour Climate Change Initiative (Ocean_Colour_cci): Global dataset of inherent optical properties (IOP) gridded on a geographic projection, Version 4.2"
     },
     "esacci.OC.mon.L3S.IOP.multi-sensor.multi-platform.MERGED.5-0.geographic": {
-        "type_specifier": "dataset",
+        "data_type": "dataset",
         "verification_flags": [
             "open",
             "constrain_time",
@@ -1966,7 +1966,7 @@
         "title": "ESA Ocean Colour Climate Change Initiative (Ocean_Colour_cci): Global dataset of inherent optical properties (IOP) gridded on a geographic projection, Version 5.0"
     },
     "esacci.OC.mon.L3S.K_490.multi-sensor.multi-platform.MERGED.3-1.geographic": {
-        "type_specifier": "dataset",
+        "data_type": "dataset",
         "verification_flags": [
             "open",
             "constrain_time",
@@ -1976,7 +1976,7 @@
         "title": "ESA Ocean Colour Climate Change Initiative (Ocean_Colour_cci): Global attenuation coefficient for downwelling irradiance (Kd490) gridded on a geographic projection, Version 3.1"
     },
     "esacci.OC.mon.L3S.K_490.multi-sensor.multi-platform.MERGED.4-2.geographic": {
-        "type_specifier": "dataset",
+        "data_type": "dataset",
         "verification_flags": [
             "open",
             "constrain_time",
@@ -1986,7 +1986,7 @@
         "title": "ESA Ocean Colour Climate Change Initiative (Ocean_Colour_cci): Global attenuation coefficient for downwelling irradiance (Kd490) gridded on a geographic projection, Version 4.2"
     },
     "esacci.OC.mon.L3S.K_490.multi-sensor.multi-platform.MERGED.5-0.geographic": {
-        "type_specifier": "dataset",
+        "data_type": "dataset",
         "verification_flags": [
             "open",
             "constrain_time",
@@ -1996,7 +1996,7 @@
         "title": "ESA Ocean Colour Climate Change Initiative (Ocean_Colour_cci): Global attenuation coefficient for downwelling irradiance (Kd490) gridded on a geographic projection, Version 5.0"
     },
     "esacci.OC.mon.L3S.OC_PRODUCTS.multi-sensor.multi-platform.MERGED.3-1.geographic": {
-        "type_specifier": "dataset",
+        "data_type": "dataset",
         "verification_flags": [
             "open",
             "constrain_time",
@@ -2006,7 +2006,7 @@
         "title": "ESA Ocean Colour Climate Change Initiative (Ocean_Colour_cci): Global ocean colour data products gridded on a geographic projection (All Products), Version 3.1"
     },
     "esacci.OC.mon.L3S.OC_PRODUCTS.multi-sensor.multi-platform.MERGED.4-2.geographic": {
-        "type_specifier": "dataset",
+        "data_type": "dataset",
         "verification_flags": [
             "open",
             "constrain_time",
@@ -2016,12 +2016,12 @@
         "title": "ESA Ocean Colour Climate Change Initiative (Ocean_Colour_cci): Global ocean colour data products gridded on a geographic projection (All Products), Version 4.2"
     },
     "esacci.OC.mon.L3S.OC_PRODUCTS.multi-sensor.multi-platform.MERGED.5-0.geographic": {
-        "type_specifier": "dataset",
+        "data_type": "dataset",
         "verification_flags": [],
         "title": "ESA Ocean Colour Climate Change Initiative (Ocean_Colour_cci): Global ocean colour data products gridded on a geographic projection (All Products), Version 5.0"
     },
     "esacci.OC.mon.L3S.RRS.multi-sensor.multi-platform.MERGED.3-1.geographic": {
-        "type_specifier": "dataset",
+        "data_type": "dataset",
         "verification_flags": [
             "open",
             "constrain_time",
@@ -2031,7 +2031,7 @@
         "title": "ESA Ocean Colour Climate Change Initiative (Ocean_Colour_cci): Global remote sensing reflectance gridded on a geographic projection, Version 3.1"
     },
     "esacci.OC.mon.L3S.RRS.multi-sensor.multi-platform.MERGED.4-2.geographic": {
-        "type_specifier": "dataset",
+        "data_type": "dataset",
         "verification_flags": [
             "open",
             "constrain_time",
@@ -2041,7 +2041,7 @@
         "title": "ESA Ocean Colour Climate Change Initiative (Ocean_Colour_cci): Global remote sensing reflectance gridded on a geographic projection, Version 4.2"
     },
     "esacci.OC.mon.L3S.RRS.multi-sensor.multi-platform.MERGED.5-0.geographic": {
-        "type_specifier": "dataset",
+        "data_type": "dataset",
         "verification_flags": [
             "open",
             "constrain_time",
@@ -2051,7 +2051,7 @@
         "title": "ESA Ocean Colour Climate Change Initiative (Ocean_Colour_cci): Global remote sensing reflectance gridded on a geographic projection, Version 5.0"
     },
     "esacci.OZONE.day.L3S.TC.multi-sensor.multi-platform.MERGED.fv0100.r1": {
-        "type_specifier": "dataset",
+        "data_type": "dataset",
         "verification_flags": [
             "open",
             "constrain_time",
@@ -2061,7 +2061,7 @@
         "title": "ESA Ozone Climate Change Initiative (Ozone CCI): Level 3 Total Ozone Merged Data Product, version 01"
     },
     "esacci.OZONE.mon.L3.LP.GOMOS.Envisat.GOMOS_ENVISAT.v0001.r1": {
-        "type_specifier": "dataset",
+        "data_type": "dataset",
         "verification_flags": [
             "open",
             "constrain_time"
@@ -2069,7 +2069,7 @@
         "title": "ESA Ozone Climate Change Initiative (Ozone CCI): GOMOS Level 3 Limb Ozone Monthly Zonal Mean (MZM) Profiles, Version 1"
     },
     "esacci.OZONE.mon.L3.LP.MIPAS.Envisat.MIPAS_ENVISAT.v0001.r1": {
-        "type_specifier": "dataset",
+        "data_type": "dataset",
         "verification_flags": [
             "open",
             "constrain_time"
@@ -2077,7 +2077,7 @@
         "title": "ESA Ozone Climate Change Initiative (Ozone CCI): MIPAS Level 3 Limb Ozone Monthly Zonal Mean (MZM) Profiles, Version 1"
     },
     "esacci.OZONE.mon.L3.LP.OSIRIS.ODIN.OSIRIS_ODIN.v0001.r1": {
-        "type_specifier": "dataset",
+        "data_type": "dataset",
         "verification_flags": [
             "open",
             "constrain_time"
@@ -2085,7 +2085,7 @@
         "title": "ESA Ozone Climate Change Initiative (Ozone CCI): OSIRIS Level 3 Limb Ozone Monthly Zonal Mean (MZM) Profiles, Version 1"
     },
     "esacci.OZONE.mon.L3.LP.SCIAMACHY.Envisat.SCIAMACHY_ENVISAT.v0001.r1": {
-        "type_specifier": "dataset",
+        "data_type": "dataset",
         "verification_flags": [
             "open",
             "constrain_time"
@@ -2093,7 +2093,7 @@
         "title": "ESA Ozone Climate Change Initiative (Ozone CCI): SCIAMACHY Level 3 Limb Ozone Monthly Zonal Mean (MZM) Profiles, Version 1"
     },
     "esacci.OZONE.mon.L3.LP.SMR.ODIN.MZM.v0001.r1": {
-        "type_specifier": "dataset",
+        "data_type": "dataset",
         "verification_flags": [
             "open",
             "constrain_time"
@@ -2101,7 +2101,7 @@
         "title": "ESA Ozone Climate Change Initiative (Ozone CCI): ODIN/SMR (544.6 GHz) Level 3 Limb Ozone Monthly Zonal Mean (MZM) Profiles, Version 1"
     },
     "esacci.OZONE.mon.L3.LP.SMR.ODIN.SMR_ODIN.v0001.r1": {
-        "type_specifier": "dataset",
+        "data_type": "dataset",
         "verification_flags": [
             "open",
             "constrain_time"
@@ -2109,7 +2109,7 @@
         "title": "ESA Ozone Climate Change Initiative (Ozone CCI): ODIN/SMR Level 3 Limb Ozone Monthly Zonal Mean (MZM) Profiles, Version 1"
     },
     "esacci.OZONE.mon.L3.NP.multi-sensor.multi-platform.MERGED.fv0002.r1": {
-        "type_specifier": "dataset",
+        "data_type": "dataset",
         "verification_flags": [
             "open",
             "constrain_time",
@@ -2119,102 +2119,102 @@
         "title": "ESA Ozone Climate Change Initiative (Ozone CCI): Level 3 Nadir Ozone Profile Merged Data Product, version 2"
     },
     "esacci.PERMAFROST.yr.L4.ALT.multi-sensor.multi-platform.ERA5_MODISLST_BIASCORRECTED.02-0.r1": {
-        "type_specifier": "dataset",
+        "data_type": "dataset",
         "verification_flags": [],
         "title": "ESA Permafrost Climate Change Initiative (Permafrost_cci):   Permafrost active layer thickness for the Northern Hemisphere, v2.0"
     },
     "esacci.PERMAFROST.yr.L4.ALT.multi-sensor.multi-platform.MODISLST_CRYOGRID.02-0.r1": {
-        "type_specifier": "dataset",
+        "data_type": "dataset",
         "verification_flags": [],
         "title": "ESA Permafrost Climate Change Initiative (Permafrost_cci):   Permafrost active layer thickness for the Northern Hemisphere, v2.0"
     },
     "esacci.PERMAFROST.yr.L4.GTD.multi-sensor.multi-platform.ERA5_MODISLST_BIASCORRECTED.02-0.r1": {
-        "type_specifier": "dataset",
+        "data_type": "dataset",
         "verification_flags": [],
         "title": "ESA Permafrost Climate Change Initiative (Permafrost_cci):   Permafrost ground temperature for the Northern Hemisphere, v2.0"
     },
     "esacci.PERMAFROST.yr.L4.GTD.multi-sensor.multi-platform.MODISLST_CRYOGRID.02-0.r1": {
-        "type_specifier": "dataset",
+        "data_type": "dataset",
         "verification_flags": [],
         "title": "ESA Permafrost Climate Change Initiative (Permafrost_cci):   Permafrost ground temperature for the Northern Hemisphere, v2.0"
     },
     "esacci.PERMAFROST.yr.L4.PFR.multi-sensor.multi-platform.ERA5_MODISLST_BIASCORRECTED.02-0.r1": {
-        "type_specifier": "dataset",
+        "data_type": "dataset",
         "verification_flags": [],
         "title": "ESA Permafrost Climate Change Initiative (Permafrost_cci):   Permafrost extent for the Northern Hemisphere, v2.0"
     },
     "esacci.PERMAFROST.yr.L4.PFR.multi-sensor.multi-platform.MODISLST_CRYOGRID.02-0.r1": {
-        "type_specifier": "dataset",
+        "data_type": "dataset",
         "verification_flags": [],
         "title": "ESA Permafrost Climate Change Initiative (Permafrost_cci):   Permafrost extent for the Northern Hemisphere, v2.0"
     },
     "esacci.SEAICE.day.L4.SICONC.multi-sensor.multi-platform.AMSR_25kmEASE2.2-1.NH": {
-        "type_specifier": "dataset",
+        "data_type": "dataset",
         "verification_flags": [],
         "title": "ESA Sea Ice Climate Change Initiative (Sea_Ice_cci):  Sea Ice Concentration Climate Data Record from the AMSR-E and AMSR-2 instruments at 25km grid spacing, version 2.1"
     },
     "esacci.SEAICE.day.L4.SICONC.multi-sensor.multi-platform.AMSR_25kmEASE2.2-1.SH": {
-        "type_specifier": "dataset",
+        "data_type": "dataset",
         "verification_flags": [],
         "title": "ESA Sea Ice Climate Change Initiative (Sea_Ice_cci):  Sea Ice Concentration Climate Data Record from the AMSR-E and AMSR-2 instruments at 25km grid spacing, version 2.1"
     },
     "esacci.SEAICE.day.L4.SICONC.multi-sensor.multi-platform.AMSR_50kmEASE2.2-1.NH": {
-        "type_specifier": "dataset",
+        "data_type": "dataset",
         "verification_flags": [],
         "title": "ESA Sea Ice Climate Change Initiative (Sea_Ice_cci):  Sea Ice Concentration Climate Data Record from the AMSR-E and AMSR-2 instruments at 50km grid spacing, version 2.1"
     },
     "esacci.SEAICE.day.L4.SICONC.multi-sensor.multi-platform.AMSR_50kmEASE2.2-1.SH": {
-        "type_specifier": "dataset",
+        "data_type": "dataset",
         "verification_flags": [],
         "title": "ESA Sea Ice Climate Change Initiative (Sea_Ice_cci):  Sea Ice Concentration Climate Data Record from the AMSR-E and AMSR-2 instruments at 50km grid spacing, version 2.1"
     },
     "esacci.SEAICE.mon.L3C.SITHICK.RA-2.Envisat.NH25KMEASE2.2-0.r1": {
-        "type_specifier": "dataset",
+        "data_type": "dataset",
         "verification_flags": [],
         "title": "ESA Sea Ice Climate Change Initiative (Sea_Ice_cci):  Northern hemisphere sea ice thickness from the Envisat satellite on a monthly grid (L3C), v2.0"
     },
     "esacci.SEAICE.mon.L3C.SITHICK.RA-2.Envisat.SH50KMEASE2.2-0.r1": {
-        "type_specifier": "dataset",
+        "data_type": "dataset",
         "verification_flags": [],
         "title": "ESA Sea Ice Climate Change Initiative (Sea_Ice_cci):  Southern hemisphere sea ice thickness from the Envisat satellite on a monthly grid (L3C), v2.0"
     },
     "esacci.SEAICE.mon.L3C.SITHICK.SIRAL.CryoSat-2.NH25KMEASE2.2-0.r1": {
-        "type_specifier": "dataset",
+        "data_type": "dataset",
         "verification_flags": [],
         "title": "ESA Sea Ice Climate Change Initiative (Sea_Ice_cci): Northern hemisphere sea ice thickness from the CryoSat-2 satellite on a monthly grid (L3C), v2.0"
     },
     "esacci.SEAICE.mon.L3C.SITHICK.SIRAL.CryoSat-2.SH50KMEASE2.2-0.r1": {
-        "type_specifier": "dataset",
+        "data_type": "dataset",
         "verification_flags": [],
         "title": "ESA Sea Ice Climate Change Initiative (Sea_Ice_cci):  Southern hemisphere sea ice thickness from the CryoSat-2 satellite on a monthly grid (L3C), v2.0"
     },
     "esacci.SEALEVEL.10-days.L3.SLA.multi-sensor.multi-platform.NE_ATL.1-1.r1": {
-        "type_specifier": "dataset",
+        "data_type": "dataset",
         "verification_flags": [],
         "title": "ESA Sea Level Climate Change Initiative (Sea_Level_cci): Altimeter along-track high resolution sea level anomalies in some coastal regions (2002-2018), v1.1"
     },
     "esacci.SEALEVEL.10-days.L3.SLA.multi-sensor.multi-platform.N_INDIAN.1-1.r1": {
-        "type_specifier": "dataset",
+        "data_type": "dataset",
         "verification_flags": [],
         "title": "ESA Sea Level Climate Change Initiative (Sea_Level_cci): Altimeter along-track high resolution sea level anomalies in some coastal regions (2002-2018), v1.1"
     },
     "esacci.SEALEVEL.10-days.L3.SLA.multi-sensor.multi-platform.SE_ASIA.1-1.r1": {
-        "type_specifier": "dataset",
+        "data_type": "dataset",
         "verification_flags": [],
         "title": "ESA Sea Level Climate Change Initiative (Sea_Level_cci): Altimeter along-track high resolution sea level anomalies in some coastal regions (2002-2018), v1.1"
     },
     "esacci.SEALEVEL.10-days.L3.SLA.multi-sensor.multi-platform.S_AUSTRALIA.1-1.r1": {
-        "type_specifier": "dataset",
+        "data_type": "dataset",
         "verification_flags": [],
         "title": "ESA Sea Level Climate Change Initiative (Sea_Level_cci): Altimeter along-track high resolution sea level anomalies in some coastal regions (2002-2018), v1.1"
     },
     "esacci.SEALEVEL.10-days.L3.SLA.multi-sensor.multi-platform.WAFRICA.1-1.r1": {
-        "type_specifier": "dataset",
+        "data_type": "dataset",
         "verification_flags": [],
         "title": "ESA Sea Level Climate Change Initiative (Sea_Level_cci): Altimeter along-track high resolution sea level anomalies in some coastal regions (2002-2018), v1.1"
     },
     "esacci.SEALEVEL.mon.IND.MSL.multi-sensor.multi-platform.MERGED.2-0.r1": {
-        "type_specifier": "dataset",
+        "data_type": "dataset",
         "verification_flags": [
             "open",
             "constrain_time"
@@ -2222,7 +2222,7 @@
         "title": "ESA Sea Level Climate Change Initiative (Sea_Level_cci): Oceanic Indicators of Mean Sea Level Changes,  Version 2.0"
     },
     "esacci.SEALEVEL.mon.IND.MSLAMPH.multi-sensor.multi-platform.MERGED.2-0.r1": {
-        "type_specifier": "dataset",
+        "data_type": "dataset",
         "verification_flags": [
             "open",
             "constrain_time"
@@ -2230,7 +2230,7 @@
         "title": "ESA Sea Level Climate Change Initiative (Sea_Level_cci): Oceanic Indicators of Mean Sea Level Changes,  Version 2.0"
     },
     "esacci.SEALEVEL.mon.IND.MSLTR.multi-sensor.multi-platform.MERGED.1-1.MED_SEA": {
-        "type_specifier": "dataset",
+        "data_type": "dataset",
         "verification_flags": [
             "open",
             "constrain_time"
@@ -2238,7 +2238,7 @@
         "title": "ESA Sea Level Climate Change Initiative (Sea_Level_cci): A database of coastal sea level anomalies and associated trends from Jason satellite altimetry from 2002 to 2018"
     },
     "esacci.SEALEVEL.mon.IND.MSLTR.multi-sensor.multi-platform.MERGED.1-1.NE_ATL": {
-        "type_specifier": "dataset",
+        "data_type": "dataset",
         "verification_flags": [
             "open",
             "constrain_time"
@@ -2246,7 +2246,7 @@
         "title": "ESA Sea Level Climate Change Initiative (Sea_Level_cci): A database of coastal sea level anomalies and associated trends from Jason satellite altimetry from 2002 to 2018"
     },
     "esacci.SEALEVEL.mon.IND.MSLTR.multi-sensor.multi-platform.MERGED.1-1.N_INDIAN": {
-        "type_specifier": "dataset",
+        "data_type": "dataset",
         "verification_flags": [
             "open",
             "constrain_time"
@@ -2254,7 +2254,7 @@
         "title": "ESA Sea Level Climate Change Initiative (Sea_Level_cci): A database of coastal sea level anomalies and associated trends from Jason satellite altimetry from 2002 to 2018"
     },
     "esacci.SEALEVEL.mon.IND.MSLTR.multi-sensor.multi-platform.MERGED.1-1.SE_ASIA": {
-        "type_specifier": "dataset",
+        "data_type": "dataset",
         "verification_flags": [
             "open",
             "constrain_time"
@@ -2262,7 +2262,7 @@
         "title": "ESA Sea Level Climate Change Initiative (Sea_Level_cci): A database of coastal sea level anomalies and associated trends from Jason satellite altimetry from 2002 to 2018"
     },
     "esacci.SEALEVEL.mon.IND.MSLTR.multi-sensor.multi-platform.MERGED.1-1.S_AUSTRALIA": {
-        "type_specifier": "dataset",
+        "data_type": "dataset",
         "verification_flags": [
             "open",
             "constrain_time"
@@ -2270,7 +2270,7 @@
         "title": "ESA Sea Level Climate Change Initiative (Sea_Level_cci): A database of coastal sea level anomalies and associated trends from Jason satellite altimetry from 2002 to 2018"
     },
     "esacci.SEALEVEL.mon.IND.MSLTR.multi-sensor.multi-platform.MERGED.1-1.WAFRICA": {
-        "type_specifier": "dataset",
+        "data_type": "dataset",
         "verification_flags": [
             "open",
             "constrain_time"
@@ -2278,7 +2278,7 @@
         "title": "ESA Sea Level Climate Change Initiative (Sea_Level_cci): A database of coastal sea level anomalies and associated trends from Jason satellite altimetry from 2002 to 2018"
     },
     "esacci.SEALEVEL.mon.IND.MSLTR.multi-sensor.multi-platform.MERGED.2-0.r1": {
-        "type_specifier": "dataset",
+        "data_type": "dataset",
         "verification_flags": [
             "open",
             "constrain_time",
@@ -2288,7 +2288,7 @@
         "title": "ESA Sea Level Climate Change Initiative (Sea_Level_cci): Oceanic Indicators of Mean Sea Level Changes,  Version 2.0"
     },
     "esacci.SEALEVEL.mon.L4.MSLA.multi-sensor.multi-platform.MERGED.2-0.r1": {
-        "type_specifier": "dataset",
+        "data_type": "dataset",
         "verification_flags": [
             "open",
             "constrain_time",
@@ -2298,12 +2298,12 @@
         "title": "ESA Sea Level Climate Change Initiative (Sea_Level_cci): Time series of gridded Sea Level Anomalies (SLA), Version 2.0"
     },
     "esacci.SEALEVEL.unspecified.L3.SLA.multi-sensor.multi-platform.MED_SEA.1-1.r1": {
-        "type_specifier": "dataset",
+        "data_type": "dataset",
         "verification_flags": [],
         "title": "ESA Sea Level Climate Change Initiative (Sea_Level_cci): Altimeter along-track high resolution sea level anomalies in some coastal regions (2002-2018), v1.1"
     },
     "esacci.SEASTATE.mon.L4.SWH.multi-sensor.multi-platform.MULTI_1M.1-1.r1": {
-        "type_specifier": "dataset",
+        "data_type": "dataset",
         "verification_flags": [
             "open",
             "constrain_time",
@@ -2313,7 +2313,7 @@
         "title": "ESA Sea State Climate Change Initiative (Sea_State_cci) : Global remote sensing merged multi-mission monthly gridded significant wave height,  L4 product, version 1.1"
     },
     "esacci.SEASTATE.satellite-orbit-frequency.L3.SWH.multi-sensor.multi-platform.MULTI_1D.1-1.r1": {
-        "type_specifier": "dataset",
+        "data_type": "dataset",
         "verification_flags": [
             "open",
             "constrain_time"
@@ -2321,7 +2321,7 @@
         "title": "ESA Sea State Climate Change Initiative (Sea_State_cci) : Global remote sensing daily merged multi-mission along-track significant wave height, L3 product, version 1.1"
     },
     "esacci.SEASURFACESALINITY.15-days.L4.SSS.multi-sensor.multi-platform.MERGED_OI_Monthly_CENTRED_15Day_25km.2-31.r1": {
-        "type_specifier": "dataset",
+        "data_type": "dataset",
         "verification_flags": [
             "open",
             "constrain_time",
@@ -2330,7 +2330,7 @@
         "title": "ESA Sea Surface Salinity Climate Change Initiative (Sea_Surface_Salinity_cci): Monthly sea surface salinity product, v2.31, for 2010 to 2019"
     },
     "esacci.SEASURFACESALINITY.day.L4.SSS.multi-sensor.multi-platform.MERGED_OI_7DAY_RUNNINGMEAN_DAILY_25km.2-31.r1": {
-        "type_specifier": "dataset",
+        "data_type": "dataset",
         "verification_flags": [
             "open",
             "constrain_time",
@@ -2339,7 +2339,7 @@
         "title": "ESA Sea Surface Salinity Climate Change Initiative (Sea_Surface_Salinity_cci): Weekly sea surface salinity product, v2.31, for 2010 to 2019"
     },
     "esacci.SNOW.day.L3C.SCFG.MODIS.Terra.MODIS_TERRA.1-0.r1": {
-        "type_specifier": "dataset",
+        "data_type": "dataset",
         "verification_flags": [
             "open",
             "constrain_time",
@@ -2348,7 +2348,7 @@
         "title": "ESA Snow Climate Change Initiative (Snow_cci): Daily global Snow Cover Fraction - snow on ground (SCFG) from MODIS (2000-2019), version 1.0"
     },
     "esacci.SNOW.day.L3C.SCFG.multi-sensor.multi-platform.AVHRR_MERGED.1-0.r1": {
-        "type_specifier": "dataset",
+        "data_type": "dataset",
         "verification_flags": [
             "open",
             "constrain_time",
@@ -2357,7 +2357,7 @@
         "title": "ESA Snow Climate Change Initiative (Snow_cci): Daily global Snow Cover Fraction - snow on ground (SCFG) from AVHRR (1982 - 2019), version1.0"
     },
     "esacci.SNOW.day.L3C.SCFV.MODIS.Terra.MODIS_TERRA.1-0.r1": {
-        "type_specifier": "dataset",
+        "data_type": "dataset",
         "verification_flags": [
             "open",
             "constrain_time",
@@ -2366,7 +2366,7 @@
         "title": "ESA Snow Climate Change Initiative (Snow_cci): Daily global Snow Cover Fraction - viewable snow (SCFV) from MODIS (2000 - 2019), version 1.0"
     },
     "esacci.SNOW.day.L3C.SCFV.multi-sensor.multi-platform.AVHRR_MERGED.1-0.r1": {
-        "type_specifier": "dataset",
+        "data_type": "dataset",
         "verification_flags": [
             "open",
             "constrain_time",
@@ -2375,7 +2375,7 @@
         "title": "ESA Snow Climate Change Initiative (Snow_cci): Daily global Snow Cover Fraction - viewable (SCFV) from AVHRR (1982 - 2019), version 1.0"
     },
     "esacci.SNOW.day.L3C.SWE.multi-sensor.multi-platform.MERGED.1-0.r1": {
-        "type_specifier": "dataset",
+        "data_type": "dataset",
         "verification_flags": [
             "open",
             "constrain_time",
@@ -2385,7 +2385,7 @@
         "title": "ESA Snow Climate Change Initiative (Snow_cci): Snow Water Equivalent (SWE) level 3C daily global climate research data package (CRDP) (1979 \u2013 2018), version 1.0"
     },
     "esacci.SOILMOISTURE.day.L3S.SSMS.multi-sensor.multi-platform.ACTIVE.05-2.r1": {
-        "type_specifier": "dataset",
+        "data_type": "dataset",
         "verification_flags": [
             "open",
             "constrain_time",
@@ -2395,17 +2395,17 @@
         "title": "ESA Soil Moisture Climate Change Initiative (Soil_Moisture_cci): ACTIVE Product, Version 05.2"
     },
     "esacci.SOILMOISTURE.day.L3S.SSMS.multi-sensor.multi-platform.ACTIVE.v05-3.r1": {
-        "type_specifier": "dataset",
+        "data_type": "dataset",
         "verification_flags": [],
         "title": "ESA Soil Moisture Climate Change Initiative (Soil_Moisture_cci): ACTIVE Product, Version 05.3"
     },
     "esacci.SOILMOISTURE.day.L3S.SSMS.multi-sensor.multi-platform.ACTIVE.v06-1.r1": {
-        "type_specifier": "dataset",
+        "data_type": "dataset",
         "verification_flags": [],
         "title": "ESA Soil Moisture Climate Change Initiative (Soil_Moisture_cci): ACTIVE product, Version 06.1"
     },
     "esacci.SOILMOISTURE.day.L3S.SSMV.multi-sensor.multi-platform.COMBINED.05-2.r1": {
-        "type_specifier": "dataset",
+        "data_type": "dataset",
         "verification_flags": [
             "open",
             "constrain_time",
@@ -2415,17 +2415,17 @@
         "title": "ESA Soil Moisture Climate Change Initiative (Soil_Moisture_cci): COMBINED Product, Version 05.2"
     },
     "esacci.SOILMOISTURE.day.L3S.SSMV.multi-sensor.multi-platform.COMBINED.v05-3.r1": {
-        "type_specifier": "dataset",
+        "data_type": "dataset",
         "verification_flags": [],
         "title": "ESA Soil Moisture Climate Change Initiative (Soil_Moisture_cci): COMBINED Product, Version 05.3"
     },
     "esacci.SOILMOISTURE.day.L3S.SSMV.multi-sensor.multi-platform.COMBINED.v06-1.r1": {
-        "type_specifier": "dataset",
+        "data_type": "dataset",
         "verification_flags": [],
         "title": "ESA Soil Moisture Climate Change Initiative (Soil_Moisture_cci): COMBINED product, Version 06.1"
     },
     "esacci.SOILMOISTURE.day.L3S.SSMV.multi-sensor.multi-platform.PASSIVE.05-2.r1": {
-        "type_specifier": "dataset",
+        "data_type": "dataset",
         "verification_flags": [
             "open",
             "constrain_time",
@@ -2435,17 +2435,17 @@
         "title": "ESA Soil Moisture Climate Change Initiative (Soil_Moisture_cci): PASSIVE Product, Version 05.2"
     },
     "esacci.SOILMOISTURE.day.L3S.SSMV.multi-sensor.multi-platform.PASSIVE.v05-3.r1": {
-        "type_specifier": "dataset",
+        "data_type": "dataset",
         "verification_flags": [],
         "title": "ESA Soil Moisture Climate Change Initiative (Soil_Moisture_cci): PASSIVE Product, Version 05.3"
     },
     "esacci.SOILMOISTURE.day.L3S.SSMV.multi-sensor.multi-platform.PASSIVE.v06-1.r1": {
-        "type_specifier": "dataset",
+        "data_type": "dataset",
         "verification_flags": [],
         "title": "ESA Soil Moisture Climate Change Initiative (Soil_Moisture_cci): PASSIVE product, Version 06.1"
     },
     "esacci.SST.climatology.L4.SSTdepth.multi-sensor.multi-platform.OSTIA.2-1.r1": {
-        "type_specifier": "dataset",
+        "data_type": "dataset",
         "verification_flags": [
             "open",
             "constrain_region"
@@ -2453,7 +2453,7 @@
         "title": "ESA Sea Surface Temperature Climate Change Initiative (SST_cci): Climatology Climate Data Record, version 2.1"
     },
     "esacci.SST.day.L3C.SSTskin.AATSR.Envisat.AATSR.2-1.day": {
-        "type_specifier": "dataset",
+        "data_type": "dataset",
         "verification_flags": [
             "open",
             "constrain_time",
@@ -2463,7 +2463,7 @@
         "title": "ESA Sea Surface Temperature Climate Change Initiative (SST_cci): Along-Track Scanning Radiometer (ATSR) Level 3 Collated (L3C) Climate Data Record, version 2.1"
     },
     "esacci.SST.day.L3C.SSTskin.AATSR.Envisat.AATSR.2-1.night": {
-        "type_specifier": "dataset",
+        "data_type": "dataset",
         "verification_flags": [
             "open",
             "constrain_time",
@@ -2473,7 +2473,7 @@
         "title": "ESA Sea Surface Temperature Climate Change Initiative (SST_cci): Along-Track Scanning Radiometer (ATSR) Level 3 Collated (L3C) Climate Data Record, version 2.1"
     },
     "esacci.SST.day.L3C.SSTskin.ATSR-2.ERS-2.ATSR2.2-1.day": {
-        "type_specifier": "dataset",
+        "data_type": "dataset",
         "verification_flags": [
             "open",
             "constrain_time",
@@ -2483,7 +2483,7 @@
         "title": "ESA Sea Surface Temperature Climate Change Initiative (SST_cci): Along-Track Scanning Radiometer (ATSR) Level 3 Collated (L3C) Climate Data Record, version 2.1"
     },
     "esacci.SST.day.L3C.SSTskin.ATSR-2.ERS-2.ATSR2.2-1.night": {
-        "type_specifier": "dataset",
+        "data_type": "dataset",
         "verification_flags": [
             "open",
             "constrain_time",
@@ -2493,7 +2493,7 @@
         "title": "ESA Sea Surface Temperature Climate Change Initiative (SST_cci): Along-Track Scanning Radiometer (ATSR) Level 3 Collated (L3C) Climate Data Record, version 2.1"
     },
     "esacci.SST.day.L3C.SSTskin.ATSR.ERS-1.ATSR1.2-1.day": {
-        "type_specifier": "dataset",
+        "data_type": "dataset",
         "verification_flags": [
             "open",
             "constrain_time",
@@ -2503,7 +2503,7 @@
         "title": "ESA Sea Surface Temperature Climate Change Initiative (SST_cci): Along-Track Scanning Radiometer (ATSR) Level 3 Collated (L3C) Climate Data Record, version 2.1"
     },
     "esacci.SST.day.L3C.SSTskin.ATSR.ERS-1.ATSR1.2-1.night": {
-        "type_specifier": "dataset",
+        "data_type": "dataset",
         "verification_flags": [
             "open",
             "constrain_time",
@@ -2513,7 +2513,7 @@
         "title": "ESA Sea Surface Temperature Climate Change Initiative (SST_cci): Along-Track Scanning Radiometer (ATSR) Level 3 Collated (L3C) Climate Data Record, version 2.1"
     },
     "esacci.SST.day.L3C.SSTskin.AVHRR-2.NOAA-11.AVHRR11_G.2-1.day": {
-        "type_specifier": "dataset",
+        "data_type": "dataset",
         "verification_flags": [
             "open",
             "constrain_time",
@@ -2523,7 +2523,7 @@
         "title": "ESA Sea Surface Temperature Climate Change Initiative (SST_cci): Advanced Very High Resolution Radiometer (AVHRR) Level 3 Collated (L3C) Climate Data Record, version 2.1"
     },
     "esacci.SST.day.L3C.SSTskin.AVHRR-2.NOAA-11.AVHRR11_G.2-1.night": {
-        "type_specifier": "dataset",
+        "data_type": "dataset",
         "verification_flags": [
             "open",
             "constrain_time"
@@ -2531,7 +2531,7 @@
         "title": "ESA Sea Surface Temperature Climate Change Initiative (SST_cci): Advanced Very High Resolution Radiometer (AVHRR) Level 3 Collated (L3C) Climate Data Record, version 2.1"
     },
     "esacci.SST.day.L3C.SSTskin.AVHRR-2.NOAA-12.AVHRR12_G.2-1.day": {
-        "type_specifier": "dataset",
+        "data_type": "dataset",
         "verification_flags": [
             "open",
             "constrain_time",
@@ -2541,7 +2541,7 @@
         "title": "ESA Sea Surface Temperature Climate Change Initiative (SST_cci): Advanced Very High Resolution Radiometer (AVHRR) Level 3 Collated (L3C) Climate Data Record, version 2.1"
     },
     "esacci.SST.day.L3C.SSTskin.AVHRR-2.NOAA-12.AVHRR12_G.2-1.night": {
-        "type_specifier": "dataset",
+        "data_type": "dataset",
         "verification_flags": [
             "open",
             "constrain_time",
@@ -2551,7 +2551,7 @@
         "title": "ESA Sea Surface Temperature Climate Change Initiative (SST_cci): Advanced Very High Resolution Radiometer (AVHRR) Level 3 Collated (L3C) Climate Data Record, version 2.1"
     },
     "esacci.SST.day.L3C.SSTskin.AVHRR-2.NOAA-14.AVHRR14_G.2-1.day": {
-        "type_specifier": "dataset",
+        "data_type": "dataset",
         "verification_flags": [
             "open",
             "constrain_time",
@@ -2561,7 +2561,7 @@
         "title": "ESA Sea Surface Temperature Climate Change Initiative (SST_cci): Advanced Very High Resolution Radiometer (AVHRR) Level 3 Collated (L3C) Climate Data Record, version 2.1"
     },
     "esacci.SST.day.L3C.SSTskin.AVHRR-2.NOAA-14.AVHRR14_G.2-1.night": {
-        "type_specifier": "dataset",
+        "data_type": "dataset",
         "verification_flags": [
             "open",
             "constrain_time",
@@ -2571,7 +2571,7 @@
         "title": "ESA Sea Surface Temperature Climate Change Initiative (SST_cci): Advanced Very High Resolution Radiometer (AVHRR) Level 3 Collated (L3C) Climate Data Record, version 2.1"
     },
     "esacci.SST.day.L3C.SSTskin.AVHRR-2.NOAA-7.AVHRR07_G.2-1.day": {
-        "type_specifier": "dataset",
+        "data_type": "dataset",
         "verification_flags": [
             "open",
             "constrain_time",
@@ -2581,7 +2581,7 @@
         "title": "ESA Sea Surface Temperature Climate Change Initiative (SST_cci): Advanced Very High Resolution Radiometer (AVHRR) Level 3 Collated (L3C) Climate Data Record, version 2.1"
     },
     "esacci.SST.day.L3C.SSTskin.AVHRR-2.NOAA-7.AVHRR07_G.2-1.night": {
-        "type_specifier": "dataset",
+        "data_type": "dataset",
         "verification_flags": [
             "open",
             "constrain_time",
@@ -2591,7 +2591,7 @@
         "title": "ESA Sea Surface Temperature Climate Change Initiative (SST_cci): Advanced Very High Resolution Radiometer (AVHRR) Level 3 Collated (L3C) Climate Data Record, version 2.1"
     },
     "esacci.SST.day.L3C.SSTskin.AVHRR-2.NOAA-9.AVHRR09_G.2-1.day": {
-        "type_specifier": "dataset",
+        "data_type": "dataset",
         "verification_flags": [
             "open",
             "constrain_time",
@@ -2601,7 +2601,7 @@
         "title": "ESA Sea Surface Temperature Climate Change Initiative (SST_cci): Advanced Very High Resolution Radiometer (AVHRR) Level 3 Collated (L3C) Climate Data Record, version 2.1"
     },
     "esacci.SST.day.L3C.SSTskin.AVHRR-2.NOAA-9.AVHRR09_G.2-1.night": {
-        "type_specifier": "dataset",
+        "data_type": "dataset",
         "verification_flags": [
             "open",
             "constrain_time",
@@ -2611,7 +2611,7 @@
         "title": "ESA Sea Surface Temperature Climate Change Initiative (SST_cci): Advanced Very High Resolution Radiometer (AVHRR) Level 3 Collated (L3C) Climate Data Record, version 2.1"
     },
     "esacci.SST.day.L3C.SSTskin.AVHRR-3.Metop-A.AVHRRMTA_G.2-1.day": {
-        "type_specifier": "dataset",
+        "data_type": "dataset",
         "verification_flags": [
             "open",
             "constrain_time",
@@ -2621,7 +2621,7 @@
         "title": "ESA Sea Surface Temperature Climate Change Initiative (SST_cci): Advanced Very High Resolution Radiometer (AVHRR) Level 3 Collated (L3C) Climate Data Record, version 2.1"
     },
     "esacci.SST.day.L3C.SSTskin.AVHRR-3.Metop-A.AVHRRMTA_G.2-1.night": {
-        "type_specifier": "dataset",
+        "data_type": "dataset",
         "verification_flags": [
             "open",
             "constrain_time",
@@ -2631,7 +2631,7 @@
         "title": "ESA Sea Surface Temperature Climate Change Initiative (SST_cci): Advanced Very High Resolution Radiometer (AVHRR) Level 3 Collated (L3C) Climate Data Record, version 2.1"
     },
     "esacci.SST.day.L3C.SSTskin.AVHRR-3.NOAA-15.AVHRR15_G.2-1.day": {
-        "type_specifier": "dataset",
+        "data_type": "dataset",
         "verification_flags": [
             "open",
             "constrain_time",
@@ -2641,7 +2641,7 @@
         "title": "ESA Sea Surface Temperature Climate Change Initiative (SST_cci): Advanced Very High Resolution Radiometer (AVHRR) Level 3 Collated (L3C) Climate Data Record, version 2.1"
     },
     "esacci.SST.day.L3C.SSTskin.AVHRR-3.NOAA-15.AVHRR15_G.2-1.night": {
-        "type_specifier": "dataset",
+        "data_type": "dataset",
         "verification_flags": [
             "open",
             "constrain_time",
@@ -2651,7 +2651,7 @@
         "title": "ESA Sea Surface Temperature Climate Change Initiative (SST_cci): Advanced Very High Resolution Radiometer (AVHRR) Level 3 Collated (L3C) Climate Data Record, version 2.1"
     },
     "esacci.SST.day.L3C.SSTskin.AVHRR-3.NOAA-16.AVHRR16_G.2-1.day": {
-        "type_specifier": "dataset",
+        "data_type": "dataset",
         "verification_flags": [
             "open",
             "constrain_time",
@@ -2661,7 +2661,7 @@
         "title": "ESA Sea Surface Temperature Climate Change Initiative (SST_cci): Advanced Very High Resolution Radiometer (AVHRR) Level 3 Collated (L3C) Climate Data Record, version 2.1"
     },
     "esacci.SST.day.L3C.SSTskin.AVHRR-3.NOAA-16.AVHRR16_G.2-1.night": {
-        "type_specifier": "dataset",
+        "data_type": "dataset",
         "verification_flags": [
             "open",
             "constrain_time",
@@ -2671,7 +2671,7 @@
         "title": "ESA Sea Surface Temperature Climate Change Initiative (SST_cci): Advanced Very High Resolution Radiometer (AVHRR) Level 3 Collated (L3C) Climate Data Record, version 2.1"
     },
     "esacci.SST.day.L3C.SSTskin.AVHRR-3.NOAA-17.AVHRR17_G.2-1.day": {
-        "type_specifier": "dataset",
+        "data_type": "dataset",
         "verification_flags": [
             "open",
             "constrain_time",
@@ -2681,7 +2681,7 @@
         "title": "ESA Sea Surface Temperature Climate Change Initiative (SST_cci): Advanced Very High Resolution Radiometer (AVHRR) Level 3 Collated (L3C) Climate Data Record, version 2.1"
     },
     "esacci.SST.day.L3C.SSTskin.AVHRR-3.NOAA-17.AVHRR17_G.2-1.night": {
-        "type_specifier": "dataset",
+        "data_type": "dataset",
         "verification_flags": [
             "open",
             "constrain_time",
@@ -2691,7 +2691,7 @@
         "title": "ESA Sea Surface Temperature Climate Change Initiative (SST_cci): Advanced Very High Resolution Radiometer (AVHRR) Level 3 Collated (L3C) Climate Data Record, version 2.1"
     },
     "esacci.SST.day.L3C.SSTskin.AVHRR-3.NOAA-18.AVHRR18_G.2-1.day": {
-        "type_specifier": "dataset",
+        "data_type": "dataset",
         "verification_flags": [
             "open",
             "constrain_time",
@@ -2701,7 +2701,7 @@
         "title": "ESA Sea Surface Temperature Climate Change Initiative (SST_cci): Advanced Very High Resolution Radiometer (AVHRR) Level 3 Collated (L3C) Climate Data Record, version 2.1"
     },
     "esacci.SST.day.L3C.SSTskin.AVHRR-3.NOAA-18.AVHRR18_G.2-1.night": {
-        "type_specifier": "dataset",
+        "data_type": "dataset",
         "verification_flags": [
             "open",
             "constrain_time",
@@ -2711,7 +2711,7 @@
         "title": "ESA Sea Surface Temperature Climate Change Initiative (SST_cci): Advanced Very High Resolution Radiometer (AVHRR) Level 3 Collated (L3C) Climate Data Record, version 2.1"
     },
     "esacci.SST.day.L3C.SSTskin.AVHRR-3.NOAA-19.AVHRR19_G.2-1.day": {
-        "type_specifier": "dataset",
+        "data_type": "dataset",
         "verification_flags": [
             "open",
             "constrain_time",
@@ -2721,7 +2721,7 @@
         "title": "ESA Sea Surface Temperature Climate Change Initiative (SST_cci): Advanced Very High Resolution Radiometer (AVHRR) Level 3 Collated (L3C) Climate Data Record, version 2.1"
     },
     "esacci.SST.day.L3C.SSTskin.AVHRR-3.NOAA-19.AVHRR19_G.2-1.night": {
-        "type_specifier": "dataset",
+        "data_type": "dataset",
         "verification_flags": [
             "open",
             "constrain_time",
@@ -2731,7 +2731,7 @@
         "title": "ESA Sea Surface Temperature Climate Change Initiative (SST_cci): Advanced Very High Resolution Radiometer (AVHRR) Level 3 Collated (L3C) Climate Data Record, version 2.1"
     },
     "esacci.SST.day.L4.SSTdepth.multi-sensor.multi-platform.OSTIA.1-1.r1": {
-        "type_specifier": "dataset",
+        "data_type": "dataset",
         "verification_flags": [
             "open",
             "constrain_time",
@@ -2741,7 +2741,7 @@
         "title": "ESA Sea Surface Temperature Climate Change Initiative (ESA SST CCI): Analysis long term product version 1.1"
     },
     "esacci.SST.day.L4.SSTdepth.multi-sensor.multi-platform.OSTIA.2-1.anomaly": {
-        "type_specifier": "dataset",
+        "data_type": "dataset",
         "verification_flags": [
             "open",
             "constrain_time",
@@ -2751,7 +2751,7 @@
         "title": "ESA Sea Surface Temperature Climate Change Initiative (SST_cci): Level 4 Analysis Climate Data Record, version 2.1"
     },
     "esacci.SST.day.L4.SSTdepth.multi-sensor.multi-platform.OSTIA.2-1.sst": {
-        "type_specifier": "dataset",
+        "data_type": "dataset",
         "verification_flags": [
             "open",
             "constrain_time",
@@ -2761,7 +2761,7 @@
         "title": "ESA Sea Surface Temperature Climate Change Initiative (SST_cci): Level 4 Analysis Climate Data Record, version 2.1"
     },
     "esacci.SST.day.L4.SSTskin.Unspecified.Unspecified.GMPE.2-0.r1": {
-        "type_specifier": "dataset",
+        "data_type": "dataset",
         "verification_flags": [
             "open",
             "constrain_time",
@@ -2771,7 +2771,7 @@
         "title": "ESA Sea Surface Temperature Climate Change Initiative (SST_cci): GHRSST Multi-Product ensemble (GMPE), v2.0"
     },
     "esacci.SST.satellite-orbit-frequency.L3U.SSTskin.AATSR.Envisat.AATSR.2-1.r1": {
-        "type_specifier": "dataset",
+        "data_type": "dataset",
         "verification_flags": [
             "open",
             "constrain_time",
@@ -2781,7 +2781,7 @@
         "title": "ESA Sea Surface Temperature Climate Change Initiative (SST_cci): Along-Track Scanning Radiometer (ATSR) Level 3 Uncollated (L3U) Climate Data Record, version 2.1"
     },
     "esacci.SST.satellite-orbit-frequency.L3U.SSTskin.ATSR-2.ERS-2.ATSR2.2-1.r1": {
-        "type_specifier": "dataset",
+        "data_type": "dataset",
         "verification_flags": [
             "open",
             "constrain_time",
@@ -2791,7 +2791,7 @@
         "title": "ESA Sea Surface Temperature Climate Change Initiative (SST_cci): Along-Track Scanning Radiometer (ATSR) Level 3 Uncollated (L3U) Climate Data Record, version 2.1"
     },
     "esacci.SST.satellite-orbit-frequency.L3U.SSTskin.ATSR.ERS-1.ATSR1.2-1.r1": {
-        "type_specifier": "dataset",
+        "data_type": "dataset",
         "verification_flags": [
             "open",
             "constrain_time",
@@ -2801,7 +2801,7 @@
         "title": "ESA Sea Surface Temperature Climate Change Initiative (SST_cci): Along-Track Scanning Radiometer (ATSR) Level 3 Uncollated (L3U) Climate Data Record, version 2.1"
     },
     "esacci.SST.satellite-orbit-frequency.L3U.SSTskin.AVHRR-2.NOAA-11.AVHRR11_G.2-1.r1": {
-        "type_specifier": "dataset",
+        "data_type": "dataset",
         "verification_flags": [
             "open",
             "constrain_time",
@@ -2811,7 +2811,7 @@
         "title": "ESA Sea Surface Temperature Climate Change Initiative (SST_cci): Advanced Very High Resolution Radiometer (AVHRR) Level 3 Uncollated (L3U) Climate Data Record, version 2.1"
     },
     "esacci.SST.satellite-orbit-frequency.L3U.SSTskin.AVHRR-2.NOAA-12.AVHRR12_G.2-1.r1": {
-        "type_specifier": "dataset",
+        "data_type": "dataset",
         "verification_flags": [
             "open",
             "constrain_time",
@@ -2821,7 +2821,7 @@
         "title": "ESA Sea Surface Temperature Climate Change Initiative (SST_cci): Advanced Very High Resolution Radiometer (AVHRR) Level 3 Uncollated (L3U) Climate Data Record, version 2.1"
     },
     "esacci.SST.satellite-orbit-frequency.L3U.SSTskin.AVHRR-2.NOAA-14.AVHRR14_G.2-1.r1": {
-        "type_specifier": "dataset",
+        "data_type": "dataset",
         "verification_flags": [
             "open",
             "constrain_time",
@@ -2831,7 +2831,7 @@
         "title": "ESA Sea Surface Temperature Climate Change Initiative (SST_cci): Advanced Very High Resolution Radiometer (AVHRR) Level 3 Uncollated (L3U) Climate Data Record, version 2.1"
     },
     "esacci.SST.satellite-orbit-frequency.L3U.SSTskin.AVHRR-2.NOAA-7.AVHRR07_G.2-1.r1": {
-        "type_specifier": "dataset",
+        "data_type": "dataset",
         "verification_flags": [
             "open",
             "constrain_time",
@@ -2841,7 +2841,7 @@
         "title": "ESA Sea Surface Temperature Climate Change Initiative (SST_cci): Advanced Very High Resolution Radiometer (AVHRR) Level 3 Uncollated (L3U) Climate Data Record, version 2.1"
     },
     "esacci.SST.satellite-orbit-frequency.L3U.SSTskin.AVHRR-2.NOAA-9.AVHRR09_G.2-1.r1": {
-        "type_specifier": "dataset",
+        "data_type": "dataset",
         "verification_flags": [
             "open",
             "constrain_time",
@@ -2851,7 +2851,7 @@
         "title": "ESA Sea Surface Temperature Climate Change Initiative (SST_cci): Advanced Very High Resolution Radiometer (AVHRR) Level 3 Uncollated (L3U) Climate Data Record, version 2.1"
     },
     "esacci.SST.satellite-orbit-frequency.L3U.SSTskin.AVHRR-3.Metop-A.AVHRRMTA_G.2-1.r1": {
-        "type_specifier": "dataset",
+        "data_type": "dataset",
         "verification_flags": [
             "open",
             "constrain_time",
@@ -2861,7 +2861,7 @@
         "title": "ESA Sea Surface Temperature Climate Change Initiative (SST_cci): Advanced Very High Resolution Radiometer (AVHRR) Level 3 Uncollated (L3U) Climate Data Record, version 2.1"
     },
     "esacci.SST.satellite-orbit-frequency.L3U.SSTskin.AVHRR-3.NOAA-15.AVHRR15_G.2-1.r1": {
-        "type_specifier": "dataset",
+        "data_type": "dataset",
         "verification_flags": [
             "open",
             "constrain_time",
@@ -2871,7 +2871,7 @@
         "title": "ESA Sea Surface Temperature Climate Change Initiative (SST_cci): Advanced Very High Resolution Radiometer (AVHRR) Level 3 Uncollated (L3U) Climate Data Record, version 2.1"
     },
     "esacci.SST.satellite-orbit-frequency.L3U.SSTskin.AVHRR-3.NOAA-16.AVHRR16_G.2-1.r1": {
-        "type_specifier": "dataset",
+        "data_type": "dataset",
         "verification_flags": [
             "open",
             "constrain_time",
@@ -2881,7 +2881,7 @@
         "title": "ESA Sea Surface Temperature Climate Change Initiative (SST_cci): Advanced Very High Resolution Radiometer (AVHRR) Level 3 Uncollated (L3U) Climate Data Record, version 2.1"
     },
     "esacci.SST.satellite-orbit-frequency.L3U.SSTskin.AVHRR-3.NOAA-17.AVHRR17_G.2-1.r1": {
-        "type_specifier": "dataset",
+        "data_type": "dataset",
         "verification_flags": [
             "open",
             "constrain_time",
@@ -2891,7 +2891,7 @@
         "title": "ESA Sea Surface Temperature Climate Change Initiative (SST_cci): Advanced Very High Resolution Radiometer (AVHRR) Level 3 Uncollated (L3U) Climate Data Record, version 2.1"
     },
     "esacci.SST.satellite-orbit-frequency.L3U.SSTskin.AVHRR-3.NOAA-18.AVHRR18_G.2-1.r1": {
-        "type_specifier": "dataset",
+        "data_type": "dataset",
         "verification_flags": [
             "open",
             "constrain_time",
@@ -2901,7 +2901,7 @@
         "title": "ESA Sea Surface Temperature Climate Change Initiative (SST_cci): Advanced Very High Resolution Radiometer (AVHRR) Level 3 Uncollated (L3U) Climate Data Record, version 2.1"
     },
     "esacci.SST.satellite-orbit-frequency.L3U.SSTskin.AVHRR-3.NOAA-19.AVHRR19_G.2-1.r1": {
-        "type_specifier": "dataset",
+        "data_type": "dataset",
         "verification_flags": [
             "open",
             "constrain_time",

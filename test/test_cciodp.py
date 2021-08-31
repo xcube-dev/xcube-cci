@@ -55,21 +55,25 @@ class CciOdpTest(unittest.TestCase):
             'esacci.SST.satellite-orbit-frequency.L3U.SSTskin.AVHRR-3.NOAA-19.AVHRR19_G.2-1.r1'
             in dataset_names)
 
-    @skipIf(os.environ.get('XCUBE_DISABLE_WEB_TESTS', None) == '1', 'XCUBE_DISABLE_WEB_TESTS = 1')
+    @skipIf(os.environ.get('XCUBE_DISABLE_WEB_TESTS', None) == '1',
+            'XCUBE_DISABLE_WEB_TESTS = 1')
     def test_cube_ready_dataset_names(self):
         cci_odp = CciOdp(only_consider_cube_ready=True)
         dataset_names = cci_odp.dataset_names
         self.assertIsNotNone(dataset_names)
         list(dataset_names)
-        self.assertTrue(len(dataset_names) > 120)
+        self.assertTrue(len(dataset_names) > 110)
         self.assertTrue(len(dataset_names) < 250)
-        self.assertTrue('esacci.AEROSOL.mon.L3C.AER_PRODUCTS.AATSR.Envisat.SU.4-3.r1'
-                        in dataset_names)
         self.assertTrue(
-            'esacci.OC.day.L3S.K_490.multi-sensor.multi-platform.MERGED.3-1.sinusoidal'
+            'esacci.AEROSOL.mon.L3C.AER_PRODUCTS.AATSR.Envisat.SU.4-3.r1'
             in dataset_names)
         self.assertFalse(
-            'esacci.SST.satellite-orbit-frequency.L3U.SSTskin.AVHRR-3.NOAA-19.AVHRR19_G.2-1.r1'
+            'esacci.OC.day.L3S.K_490.multi-sensor.multi-platform.MERGED.'
+            '3-1.sinusoidal'
+            in dataset_names)
+        self.assertFalse(
+            'esacci.SST.satellite-orbit-frequency.L3U.SSTskin.AVHRR-3.NOAA-19.'
+            'AVHRR19_G.2-1.r1'
             in dataset_names)
 
     @skipIf(os.environ.get('XCUBE_DISABLE_WEB_TESTS', None) == '1', 'XCUBE_DISABLE_WEB_TESTS = 1')

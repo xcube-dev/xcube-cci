@@ -105,7 +105,7 @@ def gen_report(output_dir: str,
     id_to_ts = dict()
 
     for i, ds_id in enumerate(selected_ds_ids):
-        type_specifier = ''
+        data_type = ''
         observer, obs_fp = new_observer(output_dir, ds_id) if observe else (None, None)
 
         logging.info(f'Attempting to open #{i+1} of {len(selected_ds_ids)}: {ds_id}')
@@ -115,7 +115,7 @@ def gen_report(output_dir: str,
         try:
             store = CciChunkStore(odp, ds_id, observer=observer, trace_store_calls=True)
         except Exception as e:
-            report_error(output_dir, ds_id, t0, 'CciChunkStore()', e, type_specifier)
+            report_error(output_dir, ds_id, t0, 'CciChunkStore()', e, data_type)
             continue
 
         if cache_size > 0:
@@ -124,17 +124,12 @@ def gen_report(output_dir: str,
         try:
             logging.info('Attempting to open zarr ...')
             ds = xr.open_zarr(store)
-            type_specifier = 'dataset'
-            try:
-                ds = cubify_dataset(ds)
-                type_specifier = 'dataset[cube]'
-            except ValueError as ve:
-                pass
-            report_success(output_dir, ds_id, t0, ds, type_specifier)
+            data_type = 'dataset'
+            report_success(output_dir, ds_id, t0, ds, data_type)
         except Exception as e:
-            report_error(output_dir, ds_id, t0, 'xr.open_zarr()', e, type_specifier)
+            report_error(output_dir, ds_id, t0, 'xr.open_zarr()', e, data_type)
 
-        id_to_ts[ds_id] = type_specifier
+        id_to_ts[ds_id] = data_type
 
         if obs_fp is not None:
             obs_fp.close()
