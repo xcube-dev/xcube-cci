@@ -67,13 +67,13 @@ class CciChunkStoreTest(unittest.TestCase):
         cube_params = dict(time_range=time_range)
         time_ranges = store.get_time_ranges(
             'esacci.SST.satellite-orbit-frequency.L3U.SSTskin.AATSR.Envisat.AATSR.2-1.r1', cube_params)
-        self.assertEqual([('2002-07-24T12:33:21', '2002-07-24T12:33:21'),
-                          ('2002-07-24T14:13:57', '2002-07-24T14:13:57'),
-                          ('2002-07-24T15:54:33', '2002-07-24T15:54:33'),
-                          ('2002-07-24T17:35:09', '2002-07-24T17:35:09'),
-                          ('2002-07-24T19:15:45', '2002-07-24T19:15:45'),
-                          ('2002-07-24T20:56:21', '2002-07-24T20:56:21'),
-                          ('2002-07-24T22:36:57', '2002-07-24T22:36:57')],
+        self.assertEqual([('2002-07-24T12:33:21', '2002-07-24T14:13:57'),
+                          ('2002-07-24T14:13:57', '2002-07-24T15:54:33'),
+                          ('2002-07-24T15:54:33', '2002-07-24T17:35:09'),
+                          ('2002-07-24T17:35:09', '2002-07-24T19:15:45'),
+                          ('2002-07-24T19:15:45', '2002-07-24T20:56:21'),
+                          ('2002-07-24T20:56:21', '2002-07-24T22:36:57'),
+                          ('2002-07-24T22:36:57', '2002-07-25T00:17:33')],
                          [(tr[0].isoformat(), tr[1].isoformat()) for tr in time_ranges])
         # get_time_range test for data with days-period
         time_range = (pd.to_datetime('2002-07-04', utc=True), pd.to_datetime('2002-07-27', utc=True))
