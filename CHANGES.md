@@ -1,3 +1,10 @@
+## Changes in 0.9.0 (in development)
+* Version 0.9 now requires xcube 0.9 because of incompatible API changes in the 
+  xcube data store framework.
+* CciOdpCubeOpener has been removed.
+* CciOdpDatasetOpener and CciOdpDataStore now have a new constructor parameter 
+  `normalize`, that may be used to apply normalization steps to the CCI datasets.
+
 ## Changes in 0.8.1
 
 * Fixed an issue that caused that occasionally values returned by open_data consisted 
