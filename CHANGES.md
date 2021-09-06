@@ -3,7 +3,14 @@
   xcube data store framework.
 * CciOdpCubeOpener has been removed.
 * CciOdpDatasetOpener and CciOdpDataStore now have a new constructor parameter 
-  `normalize`, that may be used to apply normalization steps to the CCI datasets.
+  `normalize`, that may be used to apply normalization steps to the CCI 
+  datasets.
+* Set coordinates correctly. All coordinates are present in data descriptions
+  and opened datasets, no coordinates appear as data variables 
+  [#42](https://github.com/dcs4cop/xcube-cci/issues/42).
+* CRS are supported correctly. CRS variables are present in datasets in case 
+  the CRS is different from 'WGS84', the CRS information is provided by the
+  data descriptor [#50](https://github.com/dcs4cop/xcube-cci/issues/50).
 
 ## Changes in 0.8.1
 
