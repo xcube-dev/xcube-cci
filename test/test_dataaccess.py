@@ -106,13 +106,15 @@ class CciOdpDatasetOpenerTest(unittest.TestCase):
         self.assertEqual('esacci.OZONE.mon.L3.NP.multi-sensor.multi-platform.'
                          'MERGED.fv0002.r1', descriptor.data_id)
         self.assertEqual('dataset', str(descriptor.data_type))
-        self.assertEqual(['lon', 'lat', 'layers', 'air_pressure', 'time'],
+        self.assertEqual(['lon', 'lat', 'layers', 'air_pressure', 'time',
+                          'bnds'],
                          list(descriptor.dims.keys()))
         self.assertEqual(360, descriptor.dims['lon'])
         self.assertEqual(180, descriptor.dims['lat'])
         self.assertEqual(16, descriptor.dims['layers'])
         self.assertEqual(17, descriptor.dims['air_pressure'])
         self.assertEqual(36, descriptor.dims['time'])
+        self.assertEqual(2, descriptor.dims['bnds'])
         self.assertEqual(9, len(descriptor.data_vars))
         self.assertTrue('surface_pressure' in descriptor.data_vars)
         self.assertEqual(3, descriptor.data_vars['surface_pressure'].ndim)
@@ -134,11 +136,12 @@ class CciOdpDatasetOpenerTest(unittest.TestCase):
         self.assertEqual('esacci.AEROSOL.day.L3.AAI.multi-sensor.'
                          'multi-platform.MSAAI.1-7.r1', descriptor.data_id)
         self.assertEqual('dataset', str(descriptor.data_type))
-        self.assertEqual(['longitude', 'latitude', 'time'],
+        self.assertEqual(['longitude', 'latitude', 'time', 'bnds'],
                          list(descriptor.dims.keys()))
         self.assertEqual(360, descriptor.dims['longitude'])
         self.assertEqual(180, descriptor.dims['latitude'])
         self.assertEqual(12644, descriptor.dims['time'])
+        self.assertEqual(2, descriptor.dims['bnds'])
         self.assertEqual(3, len(descriptor.data_vars))
         self.assertTrue('absorbing_aerosol_index' in descriptor.data_vars)
         self.assertEqual(3,
@@ -301,10 +304,12 @@ class CciOdpDatasetOpenerNormalizeTest(unittest.TestCase):
         self.assertIsInstance(descriptor, DatasetDescriptor)
         self.assertEqual('esacci.AEROSOL.day.L3.AAI.multi-sensor.multi-platform.MSAAI.1-7.r1', descriptor.data_id)
         self.assertEqual('dataset', str(descriptor.data_type))
-        self.assertEqual(['lat', 'lon', 'time'], list(descriptor.dims.keys()))
+        self.assertEqual(['lat', 'lon', 'time', 'bnds'],
+                         list(descriptor.dims.keys()))
         self.assertEqual(360, descriptor.dims['lon'])
         self.assertEqual(180, descriptor.dims['lat'])
         self.assertEqual(12644, descriptor.dims['time'])
+        self.assertEqual(2, descriptor.dims['bnds'])
         self.assertEqual(3, len(descriptor.data_vars))
         self.assertTrue('absorbing_aerosol_index' in descriptor.data_vars)
         self.assertEqual(3, descriptor.data_vars['absorbing_aerosol_index'].ndim)

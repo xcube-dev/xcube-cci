@@ -124,6 +124,14 @@ class CciOdpDataOpener(DataOpener):
             dims['time'] = ds_metadata.get('time_dimension_size')
         else:
             dims['time'] *= ds_metadata.get('time_dimension_size')
+        bounds_dim_name = None
+        for dim_name, dim_size in dims.items():
+            if dim_size == 2:
+                bounds_dim_name = dim_name
+                break
+        if not bounds_dim_name:
+            bounds_dim_name = 'bnds'
+            dims['bnds'] = 2
         temporal_resolution = _get_temporal_resolution_from_id(data_id)
         dataset_info = self._cci_odp.get_dataset_info(data_id, ds_metadata)
         spatial_resolution = dataset_info['y_res']
@@ -139,7 +147,8 @@ class CciOdpDataOpener(DataOpener):
         coord_descriptors = self._get_variable_descriptors(dataset_info['coord_names'],
                                                            var_infos,
                                                            normalize_dims=False)
-        if 'time' not in coord_descriptors.keys() and 't' not in coord_descriptors.keys():
+        if 'time' not in coord_descriptors.keys() and \
+                't' not in coord_descriptors.keys():
             time_attrs = {
                 "units": "seconds since 1970-01-01T00:00:00Z",
                 "calendar": "proleptic_gregorian",
@@ -149,6 +158,20 @@ class CciOdpDataOpener(DataOpener):
                                                            dtype='int64',
                                                            dims=('time',),
                                                            attrs=time_attrs)
+        if 'time_bnds' in coord_descriptors.keys():
+            coord_descriptors.pop('time_bnds')
+        if 'time_bounds' in coord_descriptors.keys():
+            coord_descriptors.pop('time_bnds')
+        time_bnds_attrs = {
+            "units": "seconds since 1970-01-01T00:00:00Z",
+            "calendar": "proleptic_gregorian",
+            "standard_name": "time_bnds",
+        }
+        coord_descriptors['time_bnds'] = \
+            VariableDescriptor('time_bnds',
+                               dtype='int64',
+                               dims=('time', bounds_dim_name),
+                               attrs=time_bnds_attrs)
 
         if 'variables' in ds_metadata:
             ds_metadata.pop('variables')
