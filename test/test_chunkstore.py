@@ -2,6 +2,7 @@ import numpy
 import os
 import pandas as pd
 import unittest
+import xarray as xr
 
 from unittest import skipIf
 
@@ -35,63 +36,86 @@ class CciChunkStoreTest(unittest.TestCase):
                           'O3e_du_tot', 'O3_du_tot', 'O3_ndens', 'O3_du', 'O3_vmr'],
                          store._variable_names)
 
-    @skipIf(os.environ.get('XCUBE_DISABLE_WEB_TESTS', None) == '1', 'XCUBE_DISABLE_WEB_TESTS = 1')
+    @skipIf(os.environ.get('XCUBE_DISABLE_WEB_TESTS', None) == '1',
+            'XCUBE_DISABLE_WEB_TESTS = 1')
     def test_chunk_store_with_region_constraint(self):
         cci_odp = CciOdp()
-        dataset_id = 'esacci.OZONE.mon.L3.NP.multi-sensor.multi-platform.MERGED.fv0002.r1'
+        dataset_id = 'esacci.OZONE.mon.L3.NP.multi-sensor.multi-platform.' \
+                     'MERGED.fv0002.r1'
         cube_params = dict(bbox=[-10, 5, 0, 10])
         store = CciChunkStore(cci_odp, dataset_id, cube_params=cube_params)
         self.assertIsNotNone(store)
-        self.assertEqual(10, store._dimension_data['lon']['size'])
-        self.assertEqual(10, store._dimension_data['lon']['chunkSize'])
-        self.assertListEqual([-9.5, -8.5, -7.5, -6.5, -5.5, -4.5, -3.5, -2.5, -1.5, -0.5],
-                             list(store._dimension_data['lon']['data']))
-        self.assertEqual(5, store._dimension_data['lat']['size'])
-        self.assertEqual(5, store._dimension_data['lat']['chunkSize'])
-        self.assertListEqual([5.5, 6.5, 7.5, 8.5, 9.5], list(store._dimension_data['lat']['data']))
 
-    @skipIf(os.environ.get('XCUBE_DISABLE_WEB_TESTS', None) == '1', 'XCUBE_DISABLE_WEB_TESTS = 1')
+        ds = xr.open_zarr(store)
+
+        self.assertEqual(10, ds.lon.size)
+        self.assertEqual(10, ds.lon.chunk_sizes)
+        self.assertListEqual(
+            [-9.5, -8.5, -7.5, -6.5, -5.5, -4.5, -3.5, -2.5, -1.5, -0.5],
+            list(ds.lon.values))
+
+        self.assertEqual(5, ds.lat.size)
+        self.assertEqual(5, ds.lat.chunk_sizes)
+        self.assertListEqual([5.5, 6.5, 7.5, 8.5, 9.5], list(ds.lat.values))
+
+        self.assertEqual(['time', 'layers', 'lat', 'lon'],
+                         ds.O3_du.dimensions)
+        self.assertEqual((144, 16, 5, 10), ds.O3_du.shape)
+
+    @skipIf(os.environ.get('XCUBE_DISABLE_WEB_TESTS', None) == '1',
+            'XCUBE_DISABLE_WEB_TESTS = 1')
     def test_get_time_ranges(self):
         store = self._get_test_store()
-        time_range = (pd.to_datetime('2010-02-10', utc=True), pd.to_datetime('2010-05-20', utc=True))
+        time_range = (pd.to_datetime('2010-02-10', utc=True),
+                      pd.to_datetime('2010-05-20', utc=True))
         cube_params = dict(time_range=time_range)
         time_ranges = store.get_time_ranges(
-            'esacci.OZONE.mon.L3.NP.multi-sensor.multi-platform.MERGED.fv0002.r1', cube_params)
+            'esacci.OZONE.mon.L3.NP.multi-sensor.multi-platform.MERGED.'
+            'fv0002.r1', cube_params)
         self.assertEqual([('2010-02-01T00:00:00', '2010-03-01T00:00:00'),
                           ('2010-03-01T00:00:00', '2010-04-01T00:00:00'),
                           ('2010-04-01T00:00:00', '2010-05-01T00:00:00'),
                           ('2010-05-01T00:00:00', '2010-06-01T00:00:00')],
-                         [(tr[0].isoformat(), tr[1].isoformat()) for tr in time_ranges])
+                         [(tr[0].isoformat(), tr[1].isoformat())
+                          for tr in time_ranges])
         # get_time_range test for satellite-orbit-frequency data
-        time_range = (pd.to_datetime('2002-07-24', utc=True), pd.to_datetime('2002-07-24', utc=True))
+        time_range = (pd.to_datetime('2002-07-24', utc=True),
+                      pd.to_datetime('2002-07-24', utc=True))
         cube_params = dict(time_range=time_range)
         time_ranges = store.get_time_ranges(
-            'esacci.SST.satellite-orbit-frequency.L3U.SSTskin.AATSR.Envisat.AATSR.2-1.r1', cube_params)
-        self.assertEqual([('2002-07-24T12:33:21', '2002-07-24T12:33:21'),
-                          ('2002-07-24T14:13:57', '2002-07-24T14:13:57'),
-                          ('2002-07-24T15:54:33', '2002-07-24T15:54:33'),
-                          ('2002-07-24T17:35:09', '2002-07-24T17:35:09'),
-                          ('2002-07-24T19:15:45', '2002-07-24T19:15:45'),
-                          ('2002-07-24T20:56:21', '2002-07-24T20:56:21'),
-                          ('2002-07-24T22:36:57', '2002-07-24T22:36:57')],
-                         [(tr[0].isoformat(), tr[1].isoformat()) for tr in time_ranges])
+            'esacci.SST.satellite-orbit-frequency.L3U.SSTskin.AATSR.'
+            'Envisat.AATSR.2-1.r1', cube_params)
+        self.assertEqual([('2002-07-24T12:33:21', '2002-07-24T14:13:57'),
+                          ('2002-07-24T14:13:57', '2002-07-24T15:54:33'),
+                          ('2002-07-24T15:54:33', '2002-07-24T17:35:09'),
+                          ('2002-07-24T17:35:09', '2002-07-24T19:15:45'),
+                          ('2002-07-24T19:15:45', '2002-07-24T20:56:21'),
+                          ('2002-07-24T20:56:21', '2002-07-24T22:36:57'),
+                          ('2002-07-24T22:36:57', '2002-07-25T00:17:33')],
+                         [(tr[0].isoformat(), tr[1].isoformat())
+                          for tr in time_ranges])
         # get_time_range test for data with days-period
-        time_range = (pd.to_datetime('2002-07-04', utc=True), pd.to_datetime('2002-07-27', utc=True))
+        time_range = (pd.to_datetime('2002-07-04', utc=True),
+                      pd.to_datetime('2002-07-27', utc=True))
         cube_params = dict(time_range=time_range)
         time_ranges = store.get_time_ranges(
-            'esacci.OC.5-days.L3S.OC_PRODUCTS.multi-sensor.multi-platform.MERGED.4-2.sinusoidal', cube_params)
+            'esacci.OC.5-days.L3S.OC_PRODUCTS.multi-sensor.multi-platform.'
+            'MERGED.4-2.sinusoidal', cube_params)
         self.assertEqual([('2002-06-30T00:00:00', '2002-07-04T23:59:00'),
                           ('2002-07-05T00:00:00', '2002-07-09T23:59:00'),
                           ('2002-07-10T00:00:00', '2002-07-14T23:59:00'),
                           ('2002-07-15T00:00:00', '2002-07-19T23:59:00'),
                           ('2002-07-20T00:00:00', '2002-07-24T23:59:00'),
                           ('2002-07-25T00:00:00', '2002-07-29T23:59:00')],
-                         [(tr[0].isoformat(), tr[1].isoformat()) for tr in time_ranges])
+                         [(tr[0].isoformat(), tr[1].isoformat())
+                          for tr in time_ranges])
         # get_time_range test for data with day-period
-        time_range = (pd.to_datetime('2002-07-04', utc=True), pd.to_datetime('2002-07-09', utc=True))
+        time_range = (pd.to_datetime('2002-07-04', utc=True),
+                      pd.to_datetime('2002-07-09', utc=True))
         cube_params = dict(time_range=time_range)
         time_ranges = store.get_time_ranges(
-            'esacci.SEAICE.day.L4.SICONC.multi-sensor.multi-platform.AMSR_50kmEASE2.2-1.NH',
+            'esacci.SEAICE.day.L4.SICONC.multi-sensor.multi-platform.'
+            'AMSR_50kmEASE2.2-1.NH',
             cube_params)
         self.assertEqual([('2002-07-04T00:00:00', '2002-07-05T00:00:00'),
                           ('2002-07-05T00:00:00', '2002-07-06T00:00:00'),
@@ -99,7 +123,8 @@ class CciChunkStoreTest(unittest.TestCase):
                           ('2002-07-07T00:00:00', '2002-07-08T00:00:00'),
                           ('2002-07-08T00:00:00', '2002-07-09T00:00:00'),
                           ('2002-07-09T00:00:00', '2002-07-10T00:00:00')],
-                         [(tr[0].isoformat(), tr[1].isoformat()) for tr in time_ranges])
+                         [(tr[0].isoformat(), tr[1].isoformat())
+                          for tr in time_ranges])
 
     @skipIf(os.environ.get('XCUBE_DISABLE_WEB_TESTS', None) == '1', 'XCUBE_DISABLE_WEB_TESTS = 1')
     def test_get_dimension_indexes_for_chunk(self):

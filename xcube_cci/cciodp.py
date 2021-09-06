@@ -31,6 +31,7 @@ import os
 import random
 import re
 import pandas as pd
+import pyproj
 import time
 import urllib.parse
 import warnings
@@ -43,6 +44,7 @@ from xcube_cci.constants import DEFAULT_NUM_RETRIES
 from xcube_cci.constants import DEFAULT_RETRY_BACKOFF_MAX
 from xcube_cci.constants import DEFAULT_RETRY_BACKOFF_BASE
 from xcube_cci.constants import OPENSEARCH_CEDA_URL
+from xcube_cci.constants import STANDARD_COORD_VAR_NAMES
 from xcube_cci.timeutil import get_timestrings_from_string
 
 from pydap.handlers.dap import BaseProxy
@@ -361,6 +363,7 @@ def _get_res(nc_attrs: dict, dim: str) -> float:
 class CciOdpWarning(Warning):
     pass
 
+
 class CciOdp:
     """
     Represents the ESA CCI Open Data Portal
@@ -424,16 +427,38 @@ class CciOdp:
         if not dataset_metadata:
             dataset_metadata = self.get_dataset_metadata(dataset_id)
         nc_attrs = dataset_metadata.get('attributes', {}).get('NC_GLOBAL', {})
-        data_info['lat_res'] = _get_res(nc_attrs, 'lat')
-        data_info['lon_res'] = _get_res(nc_attrs, 'lon')
+        data_info['crs'] = \
+            self._get_crs(dataset_metadata.get('variable_infos', {}))
+        data_info['y_res'] = _get_res(nc_attrs, 'lat')
+        data_info['x_res'] = _get_res(nc_attrs, 'lon')
         data_info['bbox'] = (float(dataset_metadata['bbox_minx']),
                              float(dataset_metadata['bbox_miny']),
                              float(dataset_metadata['bbox_maxx']),
                              float(dataset_metadata['bbox_maxy']))
-        data_info['temporal_coverage_start'] = dataset_metadata.get('temporal_coverage_start', '')
-        data_info['temporal_coverage_end'] = dataset_metadata.get('temporal_coverage_end', '')
-        data_info['var_names'], data_info['coord_names'] = self.var_and_coord_names(dataset_id)
+        data_info['temporal_coverage_start'] = \
+            dataset_metadata.get('temporal_coverage_start', '')
+        data_info['temporal_coverage_end'] = \
+            dataset_metadata.get('temporal_coverage_end', '')
+        data_info['var_names'], data_info['coord_names'] = \
+            self.var_and_coord_names(dataset_id)
         return data_info
+
+    @staticmethod
+    def _get_crs(variable_infos: dict) -> str:
+        crs = None
+        for var_attrs in variable_infos.values():
+            if 'grid_mapping_name' in var_attrs:
+                crs = pyproj.crs.CRS.from_cf(var_attrs)
+                break
+        if crs:
+            epsg_code = crs.to_epsg()
+            if not epsg_code:
+                if crs.coordinate_operation:
+                    if crs.coordinate_operation.method_auth_name == 'EPSG':
+                        epsg_code = crs.coordinate_operation.method_code
+            if epsg_code:
+                return f'EPSG:{epsg_code}'
+        return 'WGS84'
 
     def get_dataset_metadata(self, dataset_id: str) -> dict:
         return self.get_datasets_metadata([dataset_id])[0]
@@ -550,7 +575,8 @@ class CciOdp:
                                        data_source)
 
     @staticmethod
-    def _get_data_var_and_coord_names(data_source) -> Tuple[List[str], List[str]]:
+    def _get_data_var_and_coord_names(data_source) \
+            -> Tuple[List[str], List[str]]:
         names_of_dims = list(data_source['dimensions'].keys())
         variable_infos = data_source['variable_infos']
         variables = []
@@ -560,12 +586,12 @@ class CciOdp:
                 coords.append(variable)
             elif variable.endswith('bounds') or variable.endswith('bnds'):
                 coords.append(variable)
-            elif len(variable_infos[variable]['dimensions']) == 0 or \
-                    variable_infos[variable]['size'] < 2:
+            elif variable in STANDARD_COORD_VAR_NAMES:
                 coords.append(variable)
-            elif variable_infos[variable].get('data_type', '') not in \
-                    ['uint8', 'uint16', 'uint32', 'int8', 'int16', 'int32', 'float32', 'float64']:
-                coords.append(variable)
+            elif variable_infos[variable].get('data_type', '') == 'bytes1024' \
+                and len(variable_infos[variable]['dimensions']) > 0:
+                # add as neither coordinate nor variable
+                continue
             else:
                 variables.append(variable)
         return variables, coords
@@ -697,19 +723,27 @@ class CciOdp:
 
     @staticmethod
     def _get_datetime_from_string(time_as_string: str) -> datetime:
-        time_format, start, end, timedelta = find_datetime_format(time_as_string)
+        time_format, start, end, timedelta = \
+            find_datetime_format(time_as_string)
         return datetime.strptime(time_as_string[start:end], time_format)
 
     def get_variable_data(self, dataset_name: str,
-                          dimension_names: Dict[str, int],
+                          variable_dict: Dict[str, int],
                           start_time: str = '1900-01-01T00:00:00',
                           end_time: str = '3001-12-31T00:00:00'):
-        dimension_data = self._run_with_session(self._get_var_data, dataset_name, dimension_names,
-                                                start_time, end_time)
+        dimension_data = self._run_with_session(self._get_var_data,
+                                                dataset_name,
+                                                variable_dict,
+                                                start_time,
+                                                end_time)
         return dimension_data
 
-    async def _get_var_data(self, session, dataset_name: str, variable_names: Dict[str, int],
-                            start_time: str, end_time: str):
+    async def _get_var_data(self,
+                            session,
+                            dataset_name: str,
+                            variable_dict: Dict[str, int],
+                            start_time: str,
+                            end_time: str):
         dataset_id = await self._get_dataset_id(session, dataset_name)
         request = dict(parentIdentifier=dataset_id,
                        startDate=start_time,
@@ -723,14 +757,17 @@ class CciOdp:
         dataset = await self._get_opendap_dataset(session, opendap_url)
         if not dataset:
             return var_data
-        for var_name in variable_names:
+        for var_name in variable_dict:
             if var_name in dataset:
-                var_data[var_name] = \
-                    dict(size=dataset[var_name].size,
-                         chunkSize=dataset[var_name].attributes.get('_ChunkSizes'))
+                var_data[var_name] = dict(size=dataset[var_name].size,
+                                          chunkSize=dataset[var_name].
+                                          attributes.get('_ChunkSizes'))
                 if dataset[var_name].size < 512 * 512:
-                    data = await self._get_data_from_opendap_dataset(dataset, session, var_name,
-                                                                     (slice(None, None, None),))
+                    data = await self._get_data_from_opendap_dataset(
+                        dataset,
+                        session,
+                        var_name,
+                        (slice(None, None, None),))
                     if data is None:
                         var_data[var_name]['data'] = []
                     else:
@@ -738,9 +775,10 @@ class CciOdp:
                 else:
                     var_data[var_name]['data'] = []
             else:
-                var_data[var_name] = dict(size=variable_names[var_name],
-                                          chunkSize=variable_names[var_name],
-                                          data=list(range(variable_names[var_name])))
+                var_data[var_name] = dict(
+                    size=variable_dict[var_name],
+                    chunkSize=variable_dict[var_name],
+                    data=list(range(variable_dict[var_name])))
         return var_data
 
     async def _get_feature_list(self, session, request):

@@ -23,7 +23,8 @@ class TestNormalize(TestCase):
         self.assertEqual(dims_1, normalize_dims_description(dims_5))
 
         dims_6 = dict(latitude=1, dhft=2, time=4)
-        self.assertEqual(dict(lat=1, dhft=2, time=4), normalize_dims_description(dims_6))
+        self.assertEqual(dict(lat=1, dhft=2, time=4),
+                         normalize_dims_description(dims_6))
 
     def test_normalize_variable_dims_description(self):
         dims_1 = ['time', 'lat', 'lon']
@@ -47,7 +48,9 @@ class TestNormalize(TestCase):
                          normalize_variable_dims_description(dims_6))
 
         dims_7 = ['lat', 'gyfdvtz', 'time']
-        self.assertIsNone(normalize_variable_dims_description(dims_7))
+        self.assertEqual(['lat', 'gyfdvtz', 'time'],
+                         normalize_variable_dims_description(dims_7))
 
         dims_8 = ['gyfdvtz']
-        self.assertIsNone(normalize_variable_dims_description(dims_8))
+        self.assertEqual(['gyfdvtz'],
+                         normalize_variable_dims_description(dims_8))

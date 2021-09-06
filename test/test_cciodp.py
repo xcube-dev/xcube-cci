@@ -76,17 +76,20 @@ class CciOdpTest(unittest.TestCase):
             'AVHRR19_G.2-1.r1'
             in dataset_names)
 
-    @skipIf(os.environ.get('XCUBE_DISABLE_WEB_TESTS', None) == '1', 'XCUBE_DISABLE_WEB_TESTS = 1')
+    @skipIf(os.environ.get('XCUBE_DISABLE_WEB_TESTS', None) == '1',
+            'XCUBE_DISABLE_WEB_TESTS = 1')
     def test_var_and_coord_names(self):
         cci_odp = CciOdp()
         var_names, coord_names = cci_odp.var_and_coord_names(
-            'esacci.OC.mon.L3S.K_490.multi-sensor.multi-platform.MERGED.3-1.geographic')
+            'esacci.OC.mon.L3S.K_490.multi-sensor.multi-platform.'
+            'MERGED.3-1.geographic')
         self.assertIsNotNone(var_names)
-        self.assertEqual(['MERIS_nobs_sum', 'MODISA_nobs_sum', 'SeaWiFS_nobs_sum',
-                          'VIIRS_nobs_sum', 'kd_490', 'kd_490_bias', 'kd_490_rmsd',
-                          'total_nobs_sum'], var_names)
+        self.assertEqual(['MERIS_nobs_sum', 'MODISA_nobs_sum',
+                          'SeaWiFS_nobs_sum', 'VIIRS_nobs_sum', 'crs', 'kd_490',
+                          'kd_490_bias', 'kd_490_rmsd', 'total_nobs_sum'],
+                         var_names)
         self.assertIsNotNone(coord_names)
-        self.assertEqual(['crs', 'lat', 'lon', 'time'], coord_names)
+        self.assertEqual(['lat', 'lon', 'time'], coord_names)
 
     @skipIf(os.environ.get('XCUBE_DISABLE_WEB_TESTS', None) == '1', 'XCUBE_DISABLE_WEB_TESTS = 1')
     def test_get_dataset_info(self):
@@ -94,10 +97,10 @@ class CciOdpTest(unittest.TestCase):
         dataset_info = cci_odp.get_dataset_info(
             'esacci.CLOUD.mon.L3C.CLD_PRODUCTS.MODIS.Terra.MODIS_TERRA.2-0.r1')
         self.assertIsNotNone(dataset_info)
-        self.assertTrue('lat_res' in dataset_info)
-        self.assertEqual(0.5, dataset_info['lat_res'])
-        self.assertTrue('lon_res' in dataset_info)
-        self.assertEqual(0.5, dataset_info['lon_res'])
+        self.assertTrue('y_res' in dataset_info)
+        self.assertEqual(0.5, dataset_info['y_res'])
+        self.assertTrue('x_res' in dataset_info)
+        self.assertEqual(0.5, dataset_info['x_res'])
         self.assertTrue('bbox' in dataset_info)
         self.assertEqual((-180.0, -90.0, 180.0, 90.0), dataset_info['bbox'])
         self.assertTrue('var_names' in dataset_info)

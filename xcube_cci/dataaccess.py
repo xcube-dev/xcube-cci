@@ -115,7 +115,9 @@ class CciOdpDataOpener(DataOpener):
             raise DataStoreError(f'Cannot describe metadata. "{data_id}" does not seem to be a valid identifier.')
 
     # noinspection PyArgumentList
-    def _get_data_descriptor_from_metadata(self, data_id: str, metadata: dict) -> DatasetDescriptor:
+    def _get_data_descriptor_from_metadata(self,
+                                           data_id: str,
+                                           metadata: dict) -> DatasetDescriptor:
         ds_metadata = metadata.copy()
         dims = self._normalize_dims(ds_metadata.get('dimensions', {}))
         if 'time' not in dims:
@@ -124,10 +126,11 @@ class CciOdpDataOpener(DataOpener):
             dims['time'] *= ds_metadata.get('time_dimension_size')
         temporal_resolution = _get_temporal_resolution_from_id(data_id)
         dataset_info = self._cci_odp.get_dataset_info(data_id, ds_metadata)
-        spatial_resolution = dataset_info['lat_res']
+        spatial_resolution = dataset_info['y_res']
         if spatial_resolution <= 0:
             spatial_resolution = None
         bbox = dataset_info['bbox']
+        crs = dataset_info['crs']
         # only use date parts of times
         temporal_coverage = (dataset_info['temporal_coverage_start'].split('T')[0],
                              dataset_info['temporal_coverage_end'].split('T')[0])
@@ -157,6 +160,7 @@ class CciOdpDataOpener(DataOpener):
         self._remove_irrelevant_metadata_attributes(attrs)
         descriptor = DatasetDescriptor(data_id,
                                        data_type=self._data_type,
+                                       crs=crs,
                                        dims=dims,
                                        coords=coord_descriptors,
                                        data_vars=var_descriptors,
@@ -219,8 +223,10 @@ class CciOdpDataOpener(DataOpener):
                 enum=dsd.data_vars.keys() if dsd and dsd.data_vars else None)),
             time_range=JsonDateSchema.new_range(min_date, max_date)
         )
-        if dsd and (('lat' in dsd.dims and 'lon' in dsd.dims) or
-                    ('latitude' in dsd.dims and 'longitude' in dsd.dims)):
+        if dsd and \
+                dsd.crs == 'WGS84' and \
+                (('lat' in dsd.dims and 'lon' in dsd.dims) or
+                 ('latitude' in dsd.dims and 'longitude' in dsd.dims)):
             min_lon = dsd.bbox[0] if dsd and dsd.bbox else -180
             min_lat = dsd.bbox[1] if dsd and dsd.bbox else -90
             max_lon = dsd.bbox[2] if dsd and dsd.bbox else 180
@@ -275,7 +281,7 @@ class CciOdpDataOpener(DataOpener):
         if self._normalize_data:
             return normalize_variable_dims_description(var_dims)
         new_var_dims = var_dims.copy()
-        if 'time' not in new_var_dims:
+        if 'time' not in new_var_dims and len(new_var_dims) > 0:
             new_var_dims.insert(0, 'time')
         return new_var_dims
 
