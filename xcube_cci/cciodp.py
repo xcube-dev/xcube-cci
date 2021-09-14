@@ -451,13 +451,18 @@ class CciOdp:
                 crs = pyproj.crs.CRS.from_cf(var_attrs)
                 break
         if crs:
-            epsg_code = crs.to_epsg()
-            if not epsg_code:
-                if crs.coordinate_operation:
-                    if crs.coordinate_operation.method_auth_name == 'EPSG':
-                        epsg_code = crs.coordinate_operation.method_code
-            if epsg_code:
-                return f'EPSG:{epsg_code}'
+            if crs.name != 'undefined':
+                return crs.name
+            crs_authority = crs.to_authority()
+            if crs_authority:
+                return f'{crs_authority[0]}:{crs_authority[1]}'
+            if crs.coordinate_operation:
+                if crs.coordinate_operation.method_name:
+                    return crs.coordinate_operation.method_name
+                if crs.coordinate_operation.method_auth_name and \
+                        crs.coordinate_operation.method_code:
+                    return f'{crs.coordinate_operation.method_auth_name}:' \
+                           f'{crs.coordinate_operation.method_code}'
         return 'WGS84'
 
     def get_dataset_metadata(self, dataset_id: str) -> dict:

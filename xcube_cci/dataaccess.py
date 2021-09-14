@@ -23,6 +23,7 @@ import json
 import os
 from typing import Any, Iterator, List, Tuple, Optional, Dict, Union, Container
 
+import pyproj
 import xarray as xr
 import zarr
 
@@ -246,20 +247,22 @@ class CciOdpDataOpener(DataOpener):
                 enum=dsd.data_vars.keys() if dsd and dsd.data_vars else None)),
             time_range=JsonDateSchema.new_range(min_date, max_date)
         )
-        if dsd and \
-                dsd.crs == 'WGS84' and \
-                (('lat' in dsd.dims and 'lon' in dsd.dims) or
-                 ('latitude' in dsd.dims and 'longitude' in dsd.dims)):
-            min_lon = dsd.bbox[0] if dsd and dsd.bbox else -180
-            min_lat = dsd.bbox[1] if dsd and dsd.bbox else -90
-            max_lon = dsd.bbox[2] if dsd and dsd.bbox else 180
-            max_lat = dsd.bbox[3] if dsd and dsd.bbox else 90
-            bbox = JsonArraySchema(items=(
-                JsonNumberSchema(minimum=min_lon, maximum=max_lon),
-                JsonNumberSchema(minimum=min_lat, maximum=max_lat),
-                JsonNumberSchema(minimum=min_lon, maximum=max_lon),
-                JsonNumberSchema(minimum=min_lat, maximum=max_lat)))
-            dataset_params['bbox'] = bbox
+        if dsd:
+            try:
+                if pyproj.CRS.from_string(dsd.crs).is_geographic:
+                    min_lon = dsd.bbox[0] if dsd and dsd.bbox else -180
+                    min_lat = dsd.bbox[1] if dsd and dsd.bbox else -90
+                    max_lon = dsd.bbox[2] if dsd and dsd.bbox else 180
+                    max_lat = dsd.bbox[3] if dsd and dsd.bbox else 90
+                    bbox = JsonArraySchema(items=(
+                        JsonNumberSchema(minimum=min_lon, maximum=max_lon),
+                        JsonNumberSchema(minimum=min_lat, maximum=max_lat),
+                        JsonNumberSchema(minimum=min_lon, maximum=max_lon),
+                        JsonNumberSchema(minimum=min_lat, maximum=max_lat)))
+                    dataset_params['bbox'] = bbox
+            except pyproj.exceptions.CRSError:
+                # do not set bbox then
+                pass
         cci_schema = JsonObjectSchema(
             properties=dict(**dataset_params),
             required=[

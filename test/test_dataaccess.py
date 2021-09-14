@@ -4,6 +4,7 @@ import unittest
 from unittest import skip
 from unittest import skipIf
 
+from xcube.core.gridmapping import GridMapping
 from xcube.core.normalize import normalize_dataset
 from xcube.core.store import DataStoreError, DATASET_TYPE
 from xcube.core.store.descriptor import DatasetDescriptor
@@ -93,7 +94,7 @@ class CciOdpDatasetOpenerTest(unittest.TestCase):
         self.assertTrue('lon' in descriptor.coords.keys())
         self.assertTrue('xc' in descriptor.coords.keys())
         self.assertTrue('yc' in descriptor.coords.keys())
-        self.assertEqual('EPSG:9820', descriptor.crs)
+        self.assertEqual('Lambert Azimuthal Equal Area', descriptor.crs)
 
     @skipIf(os.environ.get('XCUBE_DISABLE_WEB_TESTS', None) == '1',
             'XCUBE_DISABLE_WEB_TESTS = 1')
@@ -204,6 +205,10 @@ class CciOdpDatasetOpenerTest(unittest.TestCase):
         self.assertIsNotNone(dataset)
         self.assertTrue('crs' in dataset.data_vars.keys())
         self.assertTrue('grid_mapping_name' in dataset['crs'].attrs)
+
+        grid_mapping = GridMapping.from_dataset(dataset)
+        self.assertIsNotNone(grid_mapping)
+
 
     @skipIf(os.environ.get('XCUBE_DISABLE_WEB_TESTS', None) == '1', 'XCUBE_DISABLE_WEB_TESTS = 1')
     @skip('Disabled while time series are not supported')
