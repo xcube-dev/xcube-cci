@@ -21,7 +21,7 @@
 
 from typing import List
 from typing import Optional
-from .constants import STANDARD_COORD_VAR_NAMES
+from .constants import COMMON_COORD_VAR_NAMES
 
 
 def normalize_dims_description(dims: dict) -> dict:
@@ -57,7 +57,7 @@ def normalize_variable_dims_description(var_dims: List[str]) -> Optional[List[st
         if var_dims != ['time', y_dim_name, x_dim_name]:
             other_dims = []
             for dim in var_dims:
-                if dim not in STANDARD_COORD_VAR_NAMES:
+                if dim not in COMMON_COORD_VAR_NAMES:
                     other_dims.append(dim)
             new_dims = ['time', y_dim_name, x_dim_name]
             for i in range(len(other_dims)):

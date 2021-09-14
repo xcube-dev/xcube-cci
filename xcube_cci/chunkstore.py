@@ -36,7 +36,7 @@ import numpy as np
 import pandas as pd
 
 from .cciodp import CciOdp
-from .constants import STANDARD_COORD_VAR_NAMES
+from .constants import COMMON_COORD_VAR_NAMES
 
 _STATIC_ARRAY_COMPRESSOR_PARAMS = dict(cname='zstd', clevel=1, shuffle=Blosc.SHUFFLE, blocksize=0)
 _STATIC_ARRAY_COMPRESSOR_CONFIG = dict(id='blosc', **_STATIC_ARRAY_COMPRESSOR_PARAMS)
@@ -175,7 +175,7 @@ class RemoteChunkStore(MutableMapping, metaclass=ABCMeta):
         self._add_static_array('time_bnds', t_bnds_array, time_bnds_attrs)
 
         coordinate_names = [coord for coord in coords_data.keys()
-                            if coord not in STANDARD_COORD_VAR_NAMES]
+                            if coord not in COMMON_COORD_VAR_NAMES]
         coordinate_names = ' '.join(coordinate_names)
 
         global_attrs = dict(

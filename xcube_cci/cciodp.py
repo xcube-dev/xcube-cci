@@ -44,7 +44,7 @@ from xcube_cci.constants import DEFAULT_NUM_RETRIES
 from xcube_cci.constants import DEFAULT_RETRY_BACKOFF_MAX
 from xcube_cci.constants import DEFAULT_RETRY_BACKOFF_BASE
 from xcube_cci.constants import OPENSEARCH_CEDA_URL
-from xcube_cci.constants import STANDARD_COORD_VAR_NAMES
+from xcube_cci.constants import COMMON_COORD_VAR_NAMES
 from xcube_cci.timeutil import get_timestrings_from_string
 
 from pydap.handlers.dap import BaseProxy
@@ -586,7 +586,7 @@ class CciOdp:
                 coords.append(variable)
             elif variable.endswith('bounds') or variable.endswith('bnds'):
                 coords.append(variable)
-            elif variable in STANDARD_COORD_VAR_NAMES:
+            elif variable in COMMON_COORD_VAR_NAMES:
                 coords.append(variable)
             elif variable_infos[variable].get('data_type', '') == 'bytes1024' \
                 and len(variable_infos[variable]['dimensions']) > 0:
