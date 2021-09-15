@@ -207,7 +207,8 @@ class CciOdpDatasetOpenerTest(unittest.TestCase):
         self.assertTrue('grid_mapping_name' in dataset['crs'].attrs)
 
         grid_mapping = GridMapping.from_dataset(dataset)
-        self.assertIsNotNone(grid_mapping)
+        self.assertEqual(('x', 'y'), grid_mapping.xy_var_names)
+        self.assertEqual((3200, 5400), grid_mapping.size)
 
 
     @skipIf(os.environ.get('XCUBE_DISABLE_WEB_TESTS', None) == '1', 'XCUBE_DISABLE_WEB_TESTS = 1')
