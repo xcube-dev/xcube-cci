@@ -23,6 +23,7 @@ import json
 import os
 from typing import Any, Iterator, List, Tuple, Optional, Dict, Union, Container
 
+import pyproj
 import xarray as xr
 import zarr
 
@@ -115,19 +116,30 @@ class CciOdpDataOpener(DataOpener):
             raise DataStoreError(f'Cannot describe metadata. "{data_id}" does not seem to be a valid identifier.')
 
     # noinspection PyArgumentList
-    def _get_data_descriptor_from_metadata(self, data_id: str, metadata: dict) -> DatasetDescriptor:
+    def _get_data_descriptor_from_metadata(self,
+                                           data_id: str,
+                                           metadata: dict) -> DatasetDescriptor:
         ds_metadata = metadata.copy()
         dims = self._normalize_dims(ds_metadata.get('dimensions', {}))
         if 'time' not in dims:
             dims['time'] = ds_metadata.get('time_dimension_size')
         else:
             dims['time'] *= ds_metadata.get('time_dimension_size')
+        bounds_dim_name = None
+        for dim_name, dim_size in dims.items():
+            if dim_size == 2:
+                bounds_dim_name = dim_name
+                break
+        if not bounds_dim_name:
+            bounds_dim_name = 'bnds'
+            dims['bnds'] = 2
         temporal_resolution = _get_temporal_resolution_from_id(data_id)
         dataset_info = self._cci_odp.get_dataset_info(data_id, ds_metadata)
-        spatial_resolution = dataset_info['lat_res']
+        spatial_resolution = dataset_info['y_res']
         if spatial_resolution <= 0:
             spatial_resolution = None
         bbox = dataset_info['bbox']
+        crs = dataset_info['crs']
         # only use date parts of times
         temporal_coverage = (dataset_info['temporal_coverage_start'].split('T')[0],
                              dataset_info['temporal_coverage_end'].split('T')[0])
@@ -136,7 +148,8 @@ class CciOdpDataOpener(DataOpener):
         coord_descriptors = self._get_variable_descriptors(dataset_info['coord_names'],
                                                            var_infos,
                                                            normalize_dims=False)
-        if 'time' not in coord_descriptors.keys() and 't' not in coord_descriptors.keys():
+        if 'time' not in coord_descriptors.keys() and \
+                't' not in coord_descriptors.keys():
             time_attrs = {
                 "units": "seconds since 1970-01-01T00:00:00Z",
                 "calendar": "proleptic_gregorian",
@@ -146,6 +159,20 @@ class CciOdpDataOpener(DataOpener):
                                                            dtype='int64',
                                                            dims=('time',),
                                                            attrs=time_attrs)
+        if 'time_bnds' in coord_descriptors.keys():
+            coord_descriptors.pop('time_bnds')
+        if 'time_bounds' in coord_descriptors.keys():
+            coord_descriptors.pop('time_bnds')
+        time_bnds_attrs = {
+            "units": "seconds since 1970-01-01T00:00:00Z",
+            "calendar": "proleptic_gregorian",
+            "standard_name": "time_bnds",
+        }
+        coord_descriptors['time_bnds'] = \
+            VariableDescriptor('time_bnds',
+                               dtype='int64',
+                               dims=('time', bounds_dim_name),
+                               attrs=time_bnds_attrs)
 
         if 'variables' in ds_metadata:
             ds_metadata.pop('variables')
@@ -157,6 +184,7 @@ class CciOdpDataOpener(DataOpener):
         self._remove_irrelevant_metadata_attributes(attrs)
         descriptor = DatasetDescriptor(data_id,
                                        data_type=self._data_type,
+                                       crs=crs,
                                        dims=dims,
                                        coords=coord_descriptors,
                                        data_vars=var_descriptors,
@@ -219,18 +247,22 @@ class CciOdpDataOpener(DataOpener):
                 enum=dsd.data_vars.keys() if dsd and dsd.data_vars else None)),
             time_range=JsonDateSchema.new_range(min_date, max_date)
         )
-        if dsd and (('lat' in dsd.dims and 'lon' in dsd.dims) or
-                    ('latitude' in dsd.dims and 'longitude' in dsd.dims)):
-            min_lon = dsd.bbox[0] if dsd and dsd.bbox else -180
-            min_lat = dsd.bbox[1] if dsd and dsd.bbox else -90
-            max_lon = dsd.bbox[2] if dsd and dsd.bbox else 180
-            max_lat = dsd.bbox[3] if dsd and dsd.bbox else 90
-            bbox = JsonArraySchema(items=(
-                JsonNumberSchema(minimum=min_lon, maximum=max_lon),
-                JsonNumberSchema(minimum=min_lat, maximum=max_lat),
-                JsonNumberSchema(minimum=min_lon, maximum=max_lon),
-                JsonNumberSchema(minimum=min_lat, maximum=max_lat)))
-            dataset_params['bbox'] = bbox
+        if dsd:
+            try:
+                if pyproj.CRS.from_string(dsd.crs).is_geographic:
+                    min_lon = dsd.bbox[0] if dsd and dsd.bbox else -180
+                    min_lat = dsd.bbox[1] if dsd and dsd.bbox else -90
+                    max_lon = dsd.bbox[2] if dsd and dsd.bbox else 180
+                    max_lat = dsd.bbox[3] if dsd and dsd.bbox else 90
+                    bbox = JsonArraySchema(items=(
+                        JsonNumberSchema(minimum=min_lon, maximum=max_lon),
+                        JsonNumberSchema(minimum=min_lat, maximum=max_lat),
+                        JsonNumberSchema(minimum=min_lon, maximum=max_lon),
+                        JsonNumberSchema(minimum=min_lat, maximum=max_lat)))
+                    dataset_params['bbox'] = bbox
+            except pyproj.exceptions.CRSError:
+                # do not set bbox then
+                pass
         cci_schema = JsonObjectSchema(
             properties=dict(**dataset_params),
             required=[
@@ -275,7 +307,7 @@ class CciOdpDataOpener(DataOpener):
         if self._normalize_data:
             return normalize_variable_dims_description(var_dims)
         new_var_dims = var_dims.copy()
-        if 'time' not in new_var_dims:
+        if 'time' not in new_var_dims and len(new_var_dims) > 0:
             new_var_dims.insert(0, 'time')
         return new_var_dims
 

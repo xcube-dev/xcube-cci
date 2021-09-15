@@ -4,6 +4,7 @@ import unittest
 from unittest import skip
 from unittest import skipIf
 
+from xcube.core.gridmapping import GridMapping
 from xcube.core.normalize import normalize_dataset
 from xcube.core.store import DataStoreError, DATASET_TYPE
 from xcube.core.store.descriptor import DatasetDescriptor
@@ -79,47 +80,81 @@ class CciOdpDatasetOpenerTest(unittest.TestCase):
         self.assertTrue(self.opener.has_data(
             'esacci.OZONE.mon.L3.NP.multi-sensor.multi-platform.MERGED.fv0002.r1'))
 
-    @skipIf(os.environ.get('XCUBE_DISABLE_WEB_TESTS', None) == '1', 'XCUBE_DISABLE_WEB_TESTS = 1')
+    @skipIf(os.environ.get('XCUBE_DISABLE_WEB_TESTS', None) == '1',
+            'XCUBE_DISABLE_WEB_TESTS = 1')
+    def test_describe_dataset_crs_variable(self):
+        descriptor = self.opener.describe_data(
+            'esacci.SEAICE.day.L4.SICONC.multi-sensor.multi-platform.'
+            'AMSR_25kmEASE2.2-1.NH'
+        )
+        self.assertIsNotNone(descriptor)
+        self.assertTrue('Lambert_Azimuthal_Grid' in
+                        descriptor.data_vars.keys())
+        self.assertTrue('lat' in descriptor.coords.keys())
+        self.assertTrue('lon' in descriptor.coords.keys())
+        self.assertTrue('xc' in descriptor.coords.keys())
+        self.assertTrue('yc' in descriptor.coords.keys())
+        self.assertEqual('Lambert Azimuthal Equal Area', descriptor.crs)
+
+    @skipIf(os.environ.get('XCUBE_DISABLE_WEB_TESTS', None) == '1',
+            'XCUBE_DISABLE_WEB_TESTS = 1')
     def test_describe_data(self):
-        descriptor = self.opener.describe_data('esacci.OZONE.mon.L3.NP.multi-sensor.multi-platform.MERGED.fv0002.r1')
+        descriptor = self.opener.describe_data(
+            'esacci.OZONE.mon.L3.NP.multi-sensor.multi-platform.'
+            'MERGED.fv0002.r1')
         self.assertIsNotNone(descriptor)
         self.assertIsInstance(descriptor, DatasetDescriptor)
-        self.assertEqual('esacci.OZONE.mon.L3.NP.multi-sensor.multi-platform.MERGED.fv0002.r1', descriptor.data_id)
+        self.assertEqual('esacci.OZONE.mon.L3.NP.multi-sensor.multi-platform.'
+                         'MERGED.fv0002.r1', descriptor.data_id)
         self.assertEqual('dataset', str(descriptor.data_type))
-        self.assertEqual(['lon', 'lat', 'layers', 'air_pressure', 'time'], list(descriptor.dims.keys()))
+        self.assertEqual(['lon', 'lat', 'layers', 'air_pressure', 'time',
+                          'bnds'],
+                         list(descriptor.dims.keys()))
         self.assertEqual(360, descriptor.dims['lon'])
         self.assertEqual(180, descriptor.dims['lat'])
         self.assertEqual(16, descriptor.dims['layers'])
         self.assertEqual(17, descriptor.dims['air_pressure'])
         self.assertEqual(36, descriptor.dims['time'])
+        self.assertEqual(2, descriptor.dims['bnds'])
         self.assertEqual(9, len(descriptor.data_vars))
         self.assertTrue('surface_pressure' in descriptor.data_vars)
         self.assertEqual(3, descriptor.data_vars['surface_pressure'].ndim)
-        self.assertEqual(('time', 'lat', 'lon'), descriptor.data_vars['surface_pressure'].dims)
-        self.assertEqual('float32', descriptor.data_vars['surface_pressure'].dtype)
-        self.assertIsNone(descriptor.crs)
+        self.assertEqual(('time', 'lat', 'lon'),
+                         descriptor.data_vars['surface_pressure'].dims)
+        self.assertEqual('float32',
+                         descriptor.data_vars['surface_pressure'].dtype)
+        self.assertEqual('WGS84', descriptor.crs)
         self.assertEqual(1.0, descriptor.spatial_res)
-        self.assertEqual(('1997-01-01', '2008-12-31'), descriptor.time_range)
+        self.assertEqual(('1997-01-01', '2008-12-31'),
+                         descriptor.time_range)
         self.assertEqual('1M', descriptor.time_period)
 
-        descriptor = self.opener.describe_data('esacci.AEROSOL.day.L3.AAI.multi-sensor.multi-platform.MSAAI.1-7.r1')
+        descriptor = self.opener.describe_data(
+            'esacci.AEROSOL.day.L3.AAI.multi-sensor.multi-platform.'
+            'MSAAI.1-7.r1')
         self.assertIsNotNone(descriptor)
         self.assertIsInstance(descriptor, DatasetDescriptor)
-        self.assertEqual('esacci.AEROSOL.day.L3.AAI.multi-sensor.multi-platform.MSAAI.1-7.r1', descriptor.data_id)
+        self.assertEqual('esacci.AEROSOL.day.L3.AAI.multi-sensor.'
+                         'multi-platform.MSAAI.1-7.r1', descriptor.data_id)
         self.assertEqual('dataset', str(descriptor.data_type))
-        self.assertEqual(['longitude', 'latitude', 'time'], list(descriptor.dims.keys()))
+        self.assertEqual(['longitude', 'latitude', 'time', 'bnds'],
+                         list(descriptor.dims.keys()))
         self.assertEqual(360, descriptor.dims['longitude'])
         self.assertEqual(180, descriptor.dims['latitude'])
         self.assertEqual(12644, descriptor.dims['time'])
+        self.assertEqual(2, descriptor.dims['bnds'])
         self.assertEqual(3, len(descriptor.data_vars))
         self.assertTrue('absorbing_aerosol_index' in descriptor.data_vars)
-        self.assertEqual(3, descriptor.data_vars['absorbing_aerosol_index'].ndim)
+        self.assertEqual(3,
+                         descriptor.data_vars['absorbing_aerosol_index'].ndim)
         self.assertEqual(('time', 'latitude', 'longitude'),
                          descriptor.data_vars['absorbing_aerosol_index'].dims)
-        self.assertEqual('float32', descriptor.data_vars['absorbing_aerosol_index'].dtype)
-        self.assertIsNone(descriptor.crs)
+        self.assertEqual('float32',
+                         descriptor.data_vars['absorbing_aerosol_index'].dtype)
+        self.assertEqual('WGS84', descriptor.crs)
         self.assertEqual(1.0, descriptor.spatial_res)
-        self.assertEqual(('1978-11-01', '2015-12-31'), descriptor.time_range)
+        self.assertEqual(('1978-11-01', '2015-12-31'),
+                         descriptor.time_range)
         self.assertEqual('1D', descriptor.time_period)
 
     def test_get_open_data_params_schema_no_data(self):
@@ -160,6 +195,22 @@ class CciOdpDatasetOpenerTest(unittest.TestCase):
         self.assertEqual({'latitude', 'longitude', 'time'}, set(dataset.AOD550.dims))
         self.assertEqual({20, 20, 1}, set(dataset.AOD550.chunk_sizes))
 
+    @skipIf(os.environ.get(
+        'XCUBE_DISABLE_WEB_TESTS', None) == '1', 'XCUBE_DISABLE_WEB_TESTS = 1')
+    def test_open_data_with_crs(self):
+        dataset = self.opener.open_data(
+            'esacci.ICESHEETS.yr.Unspecified.IV.PALSAR.ALOS.UNSPECIFIED.1-1.'
+            'greenland_margin_2006_2011',
+        )
+        self.assertIsNotNone(dataset)
+        self.assertTrue('crs' in dataset.data_vars.keys())
+        self.assertTrue('grid_mapping_name' in dataset['crs'].attrs)
+
+        grid_mapping = GridMapping.from_dataset(dataset)
+        self.assertEqual(('x', 'y'), grid_mapping.xy_var_names)
+        self.assertEqual((3200, 5400), grid_mapping.size)
+
+
     @skipIf(os.environ.get('XCUBE_DISABLE_WEB_TESTS', None) == '1', 'XCUBE_DISABLE_WEB_TESTS = 1')
     @skip('Disabled while time series are not supported')
     def test_open_data_with_time_series_and_latitude_centers(self):
@@ -176,7 +227,8 @@ class CciOdpDatasetOpenerTest(unittest.TestCase):
                          dataset.ozone_mixing_ratio.dims)
         self.assertEqual({1, 32, 18}, dataset.ozone_mixing_ratio.chunk_sizes)
 
-    @skipIf(os.environ.get('XCUBE_DISABLE_WEB_TESTS', None) == '1', 'XCUBE_DISABLE_WEB_TESTS = 1')
+    @skipIf(os.environ.get('XCUBE_DISABLE_WEB_TESTS', None) == '1',
+            'XCUBE_DISABLE_WEB_TESTS = 1')
     def test_search(self):
         search_result = list(self.opener.search_data(
             ecv='FIRE',
@@ -237,6 +289,15 @@ class CciOdpDatasetOpenerNormalizeTest(unittest.TestCase):
         self.assertFalse(self.opener.has_data(
             'esacci.OZONE.mon.L3.NP.multi-sensor.multi-platform.MERGED.fv0002.r1'))
 
+    @skipIf(os.environ.get('XCUBE_DISABLE_WEB_TESTS', None) == '1',
+            'XCUBE_DISABLE_WEB_TESTS = 1')
+    def test_describe_dataset_crs_variable(self):
+        descriptor = self.opener.describe_data(
+            'esacci.ICESHEETS.yr.Unspecified.IV.PALSAR.ALOS.UNSPECIFIED.1-1.'
+            'greenland_margin_2006_2011')
+        self.assertIsNotNone(descriptor)
+        self.assertTrue('crs' in descriptor.data_vars.keys())
+
     @skipIf(os.environ.get('XCUBE_DISABLE_WEB_TESTS', None) == '1', 'XCUBE_DISABLE_WEB_TESTS = 1')
     def test_describe_dataset(self):
         with self.assertRaises(DataStoreError) as dse:
@@ -249,17 +310,19 @@ class CciOdpDatasetOpenerNormalizeTest(unittest.TestCase):
         self.assertIsInstance(descriptor, DatasetDescriptor)
         self.assertEqual('esacci.AEROSOL.day.L3.AAI.multi-sensor.multi-platform.MSAAI.1-7.r1', descriptor.data_id)
         self.assertEqual('dataset', str(descriptor.data_type))
-        self.assertEqual(['lat', 'lon', 'time'], list(descriptor.dims.keys()))
+        self.assertEqual(['lat', 'lon', 'time', 'bnds'],
+                         list(descriptor.dims.keys()))
         self.assertEqual(360, descriptor.dims['lon'])
         self.assertEqual(180, descriptor.dims['lat'])
         self.assertEqual(12644, descriptor.dims['time'])
+        self.assertEqual(2, descriptor.dims['bnds'])
         self.assertEqual(3, len(descriptor.data_vars))
         self.assertTrue('absorbing_aerosol_index' in descriptor.data_vars)
         self.assertEqual(3, descriptor.data_vars['absorbing_aerosol_index'].ndim)
         self.assertEqual(('time', 'lat', 'lon'),
                          descriptor.data_vars['absorbing_aerosol_index'].dims)
         self.assertEqual('float32', descriptor.data_vars['absorbing_aerosol_index'].dtype)
-        self.assertIsNone(descriptor.crs)
+        self.assertEqual('WGS84', descriptor.crs)
         self.assertEqual(1.0, descriptor.spatial_res)
         self.assertEqual(('1978-11-01', '2015-12-31'), descriptor.time_range)
         self.assertEqual('1D', descriptor.time_period)
