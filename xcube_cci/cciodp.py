@@ -380,8 +380,7 @@ class CciOdp:
                  num_retries: int = DEFAULT_NUM_RETRIES,
                  retry_backoff_max: int = DEFAULT_RETRY_BACKOFF_MAX,
                  retry_backoff_base: float = DEFAULT_RETRY_BACKOFF_BASE,
-                 user_agent: str = None,
-                 only_consider_cube_ready:bool = False
+                 user_agent: str = None
                  ):
         self._opensearch_url = endpoint_url
         self._opensearch_description_url = endpoint_description_url
@@ -398,12 +397,6 @@ class CciOdp:
                                 'data/excluded_data_sources')
         with open(eds_file, 'r') as eds:
             self._excluded_data_sources = eds.read().split('\n')
-        if only_consider_cube_ready:
-            ncds_file = os.path.join(os.path.dirname(os.path.abspath(__file__)),
-                                     'data/non_cube_data_sources')
-            with open(ncds_file, 'r') as ncds:
-                non_cube_ready_data_sources = ncds.read().split('\n')
-                self._excluded_data_sources += non_cube_ready_data_sources
 
     def close(self):
         pass

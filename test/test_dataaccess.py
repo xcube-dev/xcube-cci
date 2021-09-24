@@ -255,40 +255,6 @@ class CciOdpDatasetOpenerNormalizeTest(unittest.TestCase):
     def setUp(self) -> None:
         self.opener = CciOdpDatasetOpener(normalize_data=True)
 
-    @skipIf(os.environ.get('XCUBE_DISABLE_WEB_TESTS', None) == '1', 'XCUBE_DISABLE_WEB_TESTS = 1')
-    def test_dataset_names(self):
-        self.assertTrue(len(self.opener.dataset_names) < 200)
-        self.assertTrue(len(self.opener.dataset_names) > 100)
-
-    @skipIf(os.environ.get('XCUBE_DISABLE_WEB_TESTS', None) == '1', 'XCUBE_DISABLE_WEB_TESTS = 1')
-    def test_has_data(self):
-        self.assertFalse(self.opener.has_data(
-            'esacci.FIRE.mon.L4.BA.MODIS.Terra.MODIS_TERRA.v5-1.grid'))
-        self.assertFalse(self.opener.has_data(
-            'esacci.WIND.mon.L4.BA.MODIS.Terra.MODIS_TERRA.v5-1.grid'))
-        self.assertTrue(self.opener.has_data(
-            'esacci.AEROSOL.day.L3.AAI.multi-sensor.multi-platform.MSAAI.1-7.r1'))
-        self.assertFalse(self.opener.has_data(
-            'esacci.OZONE.mon.L3.NP.multi-sensor.multi-platform.MERGED.fv0002.r1'))
-
-        self.assertFalse(self.opener.has_data(
-            'esacci.FIRE.mon.L4.BA.MODIS.Terra.MODIS_TERRA.v5-1.grid'))
-        self.assertFalse(self.opener.has_data(
-            'esacci.WIND.mon.L4.BA.MODIS.Terra.MODIS_TERRA.v5-1.grid'))
-        self.assertTrue(self.opener.has_data(
-            'esacci.AEROSOL.day.L3.AAI.multi-sensor.multi-platform.MSAAI.1-7.r1'))
-        self.assertFalse(self.opener.has_data(
-            'esacci.OZONE.mon.L3.NP.multi-sensor.multi-platform.MERGED.fv0002.r1'))
-
-        self.assertFalse(self.opener.has_data(
-            'esacci.FIRE.mon.L4.BA.MODIS.Terra.MODIS_TERRA.v5-1.grid'))
-        self.assertFalse(self.opener.has_data(
-            'esacci.WIND.mon.L4.BA.MODIS.Terra.MODIS_TERRA.v5-1.grid'))
-        self.assertTrue(self.opener.has_data(
-            'esacci.AEROSOL.day.L3.AAI.multi-sensor.multi-platform.MSAAI.1-7.r1'))
-        self.assertFalse(self.opener.has_data(
-            'esacci.OZONE.mon.L3.NP.multi-sensor.multi-platform.MERGED.fv0002.r1'))
-
     @skipIf(os.environ.get('XCUBE_DISABLE_WEB_TESTS', None) == '1',
             'XCUBE_DISABLE_WEB_TESTS = 1')
     def test_describe_dataset_crs_variable(self):
@@ -300,11 +266,6 @@ class CciOdpDatasetOpenerNormalizeTest(unittest.TestCase):
 
     @skipIf(os.environ.get('XCUBE_DISABLE_WEB_TESTS', None) == '1', 'XCUBE_DISABLE_WEB_TESTS = 1')
     def test_describe_dataset(self):
-        with self.assertRaises(DataStoreError) as dse:
-            self.opener.describe_data('esacci.OZONE.mon.L3.NP.multi-sensor.multi-platform.MERGED.fv0002.r1')
-        self.assertEqual('Cannot describe metadata of data resource '
-                         '"esacci.OZONE.mon.L3.NP.multi-sensor.multi-platform.MERGED.fv0002.r1", '
-                         'as it cannot be accessed by data accessor "dataset:zarr:cciodp".', f'{dse.exception}')
         descriptor = self.opener.describe_data('esacci.AEROSOL.day.L3.AAI.multi-sensor.multi-platform.MSAAI.1-7.r1')
         self.assertIsNotNone(descriptor)
         self.assertIsInstance(descriptor, DatasetDescriptor)
@@ -336,13 +297,6 @@ class CciOdpDatasetOpenerNormalizeTest(unittest.TestCase):
 
     @skipIf(os.environ.get('XCUBE_DISABLE_WEB_TESTS', None) == '1', 'XCUBE_DISABLE_WEB_TESTS = 1')
     def test_get_open_data_params_schema(self):
-        with self.assertRaises(DataStoreError) as dse:
-            self.opener.get_open_data_params_schema(
-                'esacci.OZONE.mon.L3.NP.multi-sensor.multi-platform.MERGED.fv0002.r1').to_dict()
-        self.assertEqual('Cannot describe metadata of data resource '
-                         '"esacci.OZONE.mon.L3.NP.multi-sensor.multi-platform.MERGED.fv0002.r1", '
-                         'as it cannot be accessed by data accessor "dataset:zarr:cciodp".', f'{dse.exception}')
-
         schema = self.opener.get_open_data_params_schema(
             'esacci.AEROSOL.day.L3.AAI.multi-sensor.multi-platform.MSAAI.1-7.r1').to_dict()
         self.assertIsNotNone(schema)

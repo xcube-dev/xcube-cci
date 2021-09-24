@@ -317,8 +317,7 @@ class CciOdpDatasetOpener(CciOdpDataOpener):
 
     def __init__(self, normalize_data: bool = True, **odp_params):
         super().__init__(
-            # CciOdp(only_consider_cube_ready=normalize_data, **odp_params),
-            CciOdp(only_consider_cube_ready=normalize_data, **odp_params),
+            CciOdp(**odp_params),
             DATASET_OPENER_ID,
             DATASET_TYPE,
             normalize_data=normalize_data,
