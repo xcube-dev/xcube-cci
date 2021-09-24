@@ -162,7 +162,7 @@ class CciOdpDataOpener(DataOpener):
         if 'time_bnds' in coord_descriptors.keys():
             coord_descriptors.pop('time_bnds')
         if 'time_bounds' in coord_descriptors.keys():
-            coord_descriptors.pop('time_bnds')
+            coord_descriptors.pop('time_bounds')
         time_bnds_attrs = {
             "units": "seconds since 1970-01-01T00:00:00Z",
             "calendar": "proleptic_gregorian",
