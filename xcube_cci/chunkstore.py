@@ -151,10 +151,13 @@ class RemoteChunkStore(MutableMapping, metaclass=ABCMeta):
                 coord_array = np.array(coord_data)
                 self._add_static_array(coord_name, coord_array, coord_attrs)
             else:
-                size = coords_data[coord_name]['size']
+                shape = list(coords_data[coord_name].
+                             get('shape', coords_data[coord_name].get('size')))
                 chunk_size = coords_data[coord_name]['chunkSize']
+                if not isinstance(chunk_size, List):
+                    chunk_size = [chunk_size]
                 encoding = self.get_encoding(coord_name)
-                self._add_remote_array(coord_name, [size], [chunk_size],
+                self._add_remote_array(coord_name, shape, chunk_size,
                                        encoding, coord_attrs)
 
         time_attrs = {

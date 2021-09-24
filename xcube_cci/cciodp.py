@@ -771,6 +771,7 @@ class CciOdp:
         for var_name in variable_dict:
             if var_name in dataset:
                 var_data[var_name] = dict(size=dataset[var_name].size,
+                                          shape=dataset[var_name].shape,
                                           chunkSize=dataset[var_name].
                                           attributes.get('_ChunkSizes'))
                 if dataset[var_name].size < 512 * 512:
