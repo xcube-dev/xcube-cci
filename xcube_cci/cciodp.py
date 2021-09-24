@@ -448,8 +448,14 @@ class CciOdp:
         crs = None
         for var_attrs in variable_infos.values():
             if 'grid_mapping_name' in var_attrs:
-                crs = pyproj.crs.CRS.from_cf(var_attrs)
-                break
+                try:
+                    crs = pyproj.crs.CRS.from_cf(var_attrs)
+                    break
+                except pyproj.crs.CRSError:
+                    warnings.warn(f'Could not convert grid mapping '
+                                  f'"{var_attrs["grid_mapping_name"]}" '
+                                  f'into CRS')
+                    return var_attrs["grid_mapping_name"]
         if crs:
             if crs.name != 'undefined':
                 return crs.name
