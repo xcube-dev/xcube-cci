@@ -27,7 +27,7 @@ from xcube.core.store import get_data_store_class
 from xcube.util.jsonschema import JsonObjectSchema
 
 CCI_ZARR_STORE_BUCKET_NAME = 'esacci'
-CCI_ZARR_STORE_ENDPOINT = 'https://cci-ke-o.s3-ext.jc.rl.ac.uk:8443/'
+CCI_ZARR_STORE_ENDPOINT = 'https://cci-ke-o.s3-ext.jc.rl.ac.uk:443/'
 
 CCI_ZARR_STORE_PARAMS = dict(
     root=CCI_ZARR_STORE_BUCKET_NAME,
