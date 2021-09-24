@@ -1,4 +1,15 @@
 esacci.ICESHEETS.unspecified.L4.SEC.multi-sensor.multi-platform.UNSPECIFIED.0-1.greenland_sec_saral_altika
+esacci.SEALEVEL.10-days.L3.SLA.multi-sensor.multi-platform.NE_ATL.1-1.r1
+esacci.SEALEVEL.10-days.L3.SLA.multi-sensor.multi-platform.N_INDIAN.1-1.r1
+esacci.SEALEVEL.10-days.L3.SLA.multi-sensor.multi-platform.SE_ASIA.1-1.r1
+esacci.SEALEVEL.10-days.L3.SLA.multi-sensor.multi-platform.S_AUSTRALIA.1-1.r1
+esacci.SEALEVEL.10-days.L3.SLA.multi-sensor.multi-platform.WAFRICA.1-1.r1
+esacci.SEALEVEL.mon.IND.MSLTR.multi-sensor.multi-platform.MERGED.1-1.MED_SEA
+esacci.SEALEVEL.mon.IND.MSLTR.multi-sensor.multi-platform.MERGED.1-1.NE_ATL
+esacci.SEALEVEL.mon.IND.MSLTR.multi-sensor.multi-platform.MERGED.1-1.N_INDIAN
+esacci.SEALEVEL.mon.IND.MSLTR.multi-sensor.multi-platform.MERGED.1-1.SE_ASIA
+esacci.SEALEVEL.mon.IND.MSLTR.multi-sensor.multi-platform.MERGED.1-1.S_AUSTRALIA
+esacci.SEALEVEL.mon.IND.MSLTR.multi-sensor.multi-platform.MERGED.1-1.WAFRICA
 esacci.SEALEVEL.satellite-orbit-frequency.L1.UNSPECIFIED.AltiKa.SARAL.UNSPECIFIED.v2-0.r1
 esacci.SEALEVEL.satellite-orbit-frequency.L1.UNSPECIFIED.GFO-RA.GFO.UNSPECIFIED.v2-0.r1
 esacci.SEALEVEL.satellite-orbit-frequency.L1.UNSPECIFIED.Poseidon-2.Jason-1.UNSPECIFIED.v2-0.r1
@@ -8,4 +19,5 @@ esacci.SEALEVEL.satellite-orbit-frequency.L1.UNSPECIFIED.RA.ERS-1.UNSPECIFIED.v2
 esacci.SEALEVEL.satellite-orbit-frequency.L1.UNSPECIFIED.RA.ERS-2.UNSPECIFIED.v2-0.r1
 esacci.SEALEVEL.satellite-orbit-frequency.L1.UNSPECIFIED.SIRAL.CryoSat-2.UNSPECIFIED.v2-0.r1
 esacci.SEALEVEL.satellite-orbit-frequency.L1.UNSPECIFIED.SSALT.Topex-Poseidon.UNSPECIFIED.v2-0.r1
+esacci.SEALEVEL.unspecified.L3.SLA.multi-sensor.multi-platform.MED_SEA.1-1.r1
 esacci.SEASTATE.satellite-orbit-frequency.L2P.SWH.NRA.Topex/Poseidon.Topex-Poseidon.1-1.r1
