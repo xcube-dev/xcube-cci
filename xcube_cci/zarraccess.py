@@ -31,7 +31,7 @@ CCI_ZARR_STORE_ENDPOINT = 'https://cci-ke-o.s3-ext.jc.rl.ac.uk:8443/'
 
 CCI_ZARR_STORE_PARAMS = dict(
     root=CCI_ZARR_STORE_BUCKET_NAME,
-    fs_params=dict(
+    storage_options=dict(
         anon=True,
         client_kwargs=dict(
             endpoint_url=CCI_ZARR_STORE_ENDPOINT,
