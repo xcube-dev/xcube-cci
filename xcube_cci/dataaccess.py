@@ -27,7 +27,7 @@ import pyproj
 import xarray as xr
 import zarr
 
-from xcube.core.normalize import cubify_dataset
+from xcube.core.normalize import normalize_dataset
 from xcube.core.store import DATASET_TYPE
 from xcube.core.store import DataDescriptor
 from xcube.core.store import DataOpener
@@ -284,18 +284,19 @@ class CciOdpDataOpener(DataOpener):
         if max_cache_size:
             chunk_store = zarr.LRUStoreCache(chunk_store, max_cache_size)
         ds = xr.open_zarr(chunk_store)
-        ds = self._normalize_dataset(ds, cci_schema, **open_params)
+        ds = self._normalize_dataset(ds)
         return ds
 
     def _assert_valid_data_id(self, data_id: str):
         if data_id not in self.dataset_names:
-            raise DataStoreError(f'Cannot describe metadata of data resource "{data_id}", '
-                                 f'as it cannot be accessed by data accessor "{self._id}".')
+            raise DataStoreError(f'Cannot describe metadata of '
+                                 f'data resource "{data_id}", '
+                                 f'as it cannot be accessed by '
+                                 f'data accessor "{self._id}".')
 
-    def _normalize_dataset(self, ds: xr.Dataset, cci_schema: JsonObjectSchema, **open_params) \
-            -> xr.Dataset:
+    def _normalize_dataset(self, ds: xr.Dataset) -> xr.Dataset:
         if self._normalize_data:
-            return cubify_dataset(ds)
+            return normalize_dataset(ds)
         return ds
 
     def _normalize_dims(self, dims: dict) -> dict:
