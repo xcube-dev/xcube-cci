@@ -44,7 +44,6 @@ setup(
     packages=packages,
     include_package_data=True,
     data_files=[('xcube_cci', [
-        'xcube_cci/data/non_cube_data_sources',
         'xcube_cci/data/excluded_data_sources',
         'xcube_cci/data/dataset_states.json']
                  )],
