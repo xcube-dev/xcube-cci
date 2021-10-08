@@ -113,7 +113,13 @@ class RemoteChunkStore(MutableMapping, metaclass=ABCMeta):
         coords_data['time'] = {}
         coords_data['time']['size'] = len(t_array)
         coords_data['time']['data'] = t_array
-        for coord_name in coords_data:
+        sorted_coords_names = list(coords_data.keys())
+        sorted_coords_names.sort()
+        lat_min_offset = -1
+        lat_max_offset = -1
+        lon_min_offset = -1
+        lon_max_offset = -1
+        for coord_name in sorted_coords_names:
             if coord_name == 'time' or \
                     coord_name == 'time_bnds' or \
                     coord_name == 'time_bounds':
@@ -124,26 +130,44 @@ class RemoteChunkStore(MutableMapping, metaclass=ABCMeta):
             if bbox is not None and \
                     (coord_name == 'lat' or coord_name == 'latitude'):
                 if coord_data[0] < coord_data[-1]:
-                    min_offset = bisect.bisect_left(coord_data, bbox[1])
-                    max_offset = bisect.bisect_right(coord_data, bbox[3])
+                    lat_min_offset = bisect.bisect_left(coord_data, bbox[1])
+                    lat_max_offset = bisect.bisect_right(coord_data, bbox[3])
                 else:
-                    min_offset = len(coord_data) - \
+                    lat_min_offset = len(coord_data) - \
                                  bisect.bisect_left(coord_data[::-1], bbox[3])
-                    max_offset = len(coord_data) - \
+                    lat_max_offset = len(coord_data) - \
                                  bisect.bisect_right(coord_data[::-1], bbox[1])
                 coords_data = self._adjust_coord_data(coord_name,
-                                                      min_offset,
-                                                      max_offset,
+                                                      lat_min_offset,
+                                                      lat_max_offset,
                                                       coords_data,
                                                       coord_attrs)
                 coord_data = coords_data[coord_name]['data']
             elif bbox is not None and \
                     (coord_name == 'lon' or coord_name == 'longitude'):
-                min_offset = bisect.bisect_left(coord_data, bbox[0])
-                max_offset = bisect.bisect_right(coord_data, bbox[2])
+                lon_min_offset = bisect.bisect_left(coord_data, bbox[0])
+                lon_max_offset = bisect.bisect_right(coord_data, bbox[2])
                 coords_data = self._adjust_coord_data(coord_name,
-                                                      min_offset,
-                                                      max_offset,
+                                                      lon_min_offset,
+                                                      lon_max_offset,
+                                                      coords_data,
+                                                      coord_attrs)
+                coord_data = coords_data[coord_name]['data']
+            elif bbox is not None and \
+                (coord_name == 'latitude_bounds' or coord_name == 'lat_bounds'
+                 or coord_name == 'latitude_bnds' or coord_name == 'lat_bnds'):
+                coords_data = self._adjust_coord_data(coord_name,
+                                                      lat_min_offset,
+                                                      lat_max_offset,
+                                                      coords_data,
+                                                      coord_attrs)
+                coord_data = coords_data[coord_name]['data']
+            elif bbox is not None and \
+                (coord_name == 'longitude_bounds' or coord_name == 'lon_bounds'
+                 or coord_name == 'longitude_bnds' or coord_name == 'lon_bnds'):
+                coords_data = self._adjust_coord_data(coord_name,
+                                                      lon_min_offset,
+                                                      lon_max_offset,
                                                       coords_data,
                                                       coord_attrs)
                 coord_data = coords_data[coord_name]['data']
@@ -171,7 +195,7 @@ class RemoteChunkStore(MutableMapping, metaclass=ABCMeta):
             "_ARRAY_DIMENSIONS": ['time', 'bnds'],
             "units": "seconds since 1970-01-01T00:00:00Z",
             "calendar": "proleptic_gregorian",
-            "standard_name": "time",
+            "standard_name": "time_bnds",
         }
 
         self._add_static_array('time', t_array, time_attrs)
@@ -274,20 +298,28 @@ class RemoteChunkStore(MutableMapping, metaclass=ABCMeta):
                            max_offset: int, coords_data, dim_attrs: dict):
         self._dimension_chunk_offsets[coord_name] = min_offset
         coord_data = coords_data[coord_name]['data'][min_offset:max_offset]
-        lon_size = len(coord_data)
-        dim_attrs['chunk_sizes'] = \
-            min(dim_attrs.get('chunk_sizes', 1000000), lon_size)
-        dim_attrs['file_chunk_sizes'] = \
-            min(dim_attrs.get('file_chunk_sizes', 1000000), lon_size)
-        dim_attrs['size'] = lon_size
+        shape = coord_data.shape
+        self._set_chunk_sizes(dim_attrs, shape, 'chunk_sizes')
+        self._set_chunk_sizes(dim_attrs, shape, 'file_chunk_sizes')
+        dim_attrs['size'] = coord_data.size
         if 'shape' in dim_attrs:
-            dim_attrs['shape'][0] = lon_size
-        self._metadata['dimensions'][coord_name] = lon_size
-        coords_data[coord_name]['size'] = lon_size
-        coords_data[coord_name]['chunkSize'] = \
-            min(dim_attrs['chunk_sizes'], lon_size)
+            dim_attrs['shape'] = list(shape)
+        if len(shape) == 1:
+            self._metadata['dimensions'][coord_name] = coord_data.size
+        coords_data[coord_name]['size'] = coord_data.size
+        coords_data[coord_name]['chunkSize'] = dim_attrs['chunk_sizes']
         coords_data[coord_name]['data'] = coord_data
         return coords_data
+
+    def _set_chunk_sizes(self, dim_attrs, shape, name):
+        chunk_sizes = dim_attrs.get(name, 1000000)
+        if isinstance(chunk_sizes, int):
+            dim_attrs[name] = min(chunk_sizes, shape[0])
+        else:
+            # chunk sizes is list of ints
+            for i, chunk_size in enumerate(chunk_sizes):
+                chunk_sizes[i] = min(chunk_size, shape[i])
+            dim_attrs[name] = chunk_sizes
 
     @classmethod
     def _maybe_adjust_attrs(cls, lon_size, lat_size, var_attrs):

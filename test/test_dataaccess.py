@@ -182,18 +182,23 @@ class CciOdpDatasetOpenerTest(unittest.TestCase):
         self.assertTrue('bbox' in schema['properties'])
         self.assertFalse(schema['additionalProperties'])
 
-    @skipIf(os.environ.get('XCUBE_DISABLE_WEB_TESTS', None) == '1', 'XCUBE_DISABLE_WEB_TESTS = 1')
-    @skip('Data cannot be accessed temporarily')
+    @skipIf(os.environ.get('XCUBE_DISABLE_WEB_TESTS', None) == '1',
+            'XCUBE_DISABLE_WEB_TESTS = 1')
     def test_open_data(self):
         dataset = self.opener.open_data(
-            'esacci.AEROSOL.day.L3C.AOD.MERIS.Envisat.MERIS_ENVISAT.2-2.r1',
-            variable_names=['AOD550', 'R_eff'],
-            time_range=['2009-07-02', '2009-07-05'],
-            bbox=[-10.0, 40.0, 10.0, 60.0])
+            'esacci.SST.day.L4.SSTdepth.multi-sensor.multi-platform.OSTIA.1-1.r1',
+            variable_names=['analysed_sst'],
+            bbox=[-30, 20, -29, 21],
+            time_range=['2008-07-01','2008-07-01'])
+
         self.assertIsNotNone(dataset)
-        self.assertEqual({'AOD550', 'R_eff'}, set(dataset.data_vars))
-        self.assertEqual({'latitude', 'longitude', 'time'}, set(dataset.AOD550.dims))
-        self.assertEqual({20, 20, 1}, set(dataset.AOD550.chunk_sizes))
+        self.assertEqual({'analysed_sst'}, set(dataset.data_vars))
+        self.assertEqual({'lat', 'lat_bnds', 'lon', 'lon_bnds',
+                          'time', 'time_bnds'},
+                         set(dataset.coords))
+        self.assertEqual({'time', 'lat', 'lon'}, set(dataset.analysed_sst.dims))
+        self.assertEqual({1, 20, 20}, set(dataset.analysed_sst.chunk_sizes))
+
 
     @skipIf(os.environ.get(
         'XCUBE_DISABLE_WEB_TESTS', None) == '1', 'XCUBE_DISABLE_WEB_TESTS = 1')
