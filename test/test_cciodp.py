@@ -1,5 +1,6 @@
 import numpy as np
 import os
+import pandas as pd
 import unittest
 from unittest import skip, skipIf
 
@@ -454,3 +455,38 @@ class CciOdpTest(unittest.TestCase):
         file_list = cci_odp.get_file_list(
             'esacci.CLOUD.mon.L3C.CLD_PRODUCTS.MODIS.Terra.MODIS_TERRA.2-0.r1')
         self.assertIsNotNone(file_list)
+
+    @skipIf(os.environ.get('XCUBE_DISABLE_WEB_TESTS', None) == '1',
+            'XCUBE_DISABLE_WEB_TESTS = 1')
+    def test_get_time_ranges_from_data(self):
+        cci_odp = CciOdp()
+        first_time_ranges = cci_odp.get_time_ranges_from_data(
+            dataset_name='esacci.OC.5-days.L3S.RRS.multi-sensor.multi-platform.'
+            'MERGED.3-1.geographic',
+            start_time='1997-09-03T00:00:00',
+            end_time='1997-09-10T00:00:00'
+        )
+        self.assertEqual([(pd.Timestamp('1997-09-03 00:00:00'),
+                          pd.Timestamp('1997-09-07 23:59:00')),
+                          (pd.Timestamp('1997-09-08 00:00:00'),
+                           pd.Timestamp('1997-09-12 23:59:00'))],
+                         first_time_ranges)
+        self.assertIsNotNone(first_time_ranges)
+        second_time_ranges = cci_odp.get_time_ranges_from_data(
+            dataset_name='esacci.OC.5-days.L3S.RRS.multi-sensor.multi-platform.'
+            'MERGED.3-1.geographic',
+            start_time='1997-09-10T00:00:00',
+            end_time='1997-09-30T00:00:00'
+        )
+        self.assertIsNotNone(second_time_ranges)
+        self.assertEqual([(pd.Timestamp('1997-09-08 00:00:00'),
+                          pd.Timestamp('1997-09-12 23:59:00')),
+                          (pd.Timestamp('1997-09-13 00:00:00'),
+                           pd.Timestamp('1997-09-17 23:59:00')),
+                          (pd.Timestamp('1997-09-18 00:00:00'),
+                           pd.Timestamp('1997-09-22 23:59:00')),
+                          (pd.Timestamp('1997-09-23 00:00:00'),
+                           pd.Timestamp('1997-09-27 23:59:00')),
+                          (pd.Timestamp('1997-09-28 00:00:00'),
+                           pd.Timestamp('1997-10-02 23:59:00'))],
+                         second_time_ranges)
