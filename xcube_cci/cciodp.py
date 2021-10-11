@@ -902,20 +902,6 @@ class CciOdp:
         request_time_ranges = [feature[0:2] for feature in feature_list]
         return request_time_ranges
 
-    def get_file_list(self, dataset_name):
-        return self._run_with_session(self._get_file_list, dataset_name)
-
-    async def _get_file_list(self, session, dataset_name):
-        dataset_id = await self._get_dataset_id(session, dataset_name)
-        request = dict(parentIdentifier=dataset_id,
-                       drsId=dataset_name,
-                       startDate='1900-01-01T00:00:00',
-                       endDate='3001-12-31T00:00:00',
-                       fileFormat='.nc')
-        feature_list = await self._get_feature_list(session, request)
-        file_list = [feature[2] for feature in feature_list]
-        return file_list
-
     def get_dataset_id(self, dataset_name: str) -> str:
         return self._run_with_session(self._get_dataset_id, dataset_name)
 

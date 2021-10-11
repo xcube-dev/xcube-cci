@@ -449,13 +449,6 @@ class CciOdpTest(unittest.TestCase):
         )
         self.assertTrue(len(sciamachy_sources) > 2)
 
-    @skipIf(os.environ.get('XCUBE_DISABLE_WEB_TESTS', None) == '1', 'XCUBE_DISABLE_WEB_TESTS = 1')
-    def test_get_file_list(self):
-        cci_odp = CciOdp()
-        file_list = cci_odp.get_file_list(
-            'esacci.CLOUD.mon.L3C.CLD_PRODUCTS.MODIS.Terra.MODIS_TERRA.2-0.r1')
-        self.assertIsNotNone(file_list)
-
     @skipIf(os.environ.get('XCUBE_DISABLE_WEB_TESTS', None) == '1',
             'XCUBE_DISABLE_WEB_TESTS = 1')
     def test_get_time_ranges_from_data(self):
