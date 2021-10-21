@@ -934,6 +934,8 @@ class CciOdp:
         data_type = self._data_sources[request['drsId']].get('variable_infos', {})\
             .get(var_name, {}).get('data_type')
         data = await self._get_data_from_opendap_dataset(dataset, session, var_name, dim_indexes)
+        if not data:
+            return None
         data = np.array(data, copy=False, dtype=data_type)
         return data.flatten().tobytes()
 
