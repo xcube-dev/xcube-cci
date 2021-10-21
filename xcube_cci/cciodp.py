@@ -1284,13 +1284,18 @@ class CciOdp:
         # download and unpack data
         resp = await self.get_response(session, url)
         if not resp:
+            _LOG.warning(f'Could not read response from "{url}"')
             return None
         content = await resp.read()
         dds, data = content.split(b'\nData:\n', 1)
         dds = str(dds, 'utf-8')
         # Parse received dataset:
         dataset = build_dataset(dds)
-        dataset.data = unpack_data(BytesReader(data), dataset)
+        try:
+            dataset.data = unpack_data(BytesReader(data), dataset)
+        except ValueError:
+            _LOG.warning(f'Could not read data from "{url}"')
+            return None
         return dataset[proxy.id].data
 
     async def get_response(self, session: aiohttp.ClientSession, url: str) -> \
