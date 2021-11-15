@@ -1,6 +1,9 @@
 ## Changes in 0.9.1 (in development)
 * Fixed issue that datasets with spatial bounds could not be opened.
 * Show version as `__version__`
+* The CCI data attribute `data_type` has been renamed to `type_of_data` to
+  avoid confusion with the parameter `data_type` which is extensively used in
+  xcube v0.9+.   
 
 ## Changes in 0.9.0
 * Version 0.9 now requires xcube 0.9 because of incompatible API changes in the 

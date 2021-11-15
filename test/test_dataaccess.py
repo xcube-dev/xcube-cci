@@ -411,7 +411,7 @@ class CciOdpDataStoreTest(unittest.TestCase):
         self.assertTrue('processing_level' in search_schema['properties'])
         self.assertTrue('product_string' in search_schema['properties'])
         self.assertTrue('product_version' in search_schema['properties'])
-        self.assertTrue('data_type' in search_schema['properties'])
+        self.assertTrue('type_of_data' in search_schema['properties'])
         self.assertTrue('sensor' in search_schema['properties'])
         self.assertTrue('platform' in search_schema['properties'])
 

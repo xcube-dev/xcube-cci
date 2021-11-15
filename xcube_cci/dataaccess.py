@@ -182,6 +182,8 @@ class CciOdpDataOpener(DataOpener):
         ds_metadata.pop('attributes')
         attrs.update(ds_metadata)
         self._remove_irrelevant_metadata_attributes(attrs)
+        if 'data_type' in attrs:
+            attrs['type_of_data'] = attrs.pop('data_type')
         descriptor = DatasetDescriptor(data_id,
                                        data_type=self._data_type,
                                        crs=crs,
@@ -424,7 +426,7 @@ class CciOdpDataStore(DataStore):
                           .replace('-yrs', ' years').replace('yr', 'year')
                            for data_id in data_ids])
         processing_levels = set([data_id.split('.')[3] for data_id in data_ids])
-        data_types = set([data_id.split('.')[4] for data_id in data_ids])
+        types_of_data = set([data_id.split('.')[4] for data_id in data_ids])
         sensors = set([data_id.split('.')[5] for data_id in data_ids])
         platforms = set([data_id.split('.')[6] for data_id in data_ids])
         product_strings = set([data_id.split('.')[7] for data_id in data_ids])
@@ -454,7 +456,7 @@ class CciOdpDataStore(DataStore):
             processing_level=JsonStringSchema(enum=processing_levels),
             product_string=JsonStringSchema(enum=product_strings),
             product_version=JsonStringSchema(enum=product_versions),
-            data_type=JsonStringSchema(enum=data_types),
+            type_of_data=JsonStringSchema(enum=types_of_data),
             sensor=JsonStringSchema(enum=sensors),
             platform=JsonStringSchema(enum=platforms)
         )

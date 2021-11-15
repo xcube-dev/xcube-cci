@@ -434,7 +434,7 @@ class CciOdpTest(unittest.TestCase):
             start_date='2007-05-01',
             end_date='2009-08-01',
             bbox=(-20, 30, 20, 50),
-            data_type='SICONC'
+            type_of_data='SICONC'
         )
         self.assertTrue(len(siconc_sources) > 3)
 

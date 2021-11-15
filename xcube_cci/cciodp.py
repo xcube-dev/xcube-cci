@@ -610,12 +610,13 @@ class CciOdp:
                processing_level: Optional[str] = None,
                product_string: Optional[str] = None,
                product_version: Optional[str] = None,
-               data_type: Optional[str] = None,
+               type_of_data: Optional[str] = None,
                sensor: Optional[str] = None,
                platform: Optional[str] = None) -> List[str]:
         candidate_names = []
-        if not self._data_sources and not ecv and not frequency and not processing_level \
-                and not data_type and not product_string and not product_version:
+        if not self._data_sources and not ecv and not frequency \
+                and not processing_level and not type_of_data \
+                and not product_string and not product_version:
             self._run_with_session(self._read_all_data_sources)
             candidate_names = self.dataset_names
         else:
@@ -628,7 +629,8 @@ class CciOdp:
                     continue
                 if processing_level is not None and processing_level != split_dataset_name[3]:
                     continue
-                if data_type is not None and data_type != split_dataset_name[4]:
+                if type_of_data is not None \
+                        and type_of_data != split_dataset_name[4]:
                     continue
                 if product_string is not None and product_string != split_dataset_name[7]:
                     continue
