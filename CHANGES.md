@@ -1,4 +1,4 @@
-## Changes in 0.9.1 (in development)
+## Changes in 0.9.1
 * Fixed issue that datasets with spatial bounds could not be opened.
 * Show version as `__version__`
 * The interface of the method `search_data` of the CciOdpDataStore 
