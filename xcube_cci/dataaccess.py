@@ -443,7 +443,8 @@ class CciOdpDataStore(DataStore):
         sensors = set([data_id.split('.')[5] for data_id in data_ids])
         platforms = set([data_id.split('.')[6] for data_id in data_ids])
         product_strings = set([data_id.split('.')[7] for data_id in data_ids])
-        product_versions = set([data_id.split('.')[8] for data_id in data_ids])
+        product_versions = set([data_id.split('.')[8].replace('-', '.')
+                                for data_id in data_ids])
         search_params = dict(
             start_date=JsonStringSchema(format='date-time'),
             end_date=JsonStringSchema(format='date-time'),
