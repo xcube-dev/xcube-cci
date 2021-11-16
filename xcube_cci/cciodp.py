@@ -606,39 +606,43 @@ class CciOdp:
                bbox: Optional[Tuple[float, float, float, float]] = None,
                cci_attrs: Optional[Mapping[str, str]] = None) -> List[str]:
         candidate_names = []
-        if not self._data_sources and not 'ecv' in cci_attrs \
-                and not 'frequency' in cci_attrs \
-                and not 'processing_level' in cci_attrs \
-                and not 'data_type' in cci_attrs \
-                and not 'product_string' in cci_attrs \
-                and not 'product_version' in cci_attrs:
+        if not self._data_sources and 'ecv' not in cci_attrs \
+                and 'frequency' not in cci_attrs \
+                and 'processing_level' not in cci_attrs \
+                and 'data_type' not in cci_attrs \
+                and 'product_string' not in cci_attrs \
+                and 'product_version' not in cci_attrs:
             self._run_with_session(self._read_all_data_sources)
             candidate_names = self.dataset_names
         else:
             for dataset_name in self.dataset_names:
-                split_dataset_name = dataset_name.split('.')
-                if cci_attrs.get('ecv', '') != split_dataset_name[1]:
+                _, ecv, frequency, processing_level, data_type, sensor, \
+                platform, product_string, product_version, _ = \
+                    dataset_name.split('.')
+                if cci_attrs.get('ecv', ecv) != ecv:
                     continue
-                if cci_attrs.get('frequency', '')  != \
-                        _convert_time_from_drs_id(split_dataset_name[2]):
+                if cci_attrs.get('processing_level', processing_level) \
+                        != processing_level:
                     continue
-                if cci_attrs.get('processing_level', '') \
-                        != split_dataset_name[3]:
+                if cci_attrs.get('data_type', data_type) != data_type:
                     continue
-                if cci_attrs.get('data_type', '') != split_dataset_name[4]:
+                if cci_attrs.get('product_string', product_string) != \
+                        product_string:
                     continue
-                if cci_attrs.get('product_string', '') != split_dataset_name[7]:
+                product_version = product_version.replace('-', '.')
+                if cci_attrs.get('product_version', product_version) \
+                        != product_version:
                     continue
-                if cci_attrs.get('product_version', '') \
-                        != split_dataset_name[8]:
+                converted_time = _convert_time_from_drs_id(frequency)
+                if cci_attrs.get('frequency', converted_time) != converted_time:
                     continue
                 candidate_names.append(dataset_name)
             if len(candidate_names) == 0:
                 return []
         if not start_date and not end_date and not bbox \
-                and not 'institute' in cci_attrs \
-                and not 'sensor' in cci_attrs \
-                and not 'platform' in cci_attrs:
+                and 'institute' not in cci_attrs \
+                and 'sensor' not in cci_attrs \
+                and 'platform' not in cci_attrs:
             return candidate_names
         results = []
         if start_date:
@@ -655,9 +659,11 @@ class CciOdp:
                     ('institute' not in data_source_info or
                      institute != data_source_info['institute']):
                 continue
-            if cci_attrs.get('sensor', '') != data_source_info['sensor_id']:
+            if cci_attrs.get('sensor', data_source_info['sensor_id']) \
+                    != data_source_info['sensor_id']:
                 continue
-            if cci_attrs.get('platform', '') != data_source_info['platform_id']:
+            if cci_attrs.get('platform', data_source_info['platform_id']) \
+                    != data_source_info['platform_id']:
                 continue
             if bbox:
                 if float(data_source_info['bbox_minx']) > bbox[2]:
