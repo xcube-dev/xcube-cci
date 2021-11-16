@@ -65,6 +65,21 @@ _RELEVANT_METADATA_ATTRIBUTES = ['ecv', 'institute', 'processing_level', 'produc
                                  'publication_date', 'catalog_url', 'sensor_id', 'platform_id',
                                  'cci_project', 'description', 'project', 'references', 'source',
                                  'history', 'comment', 'uuid']
+_INSTITUTES = ['Alfred-Wegener-Institut Helmholtz-Zentrum für '
+               'Polar- und Meeresforschung', 'Plymouth Marine Laboratory',
+               'ENVironmental Earth Observation IT GmbH',
+               'multi-institution', 'DTU Space', 'Freie Universitaet Berlin',
+               'Vienna University of Technology', 'Deutscher Wetterdienst',
+               'Netherlands Institute for Space Research',
+               'Technische Universität Dresden',
+               'Institute of Environmental Physics',
+               'Rutherford Appleton Laboratory',
+               'Universite Catholique de Louvain', 'University of Alcala',
+               'University of Leicester', 'Norwegian Meteorological Institute',
+               'University of Bremen', 'Belgian Institute for Space Aeronomy',
+               'Deutsches Zentrum fuer Luft- und Raumfahrt',
+               'Royal Netherlands Meteorological Institute',
+               'The Geological Survey of Denmark and Greenland']
 
 
 def _get_temporal_resolution_from_id(data_id: str) -> Optional[str]:
@@ -182,8 +197,6 @@ class CciOdpDataOpener(DataOpener):
         ds_metadata.pop('attributes')
         attrs.update(ds_metadata)
         self._remove_irrelevant_metadata_attributes(attrs)
-        if 'data_type' in attrs:
-            attrs['type_of_data'] = attrs.pop('data_type')
         descriptor = DatasetDescriptor(data_id,
                                        data_type=self._data_type,
                                        crs=crs,
@@ -426,7 +439,7 @@ class CciOdpDataStore(DataStore):
                           .replace('-yrs', ' years').replace('yr', 'year')
                            for data_id in data_ids])
         processing_levels = set([data_id.split('.')[3] for data_id in data_ids])
-        types_of_data = set([data_id.split('.')[4] for data_id in data_ids])
+        data_types = set([data_id.split('.')[4] for data_id in data_ids])
         sensors = set([data_id.split('.')[5] for data_id in data_ids])
         platforms = set([data_id.split('.')[6] for data_id in data_ids])
         product_strings = set([data_id.split('.')[7] for data_id in data_ids])
@@ -438,27 +451,20 @@ class CciOdpDataStore(DataStore):
                                         JsonNumberSchema(),
                                         JsonNumberSchema(),
                                         JsonNumberSchema())),
-            ecv=JsonStringSchema(enum=ecvs),
-            frequency=JsonStringSchema(enum=frequencies),
-            institute=JsonStringSchema(enum=[
-                'Plymouth Marine Laboratory',
-                'Alfred-Wegener-Institut Helmholtz-Zentrum für Polar- und Meeresforschung',
-                'ENVironmental Earth Observation IT GmbH', 'multi-institution', 'DTU Space',
-                'Vienna University of Technology', 'Deutscher Wetterdienst',
-                'Netherlands Institute for Space Research', 'Technische Universität Dresden',
-                'Institute of Environmental Physics', 'Rutherford Appleton Laboratory',
-                'Universite Catholique de Louvain', 'University of Alcala',
-                'University of Leicester', 'Norwegian Meteorological Institute',
-                'University of Bremen', 'Belgian Institute for Space Aeronomy',
-                'Deutsches Zentrum fuer Luft- und Raumfahrt', 'Freie Universitaet Berlin',
-                'Royal Netherlands Meteorological Institute',
-                'The Geological Survey of Denmark and Greenland']),
-            processing_level=JsonStringSchema(enum=processing_levels),
-            product_string=JsonStringSchema(enum=product_strings),
-            product_version=JsonStringSchema(enum=product_versions),
-            type_of_data=JsonStringSchema(enum=types_of_data),
-            sensor=JsonStringSchema(enum=sensors),
-            platform=JsonStringSchema(enum=platforms)
+            cci_attrs=JsonObjectSchema(
+                properties=dict(
+                    ecv=JsonStringSchema(enum=ecvs),
+                    frequency=JsonStringSchema(enum=frequencies),
+                    institute=JsonStringSchema(enum=_INSTITUTES),
+                    processing_level=JsonStringSchema(enum=processing_levels),
+                    product_string=JsonStringSchema(enum=product_strings),
+                    product_version=JsonStringSchema(enum=product_versions),
+                    data_type=JsonStringSchema(enum=data_types),
+                    sensor=JsonStringSchema(enum=sensors),
+                    platform=JsonStringSchema(enum=platforms)
+                ),
+                additional_properties=False
+            )
         )
         search_schema = JsonObjectSchema(
             properties=dict(**search_params),
