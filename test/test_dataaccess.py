@@ -235,9 +235,10 @@ class CciOdpDatasetOpenerTest(unittest.TestCase):
     @skipIf(os.environ.get('XCUBE_DISABLE_WEB_TESTS', None) == '1',
             'XCUBE_DISABLE_WEB_TESTS = 1')
     def test_search(self):
-        search_result = list(self.opener.search_data(
+        search_result = list(self.opener.search_data(cci_attrs=dict(
             ecv='FIRE',
             product_string='MODIS_TERRA'))
+        )
         self.assertIsNotNone(search_result)
         self.assertEqual(2, len(search_result))
         self.assertIsInstance(search_result[1], DatasetDescriptor)
@@ -339,7 +340,8 @@ class CciOdpDatasetOpenerNormalizeTest(unittest.TestCase):
     @skipIf(os.environ.get('XCUBE_DISABLE_WEB_TESTS', None) == '1', 'XCUBE_DISABLE_WEB_TESTS = 1')
     def test_search(self):
         search_result = list(self.opener.search_data(
-            ecv='LAKES'))
+            cci_attrs=(dict(ecv='LAKES')))
+        )
         self.assertIsNotNone(search_result)
         self.assertEqual(2, len(search_result))
         self.assertIsInstance(search_result[1], DatasetDescriptor)
