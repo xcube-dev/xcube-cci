@@ -235,9 +235,10 @@ class CciOdpDatasetOpenerTest(unittest.TestCase):
     @skipIf(os.environ.get('XCUBE_DISABLE_WEB_TESTS', None) == '1',
             'XCUBE_DISABLE_WEB_TESTS = 1')
     def test_search(self):
-        search_result = list(self.opener.search_data(
+        search_result = list(self.opener.search_data(cci_attrs=dict(
             ecv='FIRE',
             product_string='MODIS_TERRA'))
+        )
         self.assertIsNotNone(search_result)
         self.assertEqual(2, len(search_result))
         self.assertIsInstance(search_result[1], DatasetDescriptor)
@@ -339,7 +340,8 @@ class CciOdpDatasetOpenerNormalizeTest(unittest.TestCase):
     @skipIf(os.environ.get('XCUBE_DISABLE_WEB_TESTS', None) == '1', 'XCUBE_DISABLE_WEB_TESTS = 1')
     def test_search(self):
         search_result = list(self.opener.search_data(
-            ecv='LAKES'))
+            cci_attrs=(dict(ecv='LAKES')))
+        )
         self.assertIsNotNone(search_result)
         self.assertEqual(2, len(search_result))
         self.assertIsInstance(search_result[1], DatasetDescriptor)
@@ -405,15 +407,17 @@ class CciOdpDataStoreTest(unittest.TestCase):
         self.assertTrue('start_date' in search_schema['properties'])
         self.assertTrue('end_date' in search_schema['properties'])
         self.assertTrue('bbox' in search_schema['properties'])
-        self.assertTrue('ecv' in search_schema['properties'])
-        self.assertTrue('frequency' in search_schema['properties'])
-        self.assertTrue('institute' in search_schema['properties'])
-        self.assertTrue('processing_level' in search_schema['properties'])
-        self.assertTrue('product_string' in search_schema['properties'])
-        self.assertTrue('product_version' in search_schema['properties'])
-        self.assertTrue('data_type' in search_schema['properties'])
-        self.assertTrue('sensor' in search_schema['properties'])
-        self.assertTrue('platform' in search_schema['properties'])
+        self.assertTrue('cci_attrs' in search_schema['properties'])
+        cci_properties = search_schema['properties']['cci_attrs']['properties']
+        self.assertTrue('ecv' in cci_properties)
+        self.assertTrue('frequency' in cci_properties)
+        self.assertTrue('institute' in cci_properties)
+        self.assertTrue('processing_level' in cci_properties)
+        self.assertTrue('product_string' in cci_properties)
+        self.assertTrue('product_version' in cci_properties)
+        self.assertTrue('data_type' in cci_properties)
+        self.assertTrue('sensor' in cci_properties)
+        self.assertTrue('platform' in cci_properties)
 
     @skipIf(os.environ.get('XCUBE_DISABLE_WEB_TESTS', None) == '1', 'XCUBE_DISABLE_WEB_TESTS = 1')
     def test_search(self):

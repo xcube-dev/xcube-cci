@@ -1,6 +1,12 @@
 ## Changes in 0.9.1 (in development)
 * Fixed issue that datasets with spatial bounds could not be opened.
 * Show version as `__version__`
+* The interface of the method `search_data` of the CciOdpDataStore 
+  has been changed. Search parameters `ecv`, `frequency` `institute`,
+  `processing_level`, `product_string`, `product_version`, `data_type`,
+  `sensor`, and `platform` may now be passed in a dictionary parameter named 
+  `cci_attrs`. This makes it possible again to use the parameter `data_type` 
+  [#54](https://github.com/dcs4cop/xcube-cci/issues/54).
 
 ## Changes in 0.9.0
 * Version 0.9 now requires xcube 0.9 because of incompatible API changes in the 
