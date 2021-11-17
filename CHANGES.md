@@ -1,5 +1,8 @@
 ## Changes in 0.9.2 (in development)
 
+* Fixed issue where opening datasets in a daily resolution without a delimiting
+  time range would cause memory errors 
+  [#56](https://github.com/dcs4cop/xcube-cci/issues/56).
 
 ## Changes in 0.9.1
 * Fixed issue that datasets with spatial bounds could not be opened.
