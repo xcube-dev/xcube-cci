@@ -984,7 +984,9 @@ class CciOdp:
                 start_time = datetime.strptime(query_args.pop('startDate'), _TIMESTAMP_FORMAT)
                 end_time = datetime.strptime(query_args.pop('endDate'), _TIMESTAMP_FORMAT)
                 num_days_per_delta = \
-                    int(np.ceil((end_time - start_time).days / (total_results / 1000)))
+                    max(1,
+                        int(np.ceil((end_time - start_time).days /
+                                    (total_results / 1000))))
                 delta = relativedelta(days=num_days_per_delta, seconds=-1)
                 tasks = []
                 current_time = start_time
