@@ -1,4 +1,4 @@
-## Changes in 0.9.2 (in development)
+## Changes in 0.9.2
 
 * Fixed issue where opening datasets in a daily resolution without a delimiting
   time range would cause memory errors 
