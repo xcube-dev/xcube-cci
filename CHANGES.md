@@ -1,5 +1,6 @@
 ## Changes in 0.9.3 (in development)
 * Always show time bounds as coordinate, not as data variable
+* Prevent IndexError when requesting data with a time range
 
 ## Changes in 0.9.2
 
