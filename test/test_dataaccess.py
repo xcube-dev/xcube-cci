@@ -217,6 +217,21 @@ class CciOdpDatasetOpenerTest(unittest.TestCase):
         self.assertEqual({1, 10, 10},
                          set(dataset.absorbing_aerosol_index.chunk_sizes))
 
+        # open same dataset again to ensure chunking is different
+        full_dataset = self.opener.open_data(
+            'esacci.AEROSOL.day.L3.AAI.multi-sensor.multi-platform.'
+            'MSAAI.1-7.r1',
+            variable_names=['absorbing_aerosol_index'],
+            time_range=['2014-01-01','2014-04-30'])
+        self.assertIsNotNone(full_dataset)
+        self.assertEqual({'absorbing_aerosol_index'}, set(full_dataset.data_vars))
+        self.assertEqual({'longitude', 'latitude', 'time', 'time_bnds'},
+                         set(full_dataset.coords))
+        self.assertEqual({'time', 'latitude', 'longitude'},
+                         set(full_dataset.absorbing_aerosol_index.dims))
+        self.assertEqual({1, 180, 360},
+                         set(full_dataset.absorbing_aerosol_index.chunk_sizes))
+
     @skipIf(os.environ.get(
         'XCUBE_DISABLE_WEB_TESTS', None) == '1', 'XCUBE_DISABLE_WEB_TESTS = 1')
     def test_open_data_with_crs(self):
@@ -356,6 +371,21 @@ class CciOdpDatasetOpenerNormalizeTest(unittest.TestCase):
                          set(dataset.absorbing_aerosol_index.dims))
         self.assertEqual({1, 10, 10},
                          set(dataset.absorbing_aerosol_index.chunk_sizes))
+
+        # open same dataset again to ensure chunking is different
+        full_dataset = self.opener.open_data(
+            'esacci.AEROSOL.day.L3.AAI.multi-sensor.multi-platform.'
+            'MSAAI.1-7.r1',
+            variable_names=['absorbing_aerosol_index'],
+            time_range=['2014-01-01','2014-04-30'])
+        self.assertIsNotNone(full_dataset)
+        self.assertEqual({'absorbing_aerosol_index'}, set(full_dataset.data_vars))
+        self.assertEqual({'lon', 'lat', 'time', 'time_bnds'},
+                         set(full_dataset.coords))
+        self.assertEqual({'time', 'lat', 'lon'},
+                         set(full_dataset.absorbing_aerosol_index.dims))
+        self.assertEqual({1, 180, 360},
+                         set(full_dataset.absorbing_aerosol_index.chunk_sizes))
 
     @skipIf(os.environ.get('XCUBE_DISABLE_WEB_TESTS', None) == '1', 'XCUBE_DISABLE_WEB_TESTS = 1')
     @skip('Disabled while time series are not supported')

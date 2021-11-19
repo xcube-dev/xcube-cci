@@ -22,9 +22,11 @@
 from datetime import datetime
 from dateutil.relativedelta import relativedelta
 import bisect
+import copy
 import itertools
 import json
 import logging
+import math
 import time
 import warnings
 from abc import abstractmethod, ABCMeta
@@ -77,6 +79,7 @@ class RemoteChunkStore(MutableMapping, metaclass=ABCMeta):
             cube_params = {}
         self._variable_names = cube_params.get('variable_names',
                                                self.get_all_variable_names())
+        self._attrs = {}
         self._observers = [observer] if observer is not None else []
         self._trace_store_calls = trace_store_calls
 
@@ -252,6 +255,8 @@ class RemoteChunkStore(MutableMapping, metaclass=ABCMeta):
                     time_dimension = i
                 if chunk_sizes[i] == -1:
                     chunk_sizes[i] = sizes[i]
+            var_attrs['shape'] = sizes
+            var_attrs['size'] = math.prod(sizes)
             if var_encoding.get('dtype', '') == 'bytes1024':
                 if 'grid_mapping_name' in var_attrs:
                     var_encoding['dtype'] = 'U'
@@ -308,7 +313,7 @@ class RemoteChunkStore(MutableMapping, metaclass=ABCMeta):
         if 'shape' in dim_attrs:
             dim_attrs['shape'] = list(shape)
         if len(shape) == 1:
-            self._metadata['dimensions'][coord_name] = coord_data.size
+            self._dimensions[coord_name] = coord_data.size
         coords_data[coord_name]['size'] = coord_data.size
         coords_data[coord_name]['chunkSize'] = dim_attrs['chunk_sizes']
         coords_data[coord_name]['data'] = coord_data
@@ -798,14 +803,13 @@ class CciChunkStore(RemoteChunkStore):
         return [variable['name'] for variable in self._metadata['variables']]
 
     def get_dimensions(self) -> Mapping[str, int]:
-        return self._metadata['dimensions']
+        return copy.copy(self._metadata['dimensions'])
 
     def get_coords_data(self, dataset_id: str):
         var_names, coord_names = self._cci_odp.var_and_coord_names(dataset_id)
         coords_dict = {}
         for coord_name in coord_names:
-            coords_dict[coord_name] = self._metadata.get('variable_infos').\
-                get(coord_name).get('size')
+            coords_dict[coord_name] = self.get_attrs(coord_name).get('size')
         dimension_data = self.get_variable_data(dataset_id, coords_dict)
         if len(dimension_data) == 0:
             # no valid data found in indicated time range, let's set this broader
@@ -820,12 +824,15 @@ class CciChunkStore(RemoteChunkStore):
 
     def get_encoding(self, var_name: str) -> Dict[str, Any]:
         encoding_dict = {}
-        encoding_dict['fill_value'] = self._metadata.get('variable_infos', {}).get(var_name, {}).get('fill_value')
-        encoding_dict['dtype'] = self._metadata.get('variable_infos', {}).get(var_name, {}).get('data_type')
+        encoding_dict['fill_value'] = self.get_attrs(var_name).get('fill_value')
+        encoding_dict['dtype'] = self.get_attrs(var_name).get('data_type')
         return encoding_dict
 
     def get_attrs(self, var_name: str) -> Dict[str, Any]:
-        return self._metadata.get('variable_infos', {}).get(var_name, {})
+        if var_name not in self._attrs:
+            self._attrs[var_name] = copy.deepcopy(
+                self._metadata.get('variable_infos', {}).get(var_name, {}))
+        return self._attrs[var_name]
 
     def fetch_chunk(self,
                     key: str,
@@ -864,7 +871,7 @@ class CciChunkStore(RemoteChunkStore):
             if var_dimension == 'time':
                 dim_indexes.append(slice(None, None, None))
                 continue
-            dim_size = self._metadata.get('dimensions', {}).get(var_dimension, -1)
+            dim_size = self._dimensions.get(var_dimension, -1)
             if dim_size < 0:
                 raise ValueError(f'Could not determine size of dimension {var_dimension}')
             data_offset = self._dimension_chunk_offsets.get(var_dimension, 0)
