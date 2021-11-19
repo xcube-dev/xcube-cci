@@ -1019,31 +1019,41 @@ class CciOdp:
                     num_results += maximum_records
                 await asyncio.gather(*tasks)
 
-    async def _fetch_opensearch_feature_part_list(self, session, base_url, query_args, start_page,
-                                                  maximum_records, extension, extender,
-                                                  start_date, end_date) -> int:
+    async def _fetch_opensearch_feature_part_list(
+            self, session, base_url, query_args, start_page, maximum_records,
+            extension, extender, start_date, end_date
+    ) -> int:
         paging_query_args = dict(query_args or {})
-        paging_query_args.update(startPage=start_page, maximumRecords=maximum_records,
+        paging_query_args.update(startPage=start_page,
+                                 maximumRecords=maximum_records,
                                  httpAccept='application/geo+json')
         if start_date:
             paging_query_args.update(startDate=start_date)
         if end_date:
             paging_query_args.update(endDate=end_date)
         url = base_url + '?' + urllib.parse.urlencode(paging_query_args)
-        resp = await self.get_response(session, url)
-        if resp:
-            json_text = await resp.read()
-            json_dict = json.loads(json_text.decode('utf-8'))
-            if extender:
-                feature_list = json_dict.get("features", [])
-                extender(extension, feature_list)
-            return json_dict['totalResults']
-        if 'startDate' in paging_query_args and 'endDate' in paging_query_args:
-            _LOG.debug(f'Did not read page {start_page} with start date '
-                       f'{paging_query_args["startDate"]} and '
-                       f'end date {paging_query_args["endDate"]}')
-        else:
-            _LOG.debug(f'Did not read page {start_page}')
+        num_reattempts = start_page * 2
+        attempt = 0
+        while attempt < num_reattempts:
+            resp = await self.get_response(session, url)
+            if resp:
+                json_text = await resp.read()
+                json_dict = json.loads(json_text.decode('utf-8'))
+                if extender:
+                    feature_list = json_dict.get("features", [])
+                    extender(extension, feature_list)
+                return json_dict['totalResults']
+            attempt += 1
+            if 'startDate' in paging_query_args and \
+                    'endDate' in paging_query_args:
+                _LOG.debug(f'Did not read page {start_page} with start date '
+                           f'{paging_query_args["startDate"]} and '
+                           f'end date {paging_query_args["endDate"]} at '
+                           f'attempt # {attempt}')
+            else:
+                _LOG.debug(f'Did not read page {start_page} '
+                           f'at attempt {attempt}')
+            time.sleep(4)
         return 0
 
     async def _set_variable_infos(self, opensearch_url: str, dataset_id: str,
