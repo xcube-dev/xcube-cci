@@ -1,4 +1,5 @@
 ## Changes in 0.9.3 (in development)
+* Always show time bounds as coordinate, not as data variable
 
 ## Changes in 0.9.2
 
