@@ -184,7 +184,7 @@ class CciOdpDatasetOpenerTest(unittest.TestCase):
 
     @skipIf(os.environ.get('XCUBE_DISABLE_WEB_TESTS', None) == '1',
             'XCUBE_DISABLE_WEB_TESTS = 1')
-    def test_open_data(self):
+    def test_open_data_sst(self):
         dataset = self.opener.open_data(
             'esacci.SST.day.L4.SSTdepth.multi-sensor.multi-platform.OSTIA.1-1.r1',
             variable_names=['analysed_sst'],
@@ -199,6 +199,23 @@ class CciOdpDatasetOpenerTest(unittest.TestCase):
         self.assertEqual({'time', 'lat', 'lon'}, set(dataset.analysed_sst.dims))
         self.assertEqual({1, 20, 20}, set(dataset.analysed_sst.chunk_sizes))
 
+    @skipIf(os.environ.get('XCUBE_DISABLE_WEB_TESTS', None) == '1',
+            'XCUBE_DISABLE_WEB_TESTS = 1')
+    def test_open_data_aerosol(self):
+        dataset = self.opener.open_data(
+            'esacci.AEROSOL.day.L3.AAI.multi-sensor.multi-platform.'
+            'MSAAI.1-7.r1',
+            variable_names=['absorbing_aerosol_index'],
+            bbox=[40, 40, 50, 50],
+            time_range=['2014-01-01','2014-04-30'])
+        self.assertIsNotNone(dataset)
+        self.assertEqual({'absorbing_aerosol_index'}, set(dataset.data_vars))
+        self.assertEqual({'longitude', 'latitude', 'time', 'time_bnds'},
+                         set(dataset.coords))
+        self.assertEqual({'time', 'latitude', 'longitude'},
+                         set(dataset.absorbing_aerosol_index.dims))
+        self.assertEqual({1, 10, 10},
+                         set(dataset.absorbing_aerosol_index.chunk_sizes))
 
     @skipIf(os.environ.get(
         'XCUBE_DISABLE_WEB_TESTS', None) == '1', 'XCUBE_DISABLE_WEB_TESTS = 1')
@@ -321,6 +338,24 @@ class CciOdpDatasetOpenerNormalizeTest(unittest.TestCase):
         self.assertEqual('Cannot describe metadata of data resource '
                          '"esacci.AEROSOL.day.L3C.AER_PRODUCTS.AATSR.Envisat.ATSR2-ENVISAT-ENS_DAILY.v2-6.r1", '
                          'as it cannot be accessed by data accessor "dataset:zarr:cciodp".', f'{dse.exception}')
+
+    @skipIf(os.environ.get('XCUBE_DISABLE_WEB_TESTS', None) == '1',
+            'XCUBE_DISABLE_WEB_TESTS = 1')
+    def test_open_data_aerosol(self):
+        dataset = self.opener.open_data(
+            'esacci.AEROSOL.day.L3.AAI.multi-sensor.multi-platform.'
+            'MSAAI.1-7.r1',
+            variable_names=['absorbing_aerosol_index'],
+            bbox=[40, 40, 50, 50],
+            time_range=['2014-01-01','2014-04-30'])
+        self.assertIsNotNone(dataset)
+        self.assertEqual({'absorbing_aerosol_index'}, set(dataset.data_vars))
+        self.assertEqual({'lon', 'lat', 'time', 'time_bnds'},
+                         set(dataset.coords))
+        self.assertEqual({'time', 'lat', 'lon'},
+                         set(dataset.absorbing_aerosol_index.dims))
+        self.assertEqual({1, 10, 10},
+                         set(dataset.absorbing_aerosol_index.chunk_sizes))
 
     @skipIf(os.environ.get('XCUBE_DISABLE_WEB_TESTS', None) == '1', 'XCUBE_DISABLE_WEB_TESTS = 1')
     @skip('Disabled while time series are not supported')
