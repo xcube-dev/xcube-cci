@@ -282,7 +282,7 @@ class CciOdpDatasetOpenerTest(unittest.TestCase):
         self.assertEqual('1M', search_result[1].time_period)
         self.assertEqual(0.25, search_result[1].spatial_res)
         self.assertEqual(DATASET_TYPE, search_result[1].data_type)
-        self.assertEqual(('2001-01-01', '2019-12-31'),
+        self.assertEqual(('2001-01-01', '2020-12-31'),
                          search_result[1].time_range)
         self.assertEqual('dataset', search_result[0].data_type.alias)
         self.assertEqual('dataset', search_result[1].data_type.alias)
