@@ -26,6 +26,7 @@ import copy
 import json
 import logging
 import lxml.etree as etree
+import nest_asyncio
 import numpy as np
 import os
 import random
@@ -77,6 +78,8 @@ DESC_NS = {'gmd': 'http://www.isotc211.org/2005/gmd',
 _FEATURE_LIST_LOCK = asyncio.Lock()
 
 _TIMESTAMP_FORMAT = "%Y-%m-%dT%H:%M:%S"
+
+nest_asyncio.apply()
 
 # handling else case to https://github.com/dask/distributed/blob/cc3a6dfca71e1304f1e87ae996be87c615f297f6/distributed/config.py#L170
 if not WINDOWS:
@@ -950,7 +953,7 @@ class CciOdp:
         data_type = self._data_sources[request['drsId']].get('variable_infos', {})\
             .get(var_name, {}).get('data_type')
         data = await self._get_data_from_opendap_dataset(dataset, session, var_name, dim_indexes)
-        if not data:
+        if data is None:
             return None
         data = np.array(data, copy=False, dtype=data_type)
         return data.flatten().tobytes()
