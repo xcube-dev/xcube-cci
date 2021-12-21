@@ -184,7 +184,7 @@ class CciOdpDatasetOpenerTest(unittest.TestCase):
 
     @skipIf(os.environ.get('XCUBE_DISABLE_WEB_TESTS', None) == '1',
             'XCUBE_DISABLE_WEB_TESTS = 1')
-    def test_open_data(self):
+    def test_open_data_sst(self):
         dataset = self.opener.open_data(
             'esacci.SST.day.L4.SSTdepth.multi-sensor.multi-platform.OSTIA.1-1.r1',
             variable_names=['analysed_sst'],
@@ -199,6 +199,38 @@ class CciOdpDatasetOpenerTest(unittest.TestCase):
         self.assertEqual({'time', 'lat', 'lon'}, set(dataset.analysed_sst.dims))
         self.assertEqual({1, 20, 20}, set(dataset.analysed_sst.chunk_sizes))
 
+    @skipIf(os.environ.get('XCUBE_DISABLE_WEB_TESTS', None) == '1',
+            'XCUBE_DISABLE_WEB_TESTS = 1')
+    def test_open_data_aerosol(self):
+        dataset = self.opener.open_data(
+            'esacci.AEROSOL.day.L3.AAI.multi-sensor.multi-platform.'
+            'MSAAI.1-7.r1',
+            variable_names=['absorbing_aerosol_index'],
+            bbox=[40, 40, 50, 50],
+            time_range=['2014-01-01','2014-04-30'])
+        self.assertIsNotNone(dataset)
+        self.assertEqual({'absorbing_aerosol_index'}, set(dataset.data_vars))
+        self.assertEqual({'longitude', 'latitude', 'time', 'time_bnds'},
+                         set(dataset.coords))
+        self.assertEqual({'time', 'latitude', 'longitude'},
+                         set(dataset.absorbing_aerosol_index.dims))
+        self.assertEqual({1, 10, 10},
+                         set(dataset.absorbing_aerosol_index.chunk_sizes))
+
+        # open same dataset again to ensure chunking is different
+        full_dataset = self.opener.open_data(
+            'esacci.AEROSOL.day.L3.AAI.multi-sensor.multi-platform.'
+            'MSAAI.1-7.r1',
+            variable_names=['absorbing_aerosol_index'],
+            time_range=['2014-01-01','2014-04-30'])
+        self.assertIsNotNone(full_dataset)
+        self.assertEqual({'absorbing_aerosol_index'}, set(full_dataset.data_vars))
+        self.assertEqual({'longitude', 'latitude', 'time', 'time_bnds'},
+                         set(full_dataset.coords))
+        self.assertEqual({'time', 'latitude', 'longitude'},
+                         set(full_dataset.absorbing_aerosol_index.dims))
+        self.assertEqual({1, 180, 360},
+                         set(full_dataset.absorbing_aerosol_index.chunk_sizes))
 
     @skipIf(os.environ.get(
         'XCUBE_DISABLE_WEB_TESTS', None) == '1', 'XCUBE_DISABLE_WEB_TESTS = 1')
@@ -235,9 +267,10 @@ class CciOdpDatasetOpenerTest(unittest.TestCase):
     @skipIf(os.environ.get('XCUBE_DISABLE_WEB_TESTS', None) == '1',
             'XCUBE_DISABLE_WEB_TESTS = 1')
     def test_search(self):
-        search_result = list(self.opener.search_data(
+        search_result = list(self.opener.search_data(cci_attrs=dict(
             ecv='FIRE',
             product_string='MODIS_TERRA'))
+        )
         self.assertIsNotNone(search_result)
         self.assertEqual(2, len(search_result))
         self.assertIsInstance(search_result[1], DatasetDescriptor)
@@ -249,7 +282,7 @@ class CciOdpDatasetOpenerTest(unittest.TestCase):
         self.assertEqual('1M', search_result[1].time_period)
         self.assertEqual(0.25, search_result[1].spatial_res)
         self.assertEqual(DATASET_TYPE, search_result[1].data_type)
-        self.assertEqual(('2001-01-01', '2019-12-31'),
+        self.assertEqual(('2001-01-01', '2020-12-31'),
                          search_result[1].time_range)
         self.assertEqual('dataset', search_result[0].data_type.alias)
         self.assertEqual('dataset', search_result[1].data_type.alias)
@@ -321,6 +354,39 @@ class CciOdpDatasetOpenerNormalizeTest(unittest.TestCase):
                          '"esacci.AEROSOL.day.L3C.AER_PRODUCTS.AATSR.Envisat.ATSR2-ENVISAT-ENS_DAILY.v2-6.r1", '
                          'as it cannot be accessed by data accessor "dataset:zarr:cciodp".', f'{dse.exception}')
 
+    @skipIf(os.environ.get('XCUBE_DISABLE_WEB_TESTS', None) == '1',
+            'XCUBE_DISABLE_WEB_TESTS = 1')
+    def test_open_data_aerosol(self):
+        dataset = self.opener.open_data(
+            'esacci.AEROSOL.day.L3.AAI.multi-sensor.multi-platform.'
+            'MSAAI.1-7.r1',
+            variable_names=['absorbing_aerosol_index'],
+            bbox=[40, 40, 50, 50],
+            time_range=['2014-01-01','2014-04-30'])
+        self.assertIsNotNone(dataset)
+        self.assertEqual({'absorbing_aerosol_index'}, set(dataset.data_vars))
+        self.assertEqual({'lon', 'lat', 'time', 'time_bnds'},
+                         set(dataset.coords))
+        self.assertEqual({'time', 'lat', 'lon'},
+                         set(dataset.absorbing_aerosol_index.dims))
+        self.assertEqual({1, 10, 10},
+                         set(dataset.absorbing_aerosol_index.chunk_sizes))
+
+        # open same dataset again to ensure chunking is different
+        full_dataset = self.opener.open_data(
+            'esacci.AEROSOL.day.L3.AAI.multi-sensor.multi-platform.'
+            'MSAAI.1-7.r1',
+            variable_names=['absorbing_aerosol_index'],
+            time_range=['2014-01-01','2014-04-30'])
+        self.assertIsNotNone(full_dataset)
+        self.assertEqual({'absorbing_aerosol_index'}, set(full_dataset.data_vars))
+        self.assertEqual({'lon', 'lat', 'time', 'time_bnds'},
+                         set(full_dataset.coords))
+        self.assertEqual({'time', 'lat', 'lon'},
+                         set(full_dataset.absorbing_aerosol_index.dims))
+        self.assertEqual({1, 180, 360},
+                         set(full_dataset.absorbing_aerosol_index.chunk_sizes))
+
     @skipIf(os.environ.get('XCUBE_DISABLE_WEB_TESTS', None) == '1', 'XCUBE_DISABLE_WEB_TESTS = 1')
     @skip('Disabled while time series are not supported')
     def test_open_data_with_time_series_and_latitude_centers(self):
@@ -339,7 +405,8 @@ class CciOdpDatasetOpenerNormalizeTest(unittest.TestCase):
     @skipIf(os.environ.get('XCUBE_DISABLE_WEB_TESTS', None) == '1', 'XCUBE_DISABLE_WEB_TESTS = 1')
     def test_search(self):
         search_result = list(self.opener.search_data(
-            ecv='LAKES'))
+            cci_attrs=(dict(ecv='LAKES')))
+        )
         self.assertIsNotNone(search_result)
         self.assertEqual(2, len(search_result))
         self.assertIsInstance(search_result[1], DatasetDescriptor)
@@ -405,15 +472,17 @@ class CciOdpDataStoreTest(unittest.TestCase):
         self.assertTrue('start_date' in search_schema['properties'])
         self.assertTrue('end_date' in search_schema['properties'])
         self.assertTrue('bbox' in search_schema['properties'])
-        self.assertTrue('ecv' in search_schema['properties'])
-        self.assertTrue('frequency' in search_schema['properties'])
-        self.assertTrue('institute' in search_schema['properties'])
-        self.assertTrue('processing_level' in search_schema['properties'])
-        self.assertTrue('product_string' in search_schema['properties'])
-        self.assertTrue('product_version' in search_schema['properties'])
-        self.assertTrue('data_type' in search_schema['properties'])
-        self.assertTrue('sensor' in search_schema['properties'])
-        self.assertTrue('platform' in search_schema['properties'])
+        self.assertTrue('cci_attrs' in search_schema['properties'])
+        cci_properties = search_schema['properties']['cci_attrs']['properties']
+        self.assertTrue('ecv' in cci_properties)
+        self.assertTrue('frequency' in cci_properties)
+        self.assertTrue('institute' in cci_properties)
+        self.assertTrue('processing_level' in cci_properties)
+        self.assertTrue('product_string' in cci_properties)
+        self.assertTrue('product_version' in cci_properties)
+        self.assertTrue('data_type' in cci_properties)
+        self.assertTrue('sensor' in cci_properties)
+        self.assertTrue('platform' in cci_properties)
 
     @skipIf(os.environ.get('XCUBE_DISABLE_WEB_TESTS', None) == '1', 'XCUBE_DISABLE_WEB_TESTS = 1')
     def test_search(self):

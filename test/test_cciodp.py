@@ -17,7 +17,7 @@ class CciOdpTest(unittest.TestCase):
             'esacci.OZONE.mon.L3.NP.multi-sensor.multi-platform.MERGED.fv0002.r1')
         request = dict(parentIdentifier=id,
                        startDate='1997-05-01T00:00:00',
-                       endDate='1997-05-01T00:00:00',
+                       endDate='1997-05-02T00:00:00',
                        varNames=['surface_pressure'],
                        drsId='esacci.OZONE.mon.L3.NP.multi-sensor.multi-platform.MERGED.fv0002.r1'
                        )
@@ -31,7 +31,7 @@ class CciOdpTest(unittest.TestCase):
         # check whether data type has been converted to
         request = dict(parentIdentifier=id,
                        startDate='1997-05-01T00:00:00',
-                       endDate='1997-05-01T00:00:00',
+                       endDate='1997-05-02T00:00:00',
                        varNames=['layers'],
                        drsId='esacci.OZONE.mon.L3.NP.multi-sensor.multi-platform.MERGED.fv0002.r1')
         dim_indexes = (slice(None, None), slice(0, 179), slice(0, 359))
@@ -379,7 +379,9 @@ class CciOdpTest(unittest.TestCase):
             start_date='1990-05-01',
             end_date='2021-08-01',
             bbox=(-20, 30, 20, 50),
-            ecv='AEROSOL'
+            cci_attrs=dict(
+                ecv='AEROSOL'
+            )
         )
         self.assertTrue(len(aerosol_sources) > 13)
 
@@ -390,7 +392,9 @@ class CciOdpTest(unittest.TestCase):
             start_date='1990-05-01',
             end_date='2021-08-01',
             bbox=(-20, 30, 20, 50),
-            frequency='5 days'
+            cci_attrs=dict(
+                frequency='5 days'
+            )
         )
         self.assertTrue(len(five_day_sources) > 18)
 
@@ -401,7 +405,9 @@ class CciOdpTest(unittest.TestCase):
             start_date = '1990-05-01',
             end_date = '2021-08-01',
             bbox=(-20, 30, 20, 50),
-            processing_level='L2P'
+            cci_attrs=dict(
+                processing_level='L2P'
+            )
         )
         self.assertTrue(len(l2p_sources) > 28)
 
@@ -412,7 +418,9 @@ class CciOdpTest(unittest.TestCase):
             start_date = '1990-05-01',
             end_date = '2021-08-01',
             bbox=(-20, 30, 20, 50),
-            product_string='AVHRR19_G'
+            cci_attrs=dict(
+                product_string='AVHRR19_G'
+            )
         )
         self.assertTrue(len(avhrr19g_sources) > 3)
 
@@ -423,7 +431,9 @@ class CciOdpTest(unittest.TestCase):
             start_date = '1990-05-01',
             end_date = '2021-08-01',
             bbox=(-20, 30, 20, 50),
-            product_version='v2.3.8'
+            cci_attrs=dict(
+                product_version='v2.3.8'
+            )
         )
         self.assertTrue(len(v238_sources) > 2)
 
@@ -434,7 +444,9 @@ class CciOdpTest(unittest.TestCase):
             start_date='2007-05-01',
             end_date='2009-08-01',
             bbox=(-20, 30, 20, 50),
-            data_type='SICONC'
+            cci_attrs=dict(
+                data_type='SICONC'
+            )
         )
         self.assertTrue(len(siconc_sources) > 3)
 
@@ -445,7 +457,9 @@ class CciOdpTest(unittest.TestCase):
             start_date = '1990-05-01',
             end_date = '2021-08-01',
             bbox=(-20, 30, 20, 50),
-            sensor='SCIAMACHY'
+            cci_attrs=dict(
+                sensor='SCIAMACHY'
+            )
         )
         self.assertTrue(len(sciamachy_sources) > 2)
 

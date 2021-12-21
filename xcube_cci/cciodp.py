@@ -37,7 +37,7 @@ import urllib.parse
 import warnings
 from datetime import datetime
 from dateutil.relativedelta import relativedelta
-from typing import List, Dict, Tuple, Optional, Union
+from typing import List, Dict, Tuple, Optional, Union, Mapping
 from urllib.parse import quote
 
 from distributed.compatibility import WINDOWS
@@ -611,42 +611,45 @@ class CciOdp:
                start_date: Optional[str] = None,
                end_date: Optional[str] = None,
                bbox: Optional[Tuple[float, float, float, float]] = None,
-               ecv: Optional[str] = None,
-               frequency: Optional[str] = None,
-               institute: Optional[str] = None,
-               processing_level: Optional[str] = None,
-               product_string: Optional[str] = None,
-               product_version: Optional[str] = None,
-               data_type: Optional[str] = None,
-               sensor: Optional[str] = None,
-               platform: Optional[str] = None) -> List[str]:
+               cci_attrs: Optional[Mapping[str, str]] = None) -> List[str]:
         candidate_names = []
-        if not self._data_sources and not ecv and not frequency and not processing_level \
-                and not data_type and not product_string and not product_version:
+        if not self._data_sources and 'ecv' not in cci_attrs \
+                and 'frequency' not in cci_attrs \
+                and 'processing_level' not in cci_attrs \
+                and 'data_type' not in cci_attrs \
+                and 'product_string' not in cci_attrs \
+                and 'product_version' not in cci_attrs:
             self._run_with_session(self._read_all_data_sources)
             candidate_names = self.dataset_names
         else:
             for dataset_name in self.dataset_names:
-                split_dataset_name = dataset_name.split('.')
-                if ecv is not None and ecv != split_dataset_name[1]:
+                _, ecv, frequency, processing_level, data_type, sensor, \
+                platform, product_string, product_version, _ = \
+                    dataset_name.split('.')
+                if cci_attrs.get('ecv', ecv) != ecv:
                     continue
-                if frequency is not None and frequency != \
-                        _convert_time_from_drs_id(split_dataset_name[2]):
+                if cci_attrs.get('processing_level', processing_level) \
+                        != processing_level:
                     continue
-                if processing_level is not None and processing_level != split_dataset_name[3]:
+                if cci_attrs.get('data_type', data_type) != data_type:
                     continue
-                if data_type is not None and data_type != split_dataset_name[4]:
+                if cci_attrs.get('product_string', product_string) != \
+                        product_string:
                     continue
-                if product_string is not None and product_string != split_dataset_name[7]:
+                product_version = product_version.replace('-', '.')
+                if cci_attrs.get('product_version', product_version) \
+                        != product_version:
                     continue
-                if product_version is not None and product_version.replace('.', '-') != \
-                        split_dataset_name[8]:
+                converted_time = _convert_time_from_drs_id(frequency)
+                if cci_attrs.get('frequency', converted_time) != converted_time:
                     continue
                 candidate_names.append(dataset_name)
             if len(candidate_names) == 0:
                 return []
-        if not start_date and not end_date and not institute and not sensor and not platform \
-                and not bbox:
+        if not start_date and not end_date and not bbox \
+                and 'institute' not in cci_attrs \
+                and 'sensor' not in cci_attrs \
+                and 'platform' not in cci_attrs:
             return candidate_names
         results = []
         if start_date:
@@ -658,12 +661,16 @@ class CciOdp:
             data_source_info = self._data_sources.get(candidate_name, None)
             if not data_source_info:
                 continue
-            if institute is not None and ('institute' not in data_source_info or
-                                          institute != data_source_info['institute']):
+            institute = cci_attrs.get('institute')
+            if institute is not None and \
+                    ('institute' not in data_source_info or
+                     institute != data_source_info['institute']):
                 continue
-            if sensor is not None and sensor != data_source_info['sensor_id']:
+            if cci_attrs.get('sensor', data_source_info['sensor_id']) \
+                    != data_source_info['sensor_id']:
                 continue
-            if platform is not None and platform != data_source_info['platform_id']:
+            if cci_attrs.get('platform', data_source_info['platform_id']) \
+                    != data_source_info['platform_id']:
                 continue
             if bbox:
                 if float(data_source_info['bbox_minx']) > bbox[2]:
@@ -826,13 +833,14 @@ class CciOdp:
                                                           feature_list,
                                                           self._extract_times_and_opendap_url,
                                                           request)
-                feature_list.sort(key=lambda x: x[0])
-                end_offset = -1
-                while feature_list[end_offset] in self._features[ds_id] \
-                        and end_offset > 0:
-                    end_offset -= 1
-                self._features[ds_id] = feature_list[:end_offset] \
-                                        + self._features[ds_id]
+                if len(feature_list) > 0:
+                    feature_list.sort(key=lambda x: x[0])
+                    end_offset = -1
+                    while feature_list[end_offset] in self._features[ds_id] \
+                            and end_offset > 0:
+                        end_offset -= 1
+                    self._features[ds_id] = feature_list[:end_offset] \
+                                            + self._features[ds_id]
             if end_date > self._features[ds_id][-1][1]:
                 request['startDate'] = datetime.strftime(self._features[ds_id][-1][1],
                                                          _TIMESTAMP_FORMAT)
@@ -842,13 +850,14 @@ class CciOdp:
                                                           feature_list,
                                                           self._extract_times_and_opendap_url,
                                                           request)
-                feature_list.sort(key=lambda x: x[0])
-                end_offset = 0
-                while feature_list[end_offset] in self._features[ds_id] \
-                        and end_offset < len(feature_list) - 1:
-                    end_offset += 1
-                self._features[ds_id] = self._features[ds_id] \
-                                        + feature_list[end_offset:]
+                if len(feature_list) > 0:
+                    feature_list.sort(key=lambda x: x[0])
+                    end_offset = 0
+                    while feature_list[end_offset] in self._features[ds_id] \
+                            and end_offset < len(feature_list) - 1:
+                        end_offset += 1
+                    self._features[ds_id] = self._features[ds_id] \
+                                            + feature_list[end_offset:]
         start = bisect.bisect_left([feature[1] for feature in self._features[ds_id]], start_date)
         end = bisect.bisect_right([feature[0] for feature in self._features[ds_id]], end_date)
         return self._features[ds_id][start:end]
@@ -986,7 +995,9 @@ class CciOdp:
                 start_time = datetime.strptime(query_args.pop('startDate'), _TIMESTAMP_FORMAT)
                 end_time = datetime.strptime(query_args.pop('endDate'), _TIMESTAMP_FORMAT)
                 num_days_per_delta = \
-                    int(np.ceil((end_time - start_time).days / (total_results / 1000)))
+                    max(1,
+                        int(np.ceil((end_time - start_time).days /
+                                    (total_results / 1000))))
                 delta = relativedelta(days=num_days_per_delta, seconds=-1)
                 tasks = []
                 current_time = start_time
@@ -1017,31 +1028,41 @@ class CciOdp:
                     num_results += maximum_records
                 await asyncio.gather(*tasks)
 
-    async def _fetch_opensearch_feature_part_list(self, session, base_url, query_args, start_page,
-                                                  maximum_records, extension, extender,
-                                                  start_date, end_date) -> int:
+    async def _fetch_opensearch_feature_part_list(
+            self, session, base_url, query_args, start_page, maximum_records,
+            extension, extender, start_date, end_date
+    ) -> int:
         paging_query_args = dict(query_args or {})
-        paging_query_args.update(startPage=start_page, maximumRecords=maximum_records,
+        paging_query_args.update(startPage=start_page,
+                                 maximumRecords=maximum_records,
                                  httpAccept='application/geo+json')
         if start_date:
             paging_query_args.update(startDate=start_date)
         if end_date:
             paging_query_args.update(endDate=end_date)
         url = base_url + '?' + urllib.parse.urlencode(paging_query_args)
-        resp = await self.get_response(session, url)
-        if resp:
-            json_text = await resp.read()
-            json_dict = json.loads(json_text.decode('utf-8'))
-            if extender:
-                feature_list = json_dict.get("features", [])
-                extender(extension, feature_list)
-            return json_dict['totalResults']
-        if 'startDate' in paging_query_args and 'endDate' in paging_query_args:
-            _LOG.debug(f'Did not read page {start_page} with start date '
-                       f'{paging_query_args["startDate"]} and '
-                       f'end date {paging_query_args["endDate"]}')
-        else:
-            _LOG.debug(f'Did not read page {start_page}')
+        num_reattempts = start_page * 2
+        attempt = 0
+        while attempt < num_reattempts:
+            resp = await self.get_response(session, url)
+            if resp:
+                json_text = await resp.read()
+                json_dict = json.loads(json_text.decode('utf-8'))
+                if extender:
+                    feature_list = json_dict.get("features", [])
+                    extender(extension, feature_list)
+                return json_dict['totalResults']
+            attempt += 1
+            if 'startDate' in paging_query_args and \
+                    'endDate' in paging_query_args:
+                _LOG.debug(f'Did not read page {start_page} with start date '
+                           f'{paging_query_args["startDate"]} and '
+                           f'end date {paging_query_args["endDate"]} at '
+                           f'attempt # {attempt}')
+            else:
+                _LOG.debug(f'Did not read page {start_page} '
+                           f'at attempt {attempt}')
+            time.sleep(4)
         return 0
 
     async def _set_variable_infos(self, opensearch_url: str, dataset_id: str,
