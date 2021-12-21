@@ -26,6 +26,7 @@ import copy
 import json
 import logging
 import lxml.etree as etree
+import nest_asyncio
 import numpy as np
 import os
 import random
@@ -39,14 +40,8 @@ from datetime import datetime
 from dateutil.relativedelta import relativedelta
 from typing import List, Dict, Tuple, Optional, Union, Mapping
 from urllib.parse import quote
-from xcube_cci.constants import CCI_ODD_URL
-from xcube_cci.constants import DEFAULT_NUM_RETRIES
-from xcube_cci.constants import DEFAULT_RETRY_BACKOFF_MAX
-from xcube_cci.constants import DEFAULT_RETRY_BACKOFF_BASE
-from xcube_cci.constants import OPENSEARCH_CEDA_URL
-from xcube_cci.constants import COMMON_COORD_VAR_NAMES
-from xcube_cci.timeutil import get_timestrings_from_string
 
+from distributed.compatibility import WINDOWS
 from pydap.handlers.dap import BaseProxy
 from pydap.handlers.dap import SequenceProxy
 from pydap.handlers.dap import unpack_data
@@ -60,6 +55,15 @@ from pydap.parsers import parse_ce
 from pydap.parsers.dds import build_dataset
 from pydap.parsers.das import parse_das, add_attributes
 from six.moves.urllib.parse import urlsplit, urlunsplit
+from tornado.platform.asyncio import AnyThreadEventLoopPolicy
+
+from xcube_cci.constants import CCI_ODD_URL
+from xcube_cci.constants import DEFAULT_NUM_RETRIES
+from xcube_cci.constants import DEFAULT_RETRY_BACKOFF_MAX
+from xcube_cci.constants import DEFAULT_RETRY_BACKOFF_BASE
+from xcube_cci.constants import OPENSEARCH_CEDA_URL
+from xcube_cci.constants import COMMON_COORD_VAR_NAMES
+from xcube_cci.timeutil import get_timestrings_from_string
 
 _LOG = logging.getLogger('xcube')
 ODD_NS = {'os': 'http://a9.com/-/spec/opensearch/1.1/',
@@ -74,6 +78,12 @@ DESC_NS = {'gmd': 'http://www.isotc211.org/2005/gmd',
 _FEATURE_LIST_LOCK = asyncio.Lock()
 
 _TIMESTAMP_FORMAT = "%Y-%m-%dT%H:%M:%S"
+
+nest_asyncio.apply()
+
+# handling else case to https://github.com/dask/distributed/blob/cc3a6dfca71e1304f1e87ae996be87c615f297f6/distributed/config.py#L170
+if not WINDOWS:
+    asyncio.set_event_loop_policy(AnyThreadEventLoopPolicy())
 
 _RE_TO_DATETIME_FORMATS = \
     [(re.compile(14 * '\\d'), '%Y%m%d%H%M%S', relativedelta()),
@@ -943,6 +953,8 @@ class CciOdp:
         data_type = self._data_sources[request['drsId']].get('variable_infos', {})\
             .get(var_name, {}).get('data_type')
         data = await self._get_data_from_opendap_dataset(dataset, session, var_name, dim_indexes)
+        if data is None:
+            return None
         data = np.array(data, copy=False, dtype=data_type)
         return data.flatten().tobytes()
 
@@ -1305,13 +1317,18 @@ class CciOdp:
         # download and unpack data
         resp = await self.get_response(session, url)
         if not resp:
+            _LOG.warning(f'Could not read response from "{url}"')
             return None
         content = await resp.read()
         dds, data = content.split(b'\nData:\n', 1)
         dds = str(dds, 'utf-8')
         # Parse received dataset:
         dataset = build_dataset(dds)
-        dataset.data = unpack_data(BytesReader(data), dataset)
+        try:
+            dataset.data = unpack_data(BytesReader(data), dataset)
+        except ValueError:
+            _LOG.warning(f'Could not read data from "{url}"')
+            return None
         return dataset[proxy.id].data
 
     async def get_response(self, session: aiohttp.ClientSession, url: str) -> \
