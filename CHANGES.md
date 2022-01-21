@@ -1,4 +1,66 @@
-## Changes in 0.6.1. (under development)
+## Changes in 0.9.4 (in development)
+
+## Changes in 0.9.3
+
+* Always show time bounds as coordinate, not as data variable
+* Prevent IndexError when requesting data with a time range
+
+## Changes in 0.9.2
+
+* Fixed issue where opening datasets in a daily resolution without a delimiting
+  time range would cause memory errors 
+  [#56](https://github.com/dcs4cop/xcube-cci/issues/56).
+
+## Changes in 0.9.1
+* Fixed issue that datasets with spatial bounds could not be opened.
+* Show version as `__version__`
+* The interface of the method `search_data` of the CciOdpDataStore 
+  has been changed. Search parameters `ecv`, `frequency` `institute`,
+  `processing_level`, `product_string`, `product_version`, `data_type`,
+  `sensor`, and `platform` may now be passed in a dictionary parameter named 
+  `cci_attrs`. This makes it possible again to use the parameter `data_type` 
+  [#54](https://github.com/dcs4cop/xcube-cci/issues/54).
+
+## Changes in 0.9.0
+* Version 0.9 now requires xcube 0.9 because of incompatible API changes in the 
+  xcube data store framework.
+* CciOdpCubeOpener has been removed.
+* CciOdpDatasetOpener and CciOdpDataStore now have a new constructor parameter 
+  `normalize`, that may be used to apply normalization steps to the CCI 
+  datasets.
+* Set coordinates correctly. All coordinates are present in data descriptions
+  and opened datasets, no coordinates appear as data variables 
+  [#42](https://github.com/dcs4cop/xcube-cci/issues/42).
+* CRS are supported correctly. CRS variables are present in datasets in case 
+  the CRS is different from 'WGS84', the CRS information is provided by the
+  data descriptor [#50](https://github.com/dcs4cop/xcube-cci/issues/50).
+
+## Changes in 0.8.1
+
+* Fixed an issue that caused that occasionally values returned by open_data consisted 
+  of random numbers where a fill value would have been expected. (#47) 
+* DataDescriptors contain coords
+* Internal virtual file system is built lazily, so opening datasets has become faster.
+* Store parameter method `get_search_params_schema` has been revised to correctly support 
+  all parameter values.
+* Support more datasets from ODP.
+* Fixed support of `user_agent` parameter
+* Added CCI Zarr Store as convenience store to access cci zarr datasets
+
+## Changes in 0.8.0
+
+* Added `user_agent` as additional optional store parameter.
+* Provided xcube data store framework interface compatibility with 
+  breaking changes in xcube 0.8.0 (see https://github.com/dcs4cop/xcube/issues/420).
+
+## Changes in 0.7.0
+* Removed constant-valued parameters from opener schema
+* Renamed store parameters `opensearch_url` and `opensearch_description_url` to
+  `endpoint_url` and `endpoint_description_url`, respectively.
+* Chunkstore considers bounding box when accessing data. Less data is accessed and normalized. (#33)
+* Fixed time range detection for datasets with daily time frequency.
+* Fixed problem with the encoding of a dataset's coordinate variables that occurs 
+  when using `xcube_cci` with xcube 0.6.0. (#27)
 * Removed CLI
 
 ## Changes in 0.6.0.
