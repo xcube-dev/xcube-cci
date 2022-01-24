@@ -136,10 +136,7 @@ class CciOdpDataOpener(DataOpener):
                                            metadata: dict) -> DatasetDescriptor:
         ds_metadata = metadata.copy()
         dims = self._normalize_dims(ds_metadata.get('dimensions', {}))
-        if 'time' not in dims:
-            dims['time'] = ds_metadata.get('time_dimension_size')
-        else:
-            dims['time'] *= ds_metadata.get('time_dimension_size')
+        dims['time'] = ds_metadata.get('time_dimension_size')
         bounds_dim_name = None
         for dim_name, dim_size in dims.items():
             if dim_size == 2:
