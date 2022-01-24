@@ -287,6 +287,32 @@ class CciOdpDatasetOpenerTest(unittest.TestCase):
         self.assertEqual('dataset', search_result[0].data_type.alias)
         self.assertEqual('dataset', search_result[1].data_type.alias)
 
+    @skipIf(os.environ.get('XCUBE_DISABLE_WEB_TESTS', None) == '1',
+            'XCUBE_DISABLE_WEB_TESTS = 1')
+    def test_open_monthly_ozone(self):
+        descriptor = self.opener.describe_data(
+            'esacci.OZONE.mon.L3.LP.GOMOS.Envisat.GOMOS_ENVISAT.v0001.r1')
+
+        dataset = self.opener.open_data(
+            'esacci.OZONE.mon.L3.LP.GOMOS.Envisat.GOMOS_ENVISAT.v0001.r1',
+            variable_names=['approximate_altitude',
+                            'ozone_mixing_ratio',
+                            'sample_standard_deviation'],
+            time_range=['2004-05-01', '2004-08-31']
+        )
+        self.assertIsNotNone(dataset)
+        self.assertEqual({'approximate_altitude', 'ozone_mixing_ratio',
+                          'sample_standard_deviation'},
+                         set(dataset.data_vars))
+        self.assertEqual({'time', 'air_pressure', 'latitude_centers', 'bnds'},
+                         set(dataset.ozone_mixing_ratio.dims))
+        self.assertEqual({4, 51, 18}, set(dataset.ozone_mixing_ratio.chunk_sizes))
+        dataset.ozone_mixing_ratio.sel(time='2004-05-15 12:00:00',
+                                       method='nearest').plot.imshow(
+            cmap='Greys_r',
+            figsize=(8, 8)
+        )
+
 
 class CciOdpDatasetOpenerNormalizeTest(unittest.TestCase):
 
@@ -424,6 +450,30 @@ class CciOdpDatasetOpenerNormalizeTest(unittest.TestCase):
         self.assertEqual('dataset', search_result[0].data_type.alias)
         self.assertEqual('dataset', search_result[1].data_type.alias)
 
+    @skipIf(os.environ.get('XCUBE_DISABLE_WEB_TESTS', None) == '1',
+            'XCUBE_DISABLE_WEB_TESTS = 1')
+    def test_open_monthly_ozone(self):
+        dataset = self.opener.open_data(
+            'esacci.OZONE.mon.L3.LP.GOMOS.Envisat.GOMOS_ENVISAT.v0001.r1',
+            variable_names=['approximate_altitude',
+                            'ozone_mixing_ratio',
+                            'sample_standard_deviation'],
+            time_range=['2004-05-01', '2004-08-31']
+        )
+        self.assertIsNotNone(dataset)
+        self.assertEqual({'approximate_altitude', 'ozone_mixing_ratio',
+                          'sample_standard_deviation'},
+                         set(dataset.data_vars))
+        self.assertEqual({'time', 'air_pressure', 'latitude_centers'},
+                         set(dataset.ozone_mixing_ratio.dims))
+        self.assertEqual({4, 51, 18}, set(dataset.ozone_mixing_ratio.chunk_sizes))
+        dataset.ozone_mixing_ratio.sel(time='2004-05-15 12:00:00',
+                                       method='nearest').plot.imshow(
+            cmap='Greys_r',
+            figsize=(8, 8)
+        )
+
+
 def user_agent(ext: str = "") -> str:
     from xcube_cci.version import version
     from platform import machine, python_version, system
@@ -490,25 +540,6 @@ class CciOdpDataStoreTest(unittest.TestCase):
         self.assertIsNotNone(geodataframe_search_result)
         self.assertEqual(0, len(geodataframe_search_result))
 
-
-    @skipIf(os.environ.get('XCUBE_DISABLE_WEB_TESTS', None) == '1', 'XCUBE_DISABLE_WEB_TESTS = 1')
-    def test_open_more_data(self):
-        dataset = self.store.open_data('esacci.OZONE.mon.L3.LP.GOMOS.Envisat.GOMOS_ENVISAT.v0001.r1',
-                                       'dataset:zarr:cciodp',
-                                        variable_names=['approximate_altitude', 'ozone_mixing_ratio',
-                                                        'sample_standard_deviation'],
-                                        time_range=['2004-05-01', '2004-08-31']
-                                       # ,
-                                        # bbox=[-10.0, 40.0, 10.0, 60.0]
-                                        )
-        self.assertIsNotNone(dataset)
-        self.assertEqual({'approximate_altitude', 'ozone_mixing_ratio', 'sample_standard_deviation'},
-                         set(dataset.data_vars))
-        self.assertEqual({'time', 'air_pressure', 'latitude_centers'},
-                         set(dataset.ozone_mixing_ratio.dims))
-        self.assertEqual({4, 51, 18}, set(dataset.ozone_mixing_ratio.chunk_sizes))
-        dataset.ozone_mixing_ratio.sel(time='2004-05-15 12:00:00', method='nearest').plot.\
-            imshow(cmap='Greys_r', figsize=(8, 8))
 
 class CciDataNormalizationTest(unittest.TestCase):
 
