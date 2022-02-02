@@ -3,9 +3,11 @@ channels:
   - conda-forge
   - defaults
 dependencies:
+  # Python
+  - python >=3.8
   # Required
   - xcube >= 0.9.0
   - aiohttp >= 3.6
   - nest-asyncio >= 1.3
   - lxml >= 4.5
-  - pydap >= 3.2
+  - pydap >= 3.3
