@@ -148,13 +148,12 @@ class CciOdpTest(unittest.TestCase):
                          data_source_list['12d6f4bdabe144d7836b0807e65aa0e2'].get('title', ''))
         self.assertTrue('variables' in data_source_list['12d6f4bdabe144d7836b0807e65aa0e2'])
         self.assertTrue('odd_url' in data_source_list['12d6f4bdabe144d7836b0807e65aa0e2'])
-        self.assertEqual('https://catalogue.ceda.ac.uk/export/xml/'
-                         '12d6f4bdabe144d7836b0807e65aa0e2.xml',
-                         data_source_list['12d6f4bdabe144d7836b0807e65aa0e2'].
-                         get('metadata_url', ''))
-        self.assertEqual('https://catalogue.ceda.ac.uk/uuid/12d6f4bdabe144d7836b0807e65aa0e2',
-                         data_source_list['12d6f4bdabe144d7836b0807e65aa0e2'].
-                         get('catalog_url', ''))
+        self.assertTrue(data_source_list['12d6f4bdabe144d7836b0807e65aa0e2'].
+                        get('metadata_url', '').
+                        endswith('12d6f4bdabe144d7836b0807e65aa0e2.xml'))
+        self.assertTrue(data_source_list['12d6f4bdabe144d7836b0807e65aa0e2'].
+                        get('catalog_url', '').
+                        endswith('12d6f4bdabe144d7836b0807e65aa0e2'))
 
     @skipIf(os.environ.get('XCUBE_DISABLE_WEB_TESTS', None) == '1', 'XCUBE_DISABLE_WEB_TESTS = 1')
     def test_get_datasets_metadata(self):
