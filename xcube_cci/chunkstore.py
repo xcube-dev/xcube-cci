@@ -800,7 +800,7 @@ class CciChunkStore(RemoteChunkStore):
         return (temporal_start, temporal_end)
 
     def get_all_variable_names(self) -> List[str]:
-        return [variable['name'] for variable in self._metadata['variables']]
+        return [variable['var_id'] for variable in self._metadata['variables']]
 
     def get_dimensions(self) -> Mapping[str, int]:
         return copy.copy(self._metadata['dimensions'])

@@ -136,22 +136,26 @@ def _get_feature_dict_from_feature(feature: dict) -> Optional[dict]:
     feature_dict['variables'] = variables
     fc_props_links = fc_props.get("links", None)
     if fc_props_links:
-        search = fc_props_links.get("search", None)
+        search = fc_props_links.get("search")
         if search:
-            odd_url = search[0].get('href', None)
+            odd_url = search[0].get('href')
             if odd_url:
                 feature_dict['odd_url'] = odd_url
-        described_by = fc_props_links.get("describedby", None)
+        described_by = fc_props_links.get("describedby")
         if described_by:
             for entry in described_by:
                 if entry.get('title', '') == 'ISO19115':
-                    metadata_url = entry.get("href", None)
+                    metadata_url = entry.get("href")
                     if metadata_url:
                         feature_dict['metadata_url'] = metadata_url
                 elif entry.get('title', '') == 'Dataset Information':
-                    catalogue_url = entry.get("href", None)
+                    catalogue_url = entry.get("href")
                     if catalogue_url:
                         feature_dict['catalog_url'] = catalogue_url
+        via = fc_props_links.get("via")
+        if via and len(via) > 0:
+            if via[0].get('title') == 'Dataset Manifest':
+                feature_dict['variable_manifest'] = via[0].get('href')
     return feature_dict
 
 
@@ -161,7 +165,7 @@ def _get_variables_from_feature(feature: dict) -> List:
     variable_dicts = []
     for variable in variables:
         variable_dict = {
-            'name': variable.get("var_id", None),
+            'var_id': variable.get("var_id", None),
             'units': variable.get("units", ""),
             'long_name': variable.get("long_name", None)}
         variable_dicts.append(variable_dict)
@@ -532,7 +536,7 @@ class CciOdp:
                 drs_meta_info['uuid'] = drs_uuid
             self._adjust_json_dict(drs_meta_info, drs_id)
             for variable in drs_meta_info.get('variables', []):
-                variable['name'] = variable['name'].replace('.', '_')
+                variable['var_id'] = variable['var_id'].replace('.', '_')
             drs_meta_info['cci_project'] = drs_meta_info['ecv']
             drs_meta_info['fid'] = datasource_id
             drs_meta_info['num_files'] = drs_meta_info['num_files'][drs_id]
@@ -1070,19 +1074,26 @@ class CciOdp:
 
     async def _set_variable_infos(self, opensearch_url: str, dataset_id: str,
                                   dataset_name: str, session, data_source):
+        time_dimension_size = data_source.get('num_files', -1)
         attributes = {}
         dimensions = {}
         variable_infos = {}
+        if data_source.get('variable_manifest'):
+            resp = await self.get_response(session,
+                                           data_source.get('variable_manifest'))
+            if resp:
+                json_dict = await resp.json(encoding='utf-8')
+                data_source['variables'] = json_dict.get(dataset_name, [])
+
+
         feature, time_dimension_size = \
-            await self._fetch_feature_and_num_nc_files_at(session,
-                                                          opensearch_url,
-                                                          dict(parentIdentifier=dataset_id,
-                                                               drsId=dataset_name),
-                                                          1)
-        # we need to do this to determine whether we are using the old
-        # or the new version of the odp
-        if 'uuid' not in data_source or data_source['uuid'] == data_source['fid']:
-            time_dimension_size = data_source['num_files']
+            await self._fetch_feature_and_num_nc_files_at(
+                session,
+                opensearch_url,
+                dict(parentIdentifier=dataset_id,
+                     drsId=dataset_name),
+                1
+            )
         if feature is not None:
             variable_infos, attributes = \
                 await self._get_variable_infos_from_feature(feature, session)

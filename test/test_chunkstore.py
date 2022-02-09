@@ -32,9 +32,10 @@ class CciChunkStoreTest(unittest.TestCase):
         time_ranges = store._time_ranges
         self.assertEqual(144, len(time_ranges))
         self.assertEqual(pd.Timestamp('1997-01-01T00:00:00'), time_ranges[0][0])
-        self.assertEqual(['surface_pressure', 'O3e_ndens', 'O3e_du', 'O3e_vmr',
-                          'O3e_du_tot', 'O3_du_tot', 'O3_ndens', 'O3_du', 'O3_vmr'],
-                         store._variable_names)
+        self.assertEqual(
+            {'surface_pressure', 'O3e_ndens', 'O3e_du', 'O3e_vmr', 'O3e_du_tot',
+             'O3_du_tot', 'O3_ndens', 'O3_du', 'O3_vmr'},
+            set(store._variable_names))
 
     @skipIf(os.environ.get('XCUBE_DISABLE_WEB_TESTS', None) == '1',
             'XCUBE_DISABLE_WEB_TESTS = 1')

@@ -424,6 +424,7 @@ class CciOdpDatasetOpenerNormalizeTest(unittest.TestCase):
         self.assertEqual('dataset', search_result[0].data_type.alias)
         self.assertEqual('dataset', search_result[1].data_type.alias)
 
+
 def user_agent(ext: str = "") -> str:
     from xcube_cci.version import version
     from platform import machine, python_version, system
