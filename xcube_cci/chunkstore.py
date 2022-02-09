@@ -119,8 +119,8 @@ class RemoteChunkStore(MutableMapping, metaclass=ABCMeta):
         if 'time_bounds' in coords_data:
             coords_data.pop('time_bounds')
         coords_data['time_bnds'] = {}
-        coords_data['time']['size'] = len(t_bnds_array)
-        coords_data['time']['data'] = t_bnds_array
+        coords_data['time_bnds']['size'] = len(t_bnds_array)
+        coords_data['time_bnds']['data'] = t_bnds_array
         sorted_coords_names = list(coords_data.keys())
         sorted_coords_names.sort()
         lat_min_offset = -1
