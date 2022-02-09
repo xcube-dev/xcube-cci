@@ -1,5 +1,8 @@
 ## Changes in 0.9.5 (in development)
 
+* Allow reading of datasets that do not specify chunk sizes (e.g., FIRE) 
+  [Cate #1033](https://github.com/CCI-Tools/cate/issues/1033).
+
 ## Changes in 0.9.4
 
 * Ensure compatibility with xarray >= 0.20.2 and python >= 3.10
