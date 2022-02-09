@@ -1227,21 +1227,28 @@ class CciOdp:
                                   f'is usually the case when data is missing '
                                   f'for a time step.',
                                   category=CciOdpWarning)
-            if '_ChunkSizes' in variable_infos[fixed_key]:
-                variable_infos[fixed_key]['chunk_sizes'] = variable_infos[fixed_key]['_ChunkSizes']
-                if type(variable_infos[fixed_key]['chunk_sizes']) == int:
-                    variable_infos[fixed_key]['file_chunk_sizes'] = \
-                        variable_infos[fixed_key]['chunk_sizes']
-                else:
-                    variable_infos[fixed_key]['file_chunk_sizes'] = \
-                        copy.deepcopy(variable_infos[fixed_key]['chunk_sizes'])
-                variable_infos[fixed_key].pop('_ChunkSizes')
-            variable_infos[fixed_key]['data_type'] = data_type
-            variable_infos[fixed_key]['dimensions'] = list(dataset[key].dimensions)
-            variable_infos[fixed_key]['file_dimensions'] = \
-                copy.deepcopy(variable_infos[fixed_key]['dimensions'])
             variable_infos[fixed_key]['size'] = dataset[key].size
             variable_infos[fixed_key]['shape'] = list(dataset[key].shape)
+            if '_ChunkSizes' in variable_infos[fixed_key]:
+                variable_infos[fixed_key]['chunk_sizes'] = \
+                    variable_infos[fixed_key]['_ChunkSizes']
+                variable_infos[fixed_key].pop('_ChunkSizes')
+            else:
+                variable_infos[fixed_key]['chunk_sizes'] = \
+                    variable_infos[fixed_key]['shape']
+            if type(variable_infos[fixed_key]['chunk_sizes']) == int:
+                variable_infos[fixed_key]['file_chunk_sizes'] = \
+                    variable_infos[fixed_key]['chunk_sizes']
+            else:
+                variable_infos[fixed_key]['file_chunk_sizes'] = \
+                    copy.deepcopy(variable_infos[fixed_key]['chunk_sizes'])
+            variable_infos[fixed_key]['data_type'] = data_type
+            variable_infos[fixed_key]['dimensions'] = \
+                list(dataset[key].dimensions)
+            variable_infos[fixed_key]['file_dimensions'] = \
+                copy.deepcopy(variable_infos[fixed_key]['dimensions'])
+
+
         return variable_infos, dataset.attributes
 
     def get_opendap_dataset(self, url: str):
