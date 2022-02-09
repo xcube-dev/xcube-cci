@@ -42,7 +42,7 @@ in order to use an unreleased version or to modify the code), you can do so as f
 
 ```
 $ git clone https://github.com/dcs4cop/xcube-cci.git
-$ cd xcube-ccs
+$ cd xcube-cci
 $ conda env create
 $ conda activate xcube-cci
 $ python setup.py develop
