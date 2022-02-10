@@ -1222,8 +1222,8 @@ class CciOdp:
                         self._determine_fill_value(np.dtype(data_type))
                 else:
                     warnings.warn(f'Variable "{fixed_key}" has no fill value, '
-                                  f'cannot set one. For parts where no data is'
-                                  f'available you will see random values. This'
+                                  f'cannot set one. For parts where no data is '
+                                  f'available you will see random values. This '
                                   f'is usually the case when data is missing '
                                   f'for a time step.',
                                   category=CciOdpWarning)
