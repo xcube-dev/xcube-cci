@@ -1,4 +1,4 @@
-## Changes in 0.9.5 (in development)
+## Changes in 0.9.5
 
 * Allow reading of datasets that do not specify chunk sizes (e.g., FIRE) 
   [Cate #1033](https://github.com/CCI-Tools/cate/issues/1033).
