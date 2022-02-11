@@ -89,6 +89,19 @@ class RemoteChunkStore(MutableMapping, metaclass=ABCMeta):
         if not self._time_ranges:
             raise ValueError('Could not determine any valid time stamps')
 
+        time_chunking = self.get_attrs('time').get('chunk_sizes', 1)
+        time_file_chunking = self.get_attrs('time').get('file_chunk_sizes', 1)
+        if time_file_chunking > 1 and 'time_range' in cube_params:
+            all_ranges = self.get_time_ranges(data_id, {})
+            first_index = all_ranges.index(self._time_ranges[0])
+            last_index = all_ranges.index(self._time_ranges[-1])
+            time_offset = first_index % time_file_chunking
+            part_in_first_file = time_file_chunking - time_offset
+            part_in_last_file = last_index & time_file_chunking
+            time_chunking = greatest_common_divisor(part_in_first_file,
+                                                    time_file_chunking,
+                                                    part_in_last_file)
+
         t_array = [s.to_pydatetime()
                    + 0.5 * (e.to_pydatetime() - s.to_pydatetime())
                    for s, e in self._time_ranges]
@@ -253,6 +266,7 @@ class RemoteChunkStore(MutableMapping, metaclass=ABCMeta):
                 if coord_name == 'time':
                     self._time_indexes[variable_name] = i
                     time_dimension = i
+                    chunk_sizes[i] = time_chunking
                 if chunk_sizes[i] == -1:
                     chunk_sizes[i] = sizes[i]
             var_attrs['shape'] = sizes
@@ -879,3 +893,16 @@ class CciChunkStore(RemoteChunkStore):
             end = min(start + chunk_sizes[i], data_offset + dim_size)
             dim_indexes.append(slice(start, end))
         return tuple(dim_indexes)
+
+
+def greatest_common_divisor(a: int, b: int, c: int):
+    return _greatest_common_divisor_two_numbers(
+        a,
+        _greatest_common_divisor_two_numbers(b, c)
+    )
+
+
+def _greatest_common_divisor_two_numbers(a: int, b: int) -> int:
+    if b == 0:
+        return a
+    return _greatest_common_divisor_two_numbers(b, a%b)

@@ -1101,12 +1101,19 @@ class CciOdp:
                 for index, dimension in enumerate(variable_infos[variable_info]['dimensions']):
                     if dimension not in dimensions:
                         dimensions[dimension] = variable_infos[variable_info]['shape'][index]
-            if 'time' in dimensions:
-                time_dimension_size *= dimensions['time']
-        data_source['dimensions'] = dimensions
-        data_source['variable_infos'] = variable_infos
-        data_source['attributes'] = attributes
-        data_source['time_dimension_size'] = time_dimension_size
+            dimensions['time'] = time_dimension_size * dimensions.get(
+                'time', 1)
+            for variable_info in variable_infos.values():
+                if 'time' in variable_info['dimensions']:
+                    time_index = variable_info['dimensions'].index('time')
+                    if 'shape' in variable_info:
+                        variable_info['shape'][time_index] = dimensions[
+                            'time']
+                        variable_info['size'] = np.prod(
+                            variable_info['shape'])
+            data_source['dimensions'] = dimensions
+            data_source['variable_infos'] = variable_infos
+            data_source['attributes'] = attributes
 
     async def _fetch_feature_and_num_nc_files_at(self, session, base_url, query_args, index) -> \
             Tuple[Optional[Dict], int]:
