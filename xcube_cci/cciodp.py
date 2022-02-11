@@ -1205,50 +1205,55 @@ class CciOdp:
         if np.issubdtype(dtype, np.inexact):
             return np.nan
 
-    async def _get_variable_infos_from_feature(self, feature: dict, session) -> (dict, dict):
+    async def _get_variable_infos_from_feature(self,
+                                               feature: dict,
+                                               session) -> (dict, dict):
         feature_info = _extract_feature_info(feature)
         opendap_url = f"{feature_info[4]['Opendap']}"
         dataset = await self._get_opendap_dataset(session, opendap_url)
         if not dataset:
-            _LOG.warning(f'Could not extract information about variables and attributes '
-                         f'from {opendap_url}')
+            _LOG.warning(f'Could not extract information about variables '
+                         f'and attributes from {opendap_url}')
             return {}, {}
         variable_infos = {}
         for key in dataset.keys():
             fixed_key = key.replace('%2E', '_').replace('.', '_')
             data_type = dataset[key].dtype.name
-            variable_infos[fixed_key] = copy.deepcopy(dataset[key].attributes)
-            variable_infos[fixed_key]['orig_data_type'] = data_type
-            if '_FillValue' in variable_infos[fixed_key]:
-                variable_infos[fixed_key]['fill_value'] = variable_infos[fixed_key]['_FillValue']
-                variable_infos[fixed_key].pop('_FillValue')
+            var_attrs = copy.deepcopy(dataset[key].attributes)
+            var_attrs['orig_data_type'] = data_type
+            if '_FillValue' in var_attrs:
+                var_attrs['fill_value'] = var_attrs['_FillValue']
+                var_attrs.pop('_FillValue')
             else:
                 if data_type in _DTYPES_TO_DTYPES_WITH_MORE_BYTES:
                     data_type = _DTYPES_TO_DTYPES_WITH_MORE_BYTES[data_type]
-                    variable_infos[fixed_key]['fill_value'] = \
+                    var_attrs['fill_value'] = \
                         self._determine_fill_value(np.dtype(data_type))
                 else:
                     warnings.warn(f'Variable "{fixed_key}" has no fill value, '
-                                  f'cannot set one. For parts where no data is'
-                                  f'available you will see random values. This'
+                                  f'cannot set one. For parts where no data is '
+                                  f'available you will see random values. This '
                                   f'is usually the case when data is missing '
                                   f'for a time step.',
                                   category=CciOdpWarning)
-            if '_ChunkSizes' in variable_infos[fixed_key]:
-                variable_infos[fixed_key]['chunk_sizes'] = variable_infos[fixed_key]['_ChunkSizes']
-                if type(variable_infos[fixed_key]['chunk_sizes']) == int:
-                    variable_infos[fixed_key]['file_chunk_sizes'] = \
-                        variable_infos[fixed_key]['chunk_sizes']
-                else:
-                    variable_infos[fixed_key]['file_chunk_sizes'] = \
-                        copy.deepcopy(variable_infos[fixed_key]['chunk_sizes'])
-                variable_infos[fixed_key].pop('_ChunkSizes')
-            variable_infos[fixed_key]['data_type'] = data_type
-            variable_infos[fixed_key]['dimensions'] = list(dataset[key].dimensions)
-            variable_infos[fixed_key]['file_dimensions'] = \
-                copy.deepcopy(variable_infos[fixed_key]['dimensions'])
-            variable_infos[fixed_key]['size'] = dataset[key].size
-            variable_infos[fixed_key]['shape'] = list(dataset[key].shape)
+            var_attrs['size'] = dataset[key].size
+            var_attrs['shape'] = list(dataset[key].shape)
+            if '_ChunkSizes' in var_attrs:
+                var_attrs['chunk_sizes'] = var_attrs['_ChunkSizes']
+                var_attrs.pop('_ChunkSizes')
+            else:
+                var_attrs['chunk_sizes'] = var_attrs['shape']
+            if type(var_attrs['chunk_sizes']) == int:
+                var_attrs['file_chunk_sizes'] = var_attrs['chunk_sizes']
+            else:
+                var_attrs['file_chunk_sizes'] = \
+                    copy.deepcopy(var_attrs['chunk_sizes'])
+            var_attrs['data_type'] = data_type
+            var_attrs['dimensions'] = list(dataset[key].dimensions)
+            var_attrs['file_dimensions'] = \
+                copy.deepcopy(var_attrs['dimensions'])
+            variable_infos[fixed_key] = var_attrs
+
         return variable_infos, dataset.attributes
 
     def get_opendap_dataset(self, url: str):
