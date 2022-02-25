@@ -94,6 +94,8 @@ class RemoteChunkStore(MutableMapping, metaclass=ABCMeta):
         if time_file_chunking > 1 and 'time_range' in cube_params:
             all_ranges = self.get_time_ranges(data_id, {})
             first_index = all_ranges.index(self._time_ranges[0])
+            new_first_index = math.floor(first_index / time_file_chunking) \
+                              * time_file_chunking
             last_index = all_ranges.index(self._time_ranges[-1])
             time_offset = first_index % time_file_chunking
             part_in_first_file = time_file_chunking - time_offset

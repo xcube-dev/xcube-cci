@@ -343,9 +343,9 @@ class CciOdpDatasetOpenerTimeSeriesTest(unittest.TestCase):
                          set(dataset.data_vars))
         self.assertEqual({'time', 'air_pressure', 'latitude_centers'},
                          set(dataset.ozone_mixing_ratio.dims))
-        self.assertEqual({4, 51, 18},
+        self.assertEqual({12, 51, 18},
                          set(dataset.ozone_mixing_ratio.shape))
-        self.assertEqual({4, 51, 18},
+        self.assertEqual({12, 51, 18},
                          set(dataset.ozone_mixing_ratio.chunk_sizes))
 
 
