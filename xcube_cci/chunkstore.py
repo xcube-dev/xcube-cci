@@ -89,20 +89,16 @@ class RemoteChunkStore(MutableMapping, metaclass=ABCMeta):
         if not self._time_ranges:
             raise ValueError('Could not determine any valid time stamps')
 
-        time_chunking = self.get_attrs('time').get('chunk_sizes', 1)
-        time_file_chunking = self.get_attrs('time').get('file_chunk_sizes', 1)
-        if time_file_chunking > 1 and 'time_range' in cube_params:
+        self._time_chunking = self.get_attrs('time').get('file_chunk_sizes', 1)
+        if self._time_chunking > 1 and 'time_range' in cube_params:
             all_ranges = self.get_time_ranges(data_id, {})
             first_index = all_ranges.index(self._time_ranges[0])
-            new_first_index = math.floor(first_index / time_file_chunking) \
-                              * time_file_chunking
+            new_first_index = math.floor(first_index / self._time_chunking) \
+                              * self._time_chunking
             last_index = all_ranges.index(self._time_ranges[-1])
-            time_offset = first_index % time_file_chunking
-            part_in_first_file = time_file_chunking - time_offset
-            part_in_last_file = last_index & time_file_chunking
-            time_chunking = greatest_common_divisor(part_in_first_file,
-                                                    time_file_chunking,
-                                                    part_in_last_file)
+            new_last_index = (math.ceil(last_index / self._time_chunking)
+                              * self._time_chunking)
+            self._time_ranges = all_ranges[new_first_index:new_last_index]
 
         t_array = [s.to_pydatetime()
                    + 0.5 * (e.to_pydatetime() - s.to_pydatetime())
@@ -268,7 +264,7 @@ class RemoteChunkStore(MutableMapping, metaclass=ABCMeta):
                 if coord_name == 'time':
                     self._time_indexes[variable_name] = i
                     time_dimension = i
-                    chunk_sizes[i] = time_chunking
+                    chunk_sizes[i] = self._time_chunking
                 if chunk_sizes[i] == -1:
                     chunk_sizes[i] = sizes[i]
             var_attrs['shape'] = sizes
@@ -296,9 +292,11 @@ class RemoteChunkStore(MutableMapping, metaclass=ABCMeta):
                                                    time_dimension)
             var_attrs['chunk_sizes'] = chunk_sizes
             if len(var_attrs.get('file_dimensions', [])) < len(dimensions):
-                var_attrs['file_chunk_sizes'] = chunk_sizes[1:]
+                var_attrs['file_chunk_sizes'] = chunk_sizes[1:].copy()
             else:
-                var_attrs['file_chunk_sizes'] = chunk_sizes
+                var_attrs['file_chunk_sizes'] = chunk_sizes.copy()
+                var_attrs['file_chunk_sizes'][time_dimension] \
+                    = time_file_chunking
             self._add_remote_array(variable_name,
                                    sizes,
                                    chunk_sizes,
@@ -528,7 +526,10 @@ class RemoteChunkStore(MutableMapping, metaclass=ABCMeta):
         return x1, y1, x2, y2
 
     def request_time_range(self, time_index: int) -> Tuple[pd.Timestamp, pd.Timestamp]:
-        start_time, end_time = self._time_ranges[time_index]
+        start_index = time_index * self._time_chunking
+        end_index = ((time_index + 1) * self._time_chunking) - 1
+        start_time = self._time_ranges[start_index][0]
+        end_time = self._time_ranges[end_index][1]
         return start_time, end_time
 
     def _add_static_array(self, name: str, array: np.ndarray, attrs: Dict):
@@ -870,10 +871,34 @@ class CciChunkStore(RemoteChunkStore):
                        )
         data = self._cci_odp.get_data_chunk(request, dim_indexes)
         if not data:
-            raise KeyError(f'{key}: cannot fetch chunk for variable {var_name!r} '
-                           f'and time_range {time_range!r}.')
+            raise KeyError(f'{key}: cannot fetch chunk for variable '
+                           f'{var_name!r} and time_range {time_range!r}.')
+        if self._time_chunking > 1:
+            expected_chunk_size, dtype_size = \
+                self._determine_expected_chunk_size(var_name)
+            data_length = len(data)
+            if data_length < expected_chunk_size:
+                var_dimensions = self.get_attrs(var_name).get('dimensions', [])
+                data_type = self.get_attrs(var_name).get('data_type')
+                dtype = np.dtype(self._SAMPLE_TYPE_TO_DTYPE[data_type])
+                fill_value = self.get_attrs(var_name).get('fill_value')
+                var_array = np.full(
+                    shape=int((expected_chunk_size - data_length) / dtype_size),
+                    fill_value=fill_value,
+                    dtype=dtype)
+                if chunk_index[var_dimensions.index('time')] == 0:
+                    return var_array.tobytes() + data
+                else:
+                    return data + var_array.tobytes()
         _LOG.info(f'Fetched chunk for ({chunk_index})"{var_name}"')
         return data
+
+    def _determine_expected_chunk_size(self, var_name: str):
+        chunk_sizes = self.get_attrs(var_name).get('chunk_sizes', {})
+        expected_chunk_size = np.prod(chunk_sizes)
+        data_type = self.get_attrs(var_name).get('data_type')
+        dtype = np.dtype(self._SAMPLE_TYPE_TO_DTYPE[data_type])
+        return expected_chunk_size * dtype.itemsize, dtype.itemsize
 
     def _get_dimension_indexes_for_chunk(self, var_name: str, chunk_index: Tuple[int, ...]) -> tuple:
         dim_indexes = []
