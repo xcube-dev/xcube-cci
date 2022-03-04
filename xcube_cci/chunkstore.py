@@ -296,7 +296,7 @@ class RemoteChunkStore(MutableMapping, metaclass=ABCMeta):
             else:
                 var_attrs['file_chunk_sizes'] = chunk_sizes.copy()
                 var_attrs['file_chunk_sizes'][time_dimension] \
-                    = time_file_chunking
+                    = self._time_chunking
             self._add_remote_array(variable_name,
                                    sizes,
                                    chunk_sizes,
