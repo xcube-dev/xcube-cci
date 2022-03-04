@@ -26,6 +26,7 @@ import copy
 import json
 import logging
 import lxml.etree as etree
+import math
 import nest_asyncio
 import numpy as np
 import os
@@ -1119,7 +1120,7 @@ class CciOdp:
             Tuple[Optional[Dict], int]:
         paging_query_args = dict(query_args or {})
         paging_query_args.update(startPage=index,
-                                 maximumRecords=2,
+                                 maximumRecords=5,
                                  httpAccept='application/geo+json',
                                  fileFormat='.nc')
         url = base_url + '?' + urllib.parse.urlencode(paging_query_args)
@@ -1130,10 +1131,8 @@ class CciOdp:
             feature_list = json_dict.get("features", [])
             # we try not to take the first feature, as the last and the first one may have
             # different time chunkings
-            if len(feature_list) > 1:
-                return feature_list[1], json_dict.get("totalResults", 0)
-            elif len(feature_list) > 0:
-                return feature_list[0], json_dict.get("totalResults", 0)
+            index = math.floor(len(feature_list) / 2)
+            return feature_list[index], json_dict.get("totalResults", 0)
         return None, 0
 
     async def _fetch_meta_info(self,
