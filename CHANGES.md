@@ -1,3 +1,7 @@
+## Changes in 0.9.6 (in development)
+
+* Updated Example Notebooks
+
 ## Changes in 0.9.5
 
 * Allow reading of datasets that do not specify chunk sizes (e.g., FIRE) 
