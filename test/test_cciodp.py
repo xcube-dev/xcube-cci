@@ -170,9 +170,10 @@ class CciOdpTest(unittest.TestCase):
         self.assertTrue('variable_infos' in datasets_metadata[2])
         self.assertTrue('freeboard' in datasets_metadata[2].get('variable_infos'))
         self.assertEqual(
-            {'coordinates': 'time lon lat', 'grid_mapping': 'Lambert_Azimuthal_Grid',
-             'long_name': 'elevation of retracked point above instantaneous sea surface height '
-                          '(with snow range corrections)',
+            {'coordinates': 'time lon lat',
+             'grid_mapping': 'Lambert_Azimuthal_Grid',
+             'long_name': 'elevation of retracked point above instantaneous '
+                          'sea surface height (with snow range corrections)',
              'standard_name': 'sea_ice_freeboard',
              'units': 'm',
              'chunk_sizes': [1, 432, 432],
@@ -182,8 +183,8 @@ class CciOdpTest(unittest.TestCase):
              'dimensions': ['time', 'yc', 'xc'],
              'file_dimensions': ['time', 'yc', 'xc'],
              'fill_value': np.nan,
-             'size': 186624,
-             'shape': [1, 432, 432]},
+             'size': 8957952,
+             'shape': [48, 432, 432]},
             datasets_metadata[2].get('variable_infos').get('freeboard'))
         self.assertEqual('uint16', datasets_metadata[2].get('variable_infos').get('status_flag').
                          get('data_type'))

@@ -90,6 +90,8 @@ class RemoteChunkStore(MutableMapping, metaclass=ABCMeta):
             raise ValueError('Could not determine any valid time stamps')
 
         self._time_chunking = self.get_attrs('time').get('file_chunk_sizes', 1)
+        if isinstance(self._time_chunking, List):
+            self._time_chunking = self._time_chunking[0]
         if self._time_chunking > 1 and 'time_range' in cube_params:
             all_ranges = self.get_time_ranges(data_id, {})
             first_index = all_ranges.index(self._time_ranges[0])
@@ -293,7 +295,7 @@ class RemoteChunkStore(MutableMapping, metaclass=ABCMeta):
             var_attrs['chunk_sizes'] = chunk_sizes
             if len(var_attrs.get('file_dimensions', [])) < len(dimensions):
                 var_attrs['file_chunk_sizes'] = chunk_sizes[1:].copy()
-            else:
+            elif len(var_attrs.get('file_dimensions', [])) > 0:
                 var_attrs['file_chunk_sizes'] = chunk_sizes.copy()
                 var_attrs['file_chunk_sizes'][time_dimension] \
                     = self._time_chunking

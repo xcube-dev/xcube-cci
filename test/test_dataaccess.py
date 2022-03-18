@@ -431,8 +431,8 @@ class CciOdpDatasetOpenerNormalizeTest(unittest.TestCase):
         self.assertIsInstance(descriptor, DatasetDescriptor)
         self.assertEqual('esacci.AEROSOL.day.L3.AAI.multi-sensor.multi-platform.MSAAI.1-7.r1', descriptor.data_id)
         self.assertEqual('dataset', str(descriptor.data_type))
-        self.assertEqual(['lat', 'lon', 'time', 'bnds'],
-                         list(descriptor.dims.keys()))
+        self.assertEqual({'lat', 'lon', 'time', 'bnds'},
+                         set(descriptor.dims.keys()))
         self.assertEqual(360, descriptor.dims['lon'])
         self.assertEqual(180, descriptor.dims['lat'])
         self.assertEqual(12644, descriptor.dims['time'])

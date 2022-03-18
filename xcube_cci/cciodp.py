@@ -596,7 +596,7 @@ class CciOdp:
     @staticmethod
     def _get_data_var_and_coord_names(data_source) \
             -> Tuple[List[str], List[str]]:
-        names_of_dims = list(data_source['dimensions'].keys())
+        names_of_dims = list(data_source.get('dimensions', {}).keys())
         variable_infos = data_source['variable_infos']
         variables = []
         coords = []
@@ -1112,9 +1112,9 @@ class CciOdp:
                             'time']
                         variable_info['size'] = np.prod(
                             variable_info['shape'])
-            data_source['dimensions'] = dimensions
-            data_source['variable_infos'] = variable_infos
-            data_source['attributes'] = attributes
+        data_source['dimensions'] = dimensions
+        data_source['variable_infos'] = variable_infos
+        data_source['attributes'] = attributes
 
     async def _fetch_feature_and_num_nc_files_at(self, session, base_url, query_args, index) -> \
             Tuple[Optional[Dict], int]:
@@ -1131,8 +1131,9 @@ class CciOdp:
             feature_list = json_dict.get("features", [])
             # we try not to take the first feature, as the last and the first one may have
             # different time chunkings
-            index = math.floor(len(feature_list) / 2)
-            return feature_list[index], json_dict.get("totalResults", 0)
+            if len(feature_list) > 0:
+                index = math.floor(len(feature_list) / 2)
+                return feature_list[index], json_dict.get("totalResults", 0)
         return None, 0
 
     async def _fetch_meta_info(self,
