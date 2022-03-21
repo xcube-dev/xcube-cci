@@ -1209,7 +1209,10 @@ class CciOdp:
                                                feature: dict,
                                                session) -> (dict, dict):
         feature_info = _extract_feature_info(feature)
-        opendap_url = f"{feature_info[4]['Opendap']}"
+        opendap_url = f"{feature_info[4].get('Opendap')}"
+        if opendap_url == 'None':
+            _LOG.warning(f'Dataset is not accessible via Opendap')
+            return {}, {}
         dataset = await self._get_opendap_dataset(session, opendap_url)
         if not dataset:
             _LOG.warning(f'Could not extract information about variables '
