@@ -1246,6 +1246,14 @@ class CciOdp:
                 var_attrs.pop('_ChunkSizes')
             else:
                 var_attrs['chunk_sizes'] = var_attrs['shape']
+            # do this to ensure that chunk size is never bigger than shape
+            if isinstance(var_attrs['chunk_sizes'], List):
+                for i, chunksize in enumerate(var_attrs['chunk_sizes']):
+                    var_attrs['chunk_sizes'][i] = min(chunksize,
+                                                      var_attrs['shape'][i])
+            else:
+                var_attrs['chunk_sizes'] = min(var_attrs['chunk_sizes'],
+                                               var_attrs['shape'][0])
             if type(var_attrs['chunk_sizes']) == int:
                 var_attrs['file_chunk_sizes'] = var_attrs['chunk_sizes']
             else:
