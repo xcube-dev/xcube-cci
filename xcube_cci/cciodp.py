@@ -1241,6 +1241,8 @@ class CciOdp:
                                   category=CciOdpWarning)
             var_attrs['size'] = dataset[key].size
             var_attrs['shape'] = list(dataset[key].shape)
+            if len(var_attrs['shape']) == 0:
+                var_attrs['shape'] = [var_attrs['size']]
             if '_ChunkSizes' in var_attrs:
                 var_attrs['chunk_sizes'] = var_attrs['_ChunkSizes']
                 var_attrs.pop('_ChunkSizes')
