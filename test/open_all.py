@@ -108,31 +108,9 @@ def gen_report(output_dir: str,
         data_type = ''
         observer, obs_fp = new_observer(output_dir, ds_id) if observe else (None, None)
 
-        # if i < 368:
-        #     continue
-
-        logging.info(f'Attempting to open #{i+1} of {len(selected_ds_ids)}')
-        # logging.info(f'Attempting to open #{i+1} of {len(selected_ds_ids)}: {ds_id}')
+        logging.info(f'Attempting to open #{i+1} of {len(selected_ds_ids)}: {ds_id}')
 
         t0 = time.perf_counter()
-
-        metadata = odp.get_dataset_metadata(ds_id)
-        time_chunk_size = metadata.get('variable_infos', {}).get('time', {}).\
-            get('file_chunk_sizes', 1)
-        if isinstance(time_chunk_size, List):
-            time_chunk_size = time_chunk_size[0]
-        if time_chunk_size < 2:
-            # logging.info(f'Skipping {ds_id}')
-            continue
-
-        logging.info(f'{ds_id} has a time_chunk_size of {time_chunk_size}')
-
-        if 'L2P' in ds_id:
-            logging.info(f'Skipping {ds_id} because it is L2P')
-            continue
-        if 'L2' in ds_id:
-            logging.info(f'Skipping {ds_id} because it is L2')
-            continue
 
         try:
             store = CciChunkStore(odp, ds_id, observer=observer, trace_store_calls=True)
