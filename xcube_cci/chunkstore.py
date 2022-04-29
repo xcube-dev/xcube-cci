@@ -388,16 +388,21 @@ class RemoteChunkStore(MutableMapping, metaclass=ABCMeta):
             if i == time_dimension:
                 valid_chunk_sizes.append([chunk])
                 continue
+            valid_dim_chunk_sizes = []
+            half_chunk = chunk
+            while half_chunk % 2 == 0:
+                half_chunk /= 2
+                valid_dim_chunk_sizes.insert(0, int(half_chunk))
             # handle case that the size cannot be divided evenly by the chunk
             if size % chunk > 0:
                 if np.prod(chunks, dtype=np.int64) / chunk * size < 1000000:
                     # if the size is small enough to be ingested in single chunk, take it
-                    valid_chunk_sizes.append([size])
+                    valid_dim_chunk_sizes.append(size)
                 else:
                     # otherwise, give in to that we cannot chunk the data evenly
-                    valid_chunk_sizes.append(list(range(chunk, size + 1, chunk)))
+                    valid_dim_chunk_sizes += (list(range(chunk, size + 1, chunk)))
+                valid_chunk_sizes.append(valid_dim_chunk_sizes)
                 continue
-            valid_dim_chunk_sizes = []
             for r in range(chunk, size + 1, chunk):
                 if size % r == 0:
                     valid_dim_chunk_sizes.append(r)
