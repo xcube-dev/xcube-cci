@@ -1,5 +1,5 @@
 # The MIT License (MIT)
-# Copyright (c) 2021 by the xcube development team and contributors
+# Copyright (c) 2022 by the xcube development team and contributors
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy of
 # this software and associated documentation files (the "Software"), to deal in
@@ -26,6 +26,7 @@ import copy
 import json
 import logging
 import lxml.etree as etree
+import math
 import nest_asyncio
 import numpy as np
 import os
@@ -595,7 +596,7 @@ class CciOdp:
     @staticmethod
     def _get_data_var_and_coord_names(data_source) \
             -> Tuple[List[str], List[str]]:
-        names_of_dims = list(data_source['dimensions'].keys())
+        names_of_dims = list(data_source.get('dimensions', {}).keys())
         variable_infos = data_source['variable_infos']
         variables = []
         coords = []
@@ -1101,18 +1102,25 @@ class CciOdp:
                 for index, dimension in enumerate(variable_infos[variable_info]['dimensions']):
                     if dimension not in dimensions:
                         dimensions[dimension] = variable_infos[variable_info]['shape'][index]
-            if 'time' in dimensions:
-                time_dimension_size *= dimensions['time']
+            dimensions['time'] = time_dimension_size * dimensions.get(
+                'time', 1)
+            for variable_info in variable_infos.values():
+                if 'time' in variable_info['dimensions']:
+                    time_index = variable_info['dimensions'].index('time')
+                    if 'shape' in variable_info:
+                        variable_info['shape'][time_index] = dimensions[
+                            'time']
+                        variable_info['size'] = np.prod(
+                            variable_info['shape'])
         data_source['dimensions'] = dimensions
         data_source['variable_infos'] = variable_infos
         data_source['attributes'] = attributes
-        data_source['time_dimension_size'] = time_dimension_size
 
     async def _fetch_feature_and_num_nc_files_at(self, session, base_url, query_args, index) -> \
             Tuple[Optional[Dict], int]:
         paging_query_args = dict(query_args or {})
         paging_query_args.update(startPage=index,
-                                 maximumRecords=2,
+                                 maximumRecords=5,
                                  httpAccept='application/geo+json',
                                  fileFormat='.nc')
         url = base_url + '?' + urllib.parse.urlencode(paging_query_args)
@@ -1123,10 +1131,9 @@ class CciOdp:
             feature_list = json_dict.get("features", [])
             # we try not to take the first feature, as the last and the first one may have
             # different time chunkings
-            if len(feature_list) > 1:
-                return feature_list[1], json_dict.get("totalResults", 0)
-            elif len(feature_list) > 0:
-                return feature_list[0], json_dict.get("totalResults", 0)
+            if len(feature_list) > 0:
+                index = math.floor(len(feature_list) / 2)
+                return feature_list[index], json_dict.get("totalResults", 0)
         return None, 0
 
     async def _fetch_meta_info(self,
@@ -1202,7 +1209,10 @@ class CciOdp:
                                                feature: dict,
                                                session) -> (dict, dict):
         feature_info = _extract_feature_info(feature)
-        opendap_url = f"{feature_info[4]['Opendap']}"
+        opendap_url = f"{feature_info[4].get('Opendap')}"
+        if opendap_url == 'None':
+            _LOG.warning(f'Dataset is not accessible via Opendap')
+            return {}, {}
         dataset = await self._get_opendap_dataset(session, opendap_url)
         if not dataset:
             _LOG.warning(f'Could not extract information about variables '
@@ -1231,11 +1241,21 @@ class CciOdp:
                                   category=CciOdpWarning)
             var_attrs['size'] = dataset[key].size
             var_attrs['shape'] = list(dataset[key].shape)
-            if '_ChunkSizes' in var_attrs:
+            if len(var_attrs['shape']) == 0:
+                var_attrs['shape'] = [var_attrs['size']]
+            if '_ChunkSizes' in var_attrs and 'DODS' not in var_attrs:
                 var_attrs['chunk_sizes'] = var_attrs['_ChunkSizes']
                 var_attrs.pop('_ChunkSizes')
             else:
                 var_attrs['chunk_sizes'] = var_attrs['shape']
+            # do this to ensure that chunk size is never bigger than shape
+            if isinstance(var_attrs['chunk_sizes'], List):
+                for i, chunksize in enumerate(var_attrs['chunk_sizes']):
+                    var_attrs['chunk_sizes'][i] = min(chunksize,
+                                                      var_attrs['shape'][i])
+            else:
+                var_attrs['chunk_sizes'] = min(var_attrs['chunk_sizes'],
+                                               var_attrs['shape'][0])
             if type(var_attrs['chunk_sizes']) == int:
                 var_attrs['file_chunk_sizes'] = var_attrs['chunk_sizes']
             else:

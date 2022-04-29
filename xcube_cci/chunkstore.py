@@ -1,5 +1,5 @@
 # The MIT License (MIT)
-# Copyright (c) 2021 by the xcube development team and contributors
+# Copyright (c) 2022 by the xcube development team and contributors
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy of
 # this software and associated documentation files (the "Software"), to deal in
@@ -89,6 +89,19 @@ class RemoteChunkStore(MutableMapping, metaclass=ABCMeta):
         if not self._time_ranges:
             raise ValueError('Could not determine any valid time stamps')
 
+        self._time_chunking = self.get_attrs('time').get('file_chunk_sizes', 1)
+        if isinstance(self._time_chunking, List):
+            self._time_chunking = self._time_chunking[0]
+        if self._time_chunking > 1 and 'time_range' in cube_params:
+            all_ranges = self.get_time_ranges(data_id, {})
+            first_index = all_ranges.index(self._time_ranges[0])
+            new_first_index = math.floor(first_index / self._time_chunking) \
+                              * self._time_chunking
+            last_index = all_ranges.index(self._time_ranges[-1])
+            new_last_index = (math.ceil(last_index / self._time_chunking)
+                              * self._time_chunking)
+            self._time_ranges = all_ranges[new_first_index:new_last_index]
+
         t_array = [s.to_pydatetime()
                    + 0.5 * (e.to_pydatetime() - s.to_pydatetime())
                    for s, e in self._time_ranges]
@@ -111,6 +124,7 @@ class RemoteChunkStore(MutableMapping, metaclass=ABCMeta):
         lat_size = -1
         self._dimension_chunk_offsets = {}
         self._dimensions = self.get_dimensions()
+        self._num_data_var_chunks_not_in_vfs = 0
         coords_data = self.get_coords_data(data_id)
         logging.debug('Determined coordinates')
         coords_data['time'] = {}
@@ -225,7 +239,6 @@ class RemoteChunkStore(MutableMapping, metaclass=ABCMeta):
 
         self._time_indexes = {}
         remove = []
-        self._num_data_var_chunks_not_in_vfs = 0
         logging.debug('Adding variables to dataset ...')
         for variable_name in self._variable_names:
             if variable_name in coords_data or variable_name == 'time_bnds':
@@ -253,6 +266,7 @@ class RemoteChunkStore(MutableMapping, metaclass=ABCMeta):
                 if coord_name == 'time':
                     self._time_indexes[variable_name] = i
                     time_dimension = i
+                    chunk_sizes[i] = self._time_chunking
                 if chunk_sizes[i] == -1:
                     chunk_sizes[i] = sizes[i]
             var_attrs['shape'] = sizes
@@ -280,15 +294,16 @@ class RemoteChunkStore(MutableMapping, metaclass=ABCMeta):
                                                    time_dimension)
             var_attrs['chunk_sizes'] = chunk_sizes
             if len(var_attrs.get('file_dimensions', [])) < len(dimensions):
-                var_attrs['file_chunk_sizes'] = chunk_sizes[1:]
-            else:
-                var_attrs['file_chunk_sizes'] = chunk_sizes
+                var_attrs['file_chunk_sizes'] = chunk_sizes[1:].copy()
+            elif len(var_attrs.get('file_dimensions', [])) > 0:
+                var_attrs['file_chunk_sizes'] = chunk_sizes.copy()
+                var_attrs['file_chunk_sizes'][time_dimension] \
+                    = self._time_chunking
             self._add_remote_array(variable_name,
                                    sizes,
                                    chunk_sizes,
                                    var_encoding,
                                    var_attrs)
-            self._num_data_var_chunks_not_in_vfs += np.prod(chunk_sizes)
         logging.debug(f"Added a total of {len(self._variable_names)} variables "
                       f"to the data set")
         for r in remove:
@@ -367,37 +382,49 @@ class RemoteChunkStore(MutableMapping, metaclass=ABCMeta):
             return sizes
         # determine valid values for a chunk size. A value is valid if the size can be divided by it without remainder
         valid_chunk_sizes = []
+        best_chunks = chunks.copy()
         for i, chunk, size in zip(range(len(chunks)), chunks, sizes):
             # do not rechunk time dimension
             if i == time_dimension:
                 valid_chunk_sizes.append([chunk])
                 continue
+            valid_dim_chunk_sizes = []
+            half_chunk = chunk
+            while half_chunk % 2 == 0:
+                half_chunk /= 2
+                valid_dim_chunk_sizes.insert(0, int(half_chunk))
             # handle case that the size cannot be divided evenly by the chunk
             if size % chunk > 0:
                 if np.prod(chunks, dtype=np.int64) / chunk * size < 1000000:
                     # if the size is small enough to be ingested in single chunk, take it
-                    valid_chunk_sizes.append([size])
+                    valid_dim_chunk_sizes.append(size)
+                    best_chunks[i] = size
                 else:
                     # otherwise, give in to that we cannot chunk the data evenly
-                    valid_chunk_sizes.append(list(range(chunk, size + 1, chunk)))
+                    valid_dim_chunk_sizes += (list(range(chunk, size + 1, chunk)))
+                valid_chunk_sizes.append(valid_dim_chunk_sizes)
                 continue
-            valid_dim_chunk_sizes = []
             for r in range(chunk, size + 1, chunk):
                 if size % r == 0:
                     valid_dim_chunk_sizes.append(r)
             valid_chunk_sizes.append(valid_dim_chunk_sizes)
         # recursively determine the chunking with the biggest size smaller than 1000000
-        chunks, chunk_size = cls._get_best_chunks(chunks, valid_chunk_sizes, chunks.copy(), 0, 0, time_dimension)
+        orig_indexes = cls.index_of_list(valid_chunk_sizes, best_chunks)
+        chunks, chunk_size = cls._get_best_chunks(chunks, valid_chunk_sizes,
+                                                  best_chunks, orig_indexes, 0, 0,
+                                                  time_dimension)
         return chunks
 
     @classmethod
-    def _get_best_chunks(cls, chunks, valid_sizes, best_chunks, best_chunk_size, index, time_dimension):
+    def _get_best_chunks(cls, chunks, valid_sizes, best_chunks, orig_indexes,
+                         best_chunk_size, index, time_dimension):
         for valid_size in valid_sizes[index]:
             test_chunks = chunks.copy()
             test_chunks[index] = valid_size
             if index < len(chunks) - 1:
                 test_chunks, test_chunk_size = \
-                    cls._get_best_chunks(test_chunks, valid_sizes, best_chunks, best_chunk_size, index + 1,
+                    cls._get_best_chunks(test_chunks, valid_sizes, best_chunks,
+                                         orig_indexes, best_chunk_size, index + 1,
                                          time_dimension)
             else:
                 test_chunk_size = np.prod(test_chunks, dtype=np.int64)
@@ -407,15 +434,39 @@ class RemoteChunkStore(MutableMapping, metaclass=ABCMeta):
                 best_chunk_size = test_chunk_size
                 best_chunks = test_chunks.copy()
             elif test_chunk_size == best_chunk_size:
-                # in case two chunkings have the same size, choose the one where values are more similar
-                where = np.full(len(test_chunks), fill_value=True)
-                where[time_dimension] = False
-                test_min_chunk = np.max(test_chunks, initial=0, where=where)
-                best_min_chunk = np.max(best_chunks, initial=0, where=where)
-                if best_min_chunk > test_min_chunk:
+                # in case two chunkings have the same size,
+                # choose the one which is more similar to the original chunking
+                best_indexes = cls.index_of_list(valid_sizes, best_chunks)
+                best_deviation = cls.compare_lists(best_indexes, orig_indexes)
+                test_indexes = cls.index_of_list(valid_sizes, test_chunks)
+                test_deviation = cls.compare_lists(test_indexes, orig_indexes)
+                if test_deviation < best_deviation:
                     best_chunk_size = test_chunk_size
                     best_chunks = test_chunks.copy()
+                elif test_deviation == best_deviation:
+                    # choose the one where values are more similar
+                    where = np.full(len(test_chunks), fill_value=True)
+                    where[time_dimension] = False
+                    test_min_chunk = np.max(test_chunks, initial=0, where=where)
+                    best_min_chunk = np.max(best_chunks, initial=0, where=where)
+                    if best_min_chunk > test_min_chunk:
+                        best_chunk_size = test_chunk_size
+                        best_chunks = test_chunks.copy()
         return best_chunks, best_chunk_size
+
+    @classmethod
+    def index_of_list(cls, lists, indexes):
+        index_list = []
+        for i, index in enumerate(indexes):
+            index_list.append(lists[i].index(index))
+        return index_list
+
+    @classmethod
+    def compare_lists(cls, list1, list2):
+        deviation = 0
+        for i in range(len(list1)):
+            deviation += abs(list1[i] - list2[i])
+        return deviation
 
     @classmethod
     def _adjust_size(cls, size: int, tile_size: int) -> int:
@@ -512,7 +563,10 @@ class RemoteChunkStore(MutableMapping, metaclass=ABCMeta):
         return x1, y1, x2, y2
 
     def request_time_range(self, time_index: int) -> Tuple[pd.Timestamp, pd.Timestamp]:
-        start_time, end_time = self._time_ranges[time_index]
+        start_index = time_index * self._time_chunking
+        end_index = ((time_index + 1) * self._time_chunking) - 1
+        start_time = self._time_ranges[start_index][0]
+        end_time = self._time_ranges[end_index][1]
         return start_time, end_time
 
     def _add_static_array(self, name: str, array: np.ndarray, attrs: Dict):
@@ -562,6 +616,8 @@ class RemoteChunkStore(MutableMapping, metaclass=ABCMeta):
         if ranges not in self._ranges_to_var_names:
             self._ranges_to_var_names[ranges] = []
         self._ranges_to_var_names[ranges].append(name)
+        self._num_data_var_chunks_not_in_vfs +=\
+            len(self._ranges_to_indexes[ranges])
 
     def _fetch_chunk(self, key: str, var_name: str, chunk_index: Tuple[int, ...]) -> bytes:
         request_time_range = self.request_time_range(chunk_index[self._time_indexes[var_name]])
@@ -854,10 +910,34 @@ class CciChunkStore(RemoteChunkStore):
                        )
         data = self._cci_odp.get_data_chunk(request, dim_indexes)
         if not data:
-            raise KeyError(f'{key}: cannot fetch chunk for variable {var_name!r} '
-                           f'and time_range {time_range!r}.')
+            raise KeyError(f'{key}: cannot fetch chunk for variable '
+                           f'{var_name!r} and time_range {time_range!r}.')
+        if self._time_chunking > 1:
+            expected_chunk_size, dtype_size = \
+                self._determine_expected_chunk_size(var_name)
+            data_length = len(data)
+            if data_length < expected_chunk_size:
+                var_dimensions = self.get_attrs(var_name).get('dimensions', [])
+                data_type = self.get_attrs(var_name).get('data_type')
+                dtype = np.dtype(self._SAMPLE_TYPE_TO_DTYPE[data_type])
+                fill_value = self.get_attrs(var_name).get('fill_value')
+                var_array = np.full(
+                    shape=int((expected_chunk_size - data_length) / dtype_size),
+                    fill_value=fill_value,
+                    dtype=dtype)
+                if chunk_index[var_dimensions.index('time')] == 0:
+                    return var_array.tobytes() + data
+                else:
+                    return data + var_array.tobytes()
         _LOG.info(f'Fetched chunk for ({chunk_index})"{var_name}"')
         return data
+
+    def _determine_expected_chunk_size(self, var_name: str):
+        chunk_sizes = self.get_attrs(var_name).get('chunk_sizes', {})
+        expected_chunk_size = np.prod(chunk_sizes)
+        data_type = self.get_attrs(var_name).get('data_type')
+        dtype = np.dtype(self._SAMPLE_TYPE_TO_DTYPE[data_type])
+        return expected_chunk_size * dtype.itemsize, dtype.itemsize
 
     def _get_dimension_indexes_for_chunk(self, var_name: str, chunk_index: Tuple[int, ...]) -> tuple:
         dim_indexes = []
@@ -879,3 +959,16 @@ class CciChunkStore(RemoteChunkStore):
             end = min(start + chunk_sizes[i], data_offset + dim_size)
             dim_indexes.append(slice(start, end))
         return tuple(dim_indexes)
+
+
+def greatest_common_divisor(a: int, b: int, c: int):
+    return _greatest_common_divisor_two_numbers(
+        a,
+        _greatest_common_divisor_two_numbers(b, c)
+    )
+
+
+def _greatest_common_divisor_two_numbers(a: int, b: int) -> int:
+    if b == 0:
+        return a
+    return _greatest_common_divisor_two_numbers(b, a%b)

@@ -51,8 +51,10 @@ from xcube_cci.constants import DEFAULT_NUM_RETRIES
 from xcube_cci.constants import DEFAULT_RETRY_BACKOFF_BASE
 from xcube_cci.constants import DEFAULT_RETRY_BACKOFF_MAX
 from xcube_cci.constants import OPENSEARCH_CEDA_URL
+from xcube_cci.normalize import normalize_coord_names
 from xcube_cci.normalize import normalize_dims_description
 from xcube_cci.normalize import normalize_variable_dims_description
+from xcube_cci.normalize import normalize_var_infos
 
 CCI_ID_PATTERN = 'esacci\..+\..+\..+\..+\..+\..+\..+\..+\..+'
 CRS_PATTERN = 'http://www.opengis.net/def/crs/EPSG/0/[0-9]{4,5}'
@@ -136,10 +138,6 @@ class CciOdpDataOpener(DataOpener):
                                            metadata: dict) -> DatasetDescriptor:
         ds_metadata = metadata.copy()
         dims = self._normalize_dims(ds_metadata.get('dimensions', {}))
-        if 'time' not in dims:
-            dims['time'] = ds_metadata.get('time_dimension_size')
-        else:
-            dims['time'] *= ds_metadata.get('time_dimension_size')
         bounds_dim_name = None
         for dim_name, dim_size in dims.items():
             if dim_size == 2:
@@ -158,9 +156,14 @@ class CciOdpDataOpener(DataOpener):
         # only use date parts of times
         temporal_coverage = (dataset_info['temporal_coverage_start'].split('T')[0],
                              dataset_info['temporal_coverage_end'].split('T')[0])
-        var_infos = ds_metadata.get('variable_infos', {})
-        var_descriptors = self._get_variable_descriptors(dataset_info['var_names'], var_infos)
-        coord_descriptors = self._get_variable_descriptors(dataset_info['coord_names'],
+        var_infos = self._normalize_var_infos(
+            ds_metadata.get('variable_infos', {})
+        )
+        coord_names = self._normalize_coord_names(dataset_info['coord_names'])
+        var_descriptors = self._get_variable_descriptors(
+            dataset_info['var_names'], var_infos
+        )
+        coord_descriptors = self._get_variable_descriptors(coord_names,
                                                            var_infos,
                                                            normalize_dims=False)
         if 'time' not in coord_descriptors.keys() and \
@@ -213,7 +216,7 @@ class CciOdpDataOpener(DataOpener):
         return descriptor
 
     def _get_variable_descriptors(self,
-                                  var_names: str,
+                                  var_names: List[str],
                                   var_infos: dict,
                                   normalize_dims: bool = True) \
             -> Dict[str, VariableDescriptor]:
@@ -326,6 +329,17 @@ class CciOdpDataOpener(DataOpener):
         if 'time' not in new_var_dims and len(new_var_dims) > 0:
             new_var_dims.insert(0, 'time')
         return new_var_dims
+
+    def _normalize_var_infos(self, var_infos: Dict[str, Dict[str, Any]]) -> \
+            Dict[str, Dict[str, Any]]:
+        if self._normalize_data:
+            return normalize_var_infos(var_infos.copy())
+        return var_infos
+
+    def _normalize_coord_names(self, coord_names: List[str]):
+        if self._normalize_data:
+            return normalize_coord_names(coord_names.copy())
+        return coord_names
 
 
 class CciOdpDatasetOpener(CciOdpDataOpener):

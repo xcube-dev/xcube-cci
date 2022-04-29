@@ -19,6 +19,8 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
+from typing import Any
+from typing import Dict
 from typing import List
 from typing import Optional
 from .constants import COMMON_COORD_VAR_NAMES
@@ -65,3 +67,33 @@ def normalize_variable_dims_description(var_dims: List[str]) -> Optional[List[st
             var_dims = new_dims
     return var_dims
 
+
+def normalize_var_infos(var_infos: Dict[str, Dict[str, Any]]) \
+        -> Dict[str, Dict[str, Any]]:
+    if 'latitude_centers' in var_infos:
+        var_info = var_infos.pop('latitude_centers')
+        var_infos['lat'] = dict(data_type=var_info['data_type'],
+                                dimensions='lat',
+                                units=var_info.get('units'),
+                                long_name='latitude',
+                                size=var_info.get('size'),
+                                shape=var_info.get('shape'),
+                                chunk_sizes=var_info.get('chunk_sizes'))
+        var_infos['lon'] = dict(data_type=var_info['data_type'],
+                                dimensions='lon',
+                                units=var_info.get('units'),
+                                long_name='longitude',
+                                size=var_info.get('size') * 2,
+                                shape=[item * 2 for item in
+                                       var_info.get('shape', [])],
+                                chunk_sizes=[item * 2 for item in
+                                       var_info.get('shape', [])])
+    return var_infos
+
+
+def normalize_coord_names(coord_names: List[str])-> List[str]:
+    if 'latitude_centers' in coord_names:
+        coord_names.remove('latitude_centers')
+        coord_names.append('lat')
+        coord_names.append('lon')
+    return coord_names
