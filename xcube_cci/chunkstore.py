@@ -124,6 +124,7 @@ class RemoteChunkStore(MutableMapping, metaclass=ABCMeta):
         lat_size = -1
         self._dimension_chunk_offsets = {}
         self._dimensions = self.get_dimensions()
+        self._num_data_var_chunks_not_in_vfs = 0
         coords_data = self.get_coords_data(data_id)
         logging.debug('Determined coordinates')
         coords_data['time'] = {}
@@ -238,7 +239,6 @@ class RemoteChunkStore(MutableMapping, metaclass=ABCMeta):
 
         self._time_indexes = {}
         remove = []
-        self._num_data_var_chunks_not_in_vfs = 0
         logging.debug('Adding variables to dataset ...')
         for variable_name in self._variable_names:
             if variable_name in coords_data or variable_name == 'time_bnds':
@@ -304,7 +304,6 @@ class RemoteChunkStore(MutableMapping, metaclass=ABCMeta):
                                    chunk_sizes,
                                    var_encoding,
                                    var_attrs)
-            self._num_data_var_chunks_not_in_vfs += np.prod(chunk_sizes)
         logging.debug(f"Added a total of {len(self._variable_names)} variables "
                       f"to the data set")
         for r in remove:
@@ -586,6 +585,8 @@ class RemoteChunkStore(MutableMapping, metaclass=ABCMeta):
         if ranges not in self._ranges_to_var_names:
             self._ranges_to_var_names[ranges] = []
         self._ranges_to_var_names[ranges].append(name)
+        self._num_data_var_chunks_not_in_vfs +=\
+            len(self._ranges_to_indexes[ranges])
 
     def _fetch_chunk(self, key: str, var_name: str, chunk_index: Tuple[int, ...]) -> bytes:
         request_time_range = self.request_time_range(chunk_index[self._time_indexes[var_name]])
