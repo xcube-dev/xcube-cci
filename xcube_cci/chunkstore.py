@@ -382,6 +382,7 @@ class RemoteChunkStore(MutableMapping, metaclass=ABCMeta):
             return sizes
         # determine valid values for a chunk size. A value is valid if the size can be divided by it without remainder
         valid_chunk_sizes = []
+        best_chunks = chunks.copy()
         for i, chunk, size in zip(range(len(chunks)), chunks, sizes):
             # do not rechunk time dimension
             if i == time_dimension:
@@ -397,6 +398,7 @@ class RemoteChunkStore(MutableMapping, metaclass=ABCMeta):
                 if np.prod(chunks, dtype=np.int64) / chunk * size < 1000000:
                     # if the size is small enough to be ingested in single chunk, take it
                     valid_dim_chunk_sizes.append(size)
+                    best_chunks[i] = size
                 else:
                     # otherwise, give in to that we cannot chunk the data evenly
                     valid_dim_chunk_sizes += (list(range(chunk, size + 1, chunk)))
@@ -407,17 +409,22 @@ class RemoteChunkStore(MutableMapping, metaclass=ABCMeta):
                     valid_dim_chunk_sizes.append(r)
             valid_chunk_sizes.append(valid_dim_chunk_sizes)
         # recursively determine the chunking with the biggest size smaller than 1000000
-        chunks, chunk_size = cls._get_best_chunks(chunks, valid_chunk_sizes, chunks.copy(), 0, 0, time_dimension)
+        orig_indexes = cls.index_of_list(valid_chunk_sizes, best_chunks)
+        chunks, chunk_size = cls._get_best_chunks(chunks, valid_chunk_sizes,
+                                                  best_chunks, orig_indexes, 0, 0,
+                                                  time_dimension)
         return chunks
 
     @classmethod
-    def _get_best_chunks(cls, chunks, valid_sizes, best_chunks, best_chunk_size, index, time_dimension):
+    def _get_best_chunks(cls, chunks, valid_sizes, best_chunks, orig_indexes,
+                         best_chunk_size, index, time_dimension):
         for valid_size in valid_sizes[index]:
             test_chunks = chunks.copy()
             test_chunks[index] = valid_size
             if index < len(chunks) - 1:
                 test_chunks, test_chunk_size = \
-                    cls._get_best_chunks(test_chunks, valid_sizes, best_chunks, best_chunk_size, index + 1,
+                    cls._get_best_chunks(test_chunks, valid_sizes, best_chunks,
+                                         orig_indexes, best_chunk_size, index + 1,
                                          time_dimension)
             else:
                 test_chunk_size = np.prod(test_chunks, dtype=np.int64)
@@ -427,15 +434,39 @@ class RemoteChunkStore(MutableMapping, metaclass=ABCMeta):
                 best_chunk_size = test_chunk_size
                 best_chunks = test_chunks.copy()
             elif test_chunk_size == best_chunk_size:
-                # in case two chunkings have the same size, choose the one where values are more similar
-                where = np.full(len(test_chunks), fill_value=True)
-                where[time_dimension] = False
-                test_min_chunk = np.max(test_chunks, initial=0, where=where)
-                best_min_chunk = np.max(best_chunks, initial=0, where=where)
-                if best_min_chunk > test_min_chunk:
+                # in case two chunkings have the same size,
+                # choose the one which is more similar to the original chunking
+                best_indexes = cls.index_of_list(valid_sizes, best_chunks)
+                best_deviation = cls.compare_lists(best_indexes, orig_indexes)
+                test_indexes = cls.index_of_list(valid_sizes, test_chunks)
+                test_deviation = cls.compare_lists(test_indexes, orig_indexes)
+                if test_deviation < best_deviation:
                     best_chunk_size = test_chunk_size
                     best_chunks = test_chunks.copy()
+                elif test_deviation == best_deviation:
+                    # choose the one where values are more similar
+                    where = np.full(len(test_chunks), fill_value=True)
+                    where[time_dimension] = False
+                    test_min_chunk = np.max(test_chunks, initial=0, where=where)
+                    best_min_chunk = np.max(best_chunks, initial=0, where=where)
+                    if best_min_chunk > test_min_chunk:
+                        best_chunk_size = test_chunk_size
+                        best_chunks = test_chunks.copy()
         return best_chunks, best_chunk_size
+
+    @classmethod
+    def index_of_list(cls, lists, indexes):
+        index_list = []
+        for i, index in enumerate(indexes):
+            index_list.append(lists[i].index(index))
+        return index_list
+
+    @classmethod
+    def compare_lists(cls, list1, list2):
+        deviation = 0
+        for i in range(len(list1)):
+            deviation += abs(list1[i] - list2[i])
+        return deviation
 
     @classmethod
     def _adjust_size(cls, size: int, tile_size: int) -> int:
