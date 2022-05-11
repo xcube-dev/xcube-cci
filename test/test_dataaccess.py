@@ -524,27 +524,29 @@ class CciOdpDatasetOpenerNormalizeTest(unittest.TestCase):
         self.assertEqual({'time', 'air_pressure', 'lat', 'lon'}, dataset.ozone_mixing_ratio.dims)
         self.assertEqual({1, 32, 18, 36}, set(dataset.ozone_mixing_ratio.chunk_sizes))
 
-    @skipIf(os.environ.get('XCUBE_DISABLE_WEB_TESTS', None) == '1', 'XCUBE_DISABLE_WEB_TESTS = 1')
+    @skipIf(os.environ.get('XCUBE_DISABLE_WEB_TESTS', None) == '1',
+            'XCUBE_DISABLE_WEB_TESTS = 1')
     def test_search(self):
         search_result = list(self.opener.search_data(
             cci_attrs=(dict(ecv='LAKES')))
         )
         self.assertIsNotNone(search_result)
-        self.assertEqual(2, len(search_result))
-        self.assertIsInstance(search_result[1], DatasetDescriptor)
-        self.assertEqual(4, len(search_result[1].dims))
-        self.assertEqual(52, len(search_result[1].data_vars))
+        self.assertEqual(3, len(search_result))
+        self.assertIsInstance(search_result[2], DatasetDescriptor)
+        self.assertEqual(4, len(search_result[2].dims))
+        self.assertEqual(52, len(search_result[2].data_vars))
         self.assertEqual(
             'esacci.LAKES.day.L3S.LK_PRODUCTS.multi-sensor.multi-platform.'
             'MERGED.v1-1.r1',
-            search_result[1].data_id)
-        self.assertEqual('1D', search_result[1].time_period)
-        self.assertEqual(0.008333333, search_result[1].spatial_res)
-        self.assertEqual(DATASET_TYPE, search_result[1].data_type)
+            search_result[2].data_id)
+        self.assertEqual('1D', search_result[2].time_period)
+        self.assertEqual(0.008333333, search_result[2].spatial_res)
+        self.assertEqual(DATASET_TYPE, search_result[2].data_type)
         self.assertEqual((('1992-09-15', '2019-12-31')),
-                         search_result[1].time_range)
+                         search_result[2].time_range)
         self.assertEqual('dataset', search_result[0].data_type.alias)
         self.assertEqual('dataset', search_result[1].data_type.alias)
+        self.assertEqual('dataset', search_result[2].data_type.alias)
 
 
 def user_agent(ext: str = "") -> str:
