@@ -864,8 +864,9 @@ class CciOdp:
                     while feature_list[end_offset] in self._features[ds_id] \
                             and end_offset < len(feature_list) - 1:
                         end_offset += 1
-                    self._features[ds_id] = self._features[ds_id] \
-                                            + feature_list[end_offset:]
+                    if feature_list[end_offset] not in self._features[ds_id]:
+                        self._features[ds_id] = self._features[ds_id] \
+                                                + feature_list[end_offset:]
         start = bisect.bisect_left([feature[1] for feature in self._features[ds_id]], start_date)
         end = bisect.bisect_right([feature[0] for feature in self._features[ds_id]], end_date)
         return self._features[ds_id][start:end]
