@@ -242,6 +242,11 @@ class RemoteChunkStore(MutableMapping, metaclass=ABCMeta):
         remove = []
         logging.debug('Adding variables to dataset ...')
         for variable_name in self._variable_names:
+            var_attrs = self.get_attrs(variable_name)
+            grid_mapping_name = var_attrs.get('grid_mapping', variable_name)
+            if grid_mapping_name not in self._variable_names:
+                self._variable_names.append(grid_mapping_name)
+        for variable_name in self._variable_names:
             if variable_name in coords_data or variable_name == 'time_bnds':
                 remove.append(variable_name)
                 continue
