@@ -98,8 +98,9 @@ class RemoteChunkStore(MutableMapping, metaclass=ABCMeta):
             new_first_index = math.floor(first_index / self._time_chunking) \
                               * self._time_chunking
             last_index = all_ranges.index(self._time_ranges[-1])
-            new_last_index = (math.ceil(last_index / self._time_chunking)
-                              * self._time_chunking)
+            new_last_index = max(new_first_index + 1,
+                                 math.ceil(last_index / self._time_chunking)
+                                 * self._time_chunking)
             self._time_ranges = all_ranges[new_first_index:new_last_index]
 
         t_array = [s.to_pydatetime()
@@ -823,7 +824,7 @@ class CciChunkStore(RemoteChunkStore):
             end_time = datetime(year=end_time.year, month=12, day=31)
             delta = relativedelta(years=1)
         else:
-            end_time = end_time.replace(hour=23, minute=59, second=59)
+            # end_time = end_time.replace(hour=23, minute=59, second=59)
             end_time_str = datetime.strftime(end_time, _TIMESTAMP_FORMAT)
             iso_end_time = self._extract_time_as_string(end_time_str)
             request_time_ranges = self._cci_odp.get_time_ranges_from_data(dataset_id, iso_start_time, iso_end_time)
