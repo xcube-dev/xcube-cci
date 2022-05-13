@@ -1,3 +1,5 @@
+## Changes in 0.9.7 (in development)
+
 ## Changes in 0.9.6
 
 * Updated Example Notebooks
