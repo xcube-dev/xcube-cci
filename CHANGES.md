@@ -1,6 +1,13 @@
-## Changes in 0.9.6 (in development)
+## Changes in 0.9.6
 
 * Updated Example Notebooks
+* Extended support of datasets. Previously, datasets which had a chunking of 
+  the time dimension larger than one were not handled properly. This affected 
+  OZONE in a monthly resolution, SEALEVEL in a monthly resolution, and several
+  ICESHEETS datasets. [#12](https://github.com/dcs4cop/xcube-cci/issues/12)
+* Chunk sizes may now also be decreased, in order to achieve optimal chunkings.
+  For some datasets (e.g., BIOMASS), this increases the performance and helps
+  avoiding memory issues. [#48](https://github.com/dcs4cop/xcube-cci/issues/48)
 
 ## Changes in 0.9.5
 
