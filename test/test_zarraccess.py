@@ -45,22 +45,27 @@ class CciZarrDataStoreTest(unittest.TestCase):
                          set(self.store.get_data_types()))
 
     def test_get_data_opener_ids(self):
-        self.assertEqual({'dataset:netcdf:s3',
+        self.assertEqual({'dataset:geotiff:s3',
+                          'dataset:netcdf:s3',
                           'dataset:zarr:s3',
                           'dataset:levels:s3',
+                          'mldataset:geotiff:s3',
                           'mldataset:levels:s3',
                           'geodataframe:shapefile:s3',
                           'geodataframe:geojson:s3'},
                          set(self.store.get_data_opener_ids()))
-        self.assertEqual({'dataset:netcdf:s3',
+        self.assertEqual({'dataset:geotiff:s3',
+                          'dataset:netcdf:s3',
                           'dataset:zarr:s3',
                           'dataset:levels:s3'},
                          set(self.store.get_data_opener_ids(
                              data_type='dataset'
                          )))
-        self.assertEqual({'dataset:netcdf:s3',
+        self.assertEqual({'dataset:geotiff:s3',
+                          'dataset:netcdf:s3',
                           'dataset:zarr:s3',
                           'dataset:levels:s3',
+                          'mldataset:geotiff:s3',
                           'mldataset:levels:s3',
                           'geodataframe:shapefile:s3',
                           'geodataframe:geojson:s3'},
