@@ -3,8 +3,6 @@ channels:
   - conda-forge
   - defaults
 dependencies:
-  # Python
-  - python >=3.8
   # Required
   - xcube >= 0.9.0
   - aiohttp >= 3.6
