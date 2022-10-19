@@ -302,6 +302,7 @@ class CciOdpDataOpener(DataOpener):
         if max_cache_size:
             chunk_store = zarr.LRUStoreCache(chunk_store, max_cache_size)
         ds = xr.open_zarr(chunk_store, consolidated=False)
+        ds.zarr_store.set(chunk_store)
         ds = self._normalize_dataset(ds)
         return ds
 

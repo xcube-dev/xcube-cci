@@ -198,6 +198,7 @@ class CciOdpDatasetOpenerTest(unittest.TestCase):
                          set(dataset.coords))
         self.assertEqual({'time', 'lat', 'lon'}, set(dataset.analysed_sst.dims))
         self.assertEqual({1, 20, 20}, set(dataset.analysed_sst.chunk_sizes))
+        self.assertIsNotNone(dataset.zarr_store.get())
 
     @skipIf(os.environ.get('XCUBE_DISABLE_WEB_TESTS', None) == '1',
             'XCUBE_DISABLE_WEB_TESTS = 1')
@@ -216,6 +217,7 @@ class CciOdpDatasetOpenerTest(unittest.TestCase):
                          set(dataset.absorbing_aerosol_index.dims))
         self.assertEqual({1, 10, 10},
                          set(dataset.absorbing_aerosol_index.chunk_sizes))
+        self.assertIsNotNone(dataset.zarr_store.get())
 
         # open same dataset again to ensure chunking is different
         full_dataset = self.opener.open_data(
@@ -231,6 +233,7 @@ class CciOdpDatasetOpenerTest(unittest.TestCase):
                          set(full_dataset.absorbing_aerosol_index.dims))
         self.assertEqual({1, 180, 360},
                          set(full_dataset.absorbing_aerosol_index.chunk_sizes))
+        self.assertIsNotNone(full_dataset.zarr_store.get())
 
     @skipIf(os.environ.get(
         'XCUBE_DISABLE_WEB_TESTS', None) == '1', 'XCUBE_DISABLE_WEB_TESTS = 1')
@@ -326,6 +329,7 @@ class CciOdpDatasetOpenerTimeSeriesTest(unittest.TestCase):
                          set(dataset.ozone_mixing_ratio.shape))
         self.assertEqual({12, 51, 18},
                          set(dataset.ozone_mixing_ratio.chunk_sizes))
+        self.assertIsNotNone(dataset.zarr_store.get())
 
     @skipIf(os.environ.get('XCUBE_DISABLE_WEB_TESTS', None) == '1',
             'XCUBE_DISABLE_WEB_TESTS = 1')
@@ -347,6 +351,7 @@ class CciOdpDatasetOpenerTimeSeriesTest(unittest.TestCase):
                          set(dataset.ozone_mixing_ratio.shape))
         self.assertEqual({12, 51, 18},
                          set(dataset.ozone_mixing_ratio.chunk_sizes))
+        self.assertIsNotNone(dataset.zarr_store.get())
 
 
 class CciOdpDatasetOpenerTimeSeriesNormalizeTest(unittest.TestCase):
@@ -387,6 +392,7 @@ class CciOdpDatasetOpenerTimeSeriesNormalizeTest(unittest.TestCase):
                          set(dataset.ozone_mixing_ratio.shape))
         self.assertEqual({12, 51, 18, 36},
                          set(dataset.ozone_mixing_ratio.chunk_sizes))
+        self.assertIsNotNone(dataset.zarr_store.get())
 
     @skipIf(os.environ.get('XCUBE_DISABLE_WEB_TESTS', None) == '1',
             'XCUBE_DISABLE_WEB_TESTS = 1')
@@ -408,6 +414,7 @@ class CciOdpDatasetOpenerTimeSeriesNormalizeTest(unittest.TestCase):
                          set(dataset.ozone_mixing_ratio.shape))
         self.assertEqual({12, 51, 18, 36},
                          set(dataset.ozone_mixing_ratio.chunk_sizes))
+        self.assertIsNotNone(dataset.zarr_store.get())
 
 
 class CciOdpDatasetOpenerNormalizeTest(unittest.TestCase):
@@ -493,6 +500,7 @@ class CciOdpDatasetOpenerNormalizeTest(unittest.TestCase):
                          set(dataset.absorbing_aerosol_index.dims))
         self.assertEqual({1, 10, 10},
                          set(dataset.absorbing_aerosol_index.chunk_sizes))
+        self.assertIsNotNone(dataset.zarr_store.get())
 
         # open same dataset again to ensure chunking is different
         full_dataset = self.opener.open_data(
@@ -508,6 +516,7 @@ class CciOdpDatasetOpenerNormalizeTest(unittest.TestCase):
                          set(full_dataset.absorbing_aerosol_index.dims))
         self.assertEqual({1, 180, 360},
                          set(full_dataset.absorbing_aerosol_index.chunk_sizes))
+        self.assertIsNotNone(dataset.zarr_store.get())
 
     @skipIf(os.environ.get('XCUBE_DISABLE_WEB_TESTS', None) == '1', 'XCUBE_DISABLE_WEB_TESTS = 1')
     @skip('Disabled while time series are not supported')
@@ -523,6 +532,7 @@ class CciOdpDatasetOpenerNormalizeTest(unittest.TestCase):
                           'sample_standard_deviation'}, set(dataset.data_vars))
         self.assertEqual({'time', 'air_pressure', 'lat', 'lon'}, dataset.ozone_mixing_ratio.dims)
         self.assertEqual({1, 32, 18, 36}, set(dataset.ozone_mixing_ratio.chunk_sizes))
+        self.assertIsNotNone(dataset.zarr_store.get())
 
     @skipIf(os.environ.get('XCUBE_DISABLE_WEB_TESTS', None) == '1',
             'XCUBE_DISABLE_WEB_TESTS = 1')

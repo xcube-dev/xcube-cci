@@ -1,6 +1,7 @@
 ## Changes in 0.9.7 (in development)
 
-* Zarr Datastore reads data ids from json file if provided. 
+* Zarr Datastore reads data ids from json file if provided
+* Updated CCI Store to set zarr store (from here on, xcube 0.12.1 is required)
 
 ## Changes in 0.9.6
 
