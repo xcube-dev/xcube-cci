@@ -404,7 +404,7 @@ class CciOdpTest(unittest.TestCase):
                 processing_level='L2P'
             )
         )
-        self.assertTrue(len(l2p_sources) > 28)
+        self.assertTrue(len(l2p_sources) > 20)
 
     @skipIf(os.environ.get('XCUBE_DISABLE_WEB_TESTS', None) == '1', 'XCUBE_DISABLE_WEB_TESTS = 1')
     def test_search_product_string(self):
