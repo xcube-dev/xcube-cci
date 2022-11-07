@@ -577,7 +577,7 @@
             "constrain_region",
             "write_zarr"
         ],
-        "title": "ESA Greenland Ice Sheet Climate Change Initiative (Greenland_Ice_Sheet_cci): Optical ice velocity of the D\u00f8cker Smith Glacier between 2016-05-08 and 2016-05-18, generated using Sentinel-2 data, v1.0"
+        "title": "ESA Greenland Ice Sheet Climate Change Initiative (Greenland_Ice_Sheet_cci): Optical ice velocity of the D\u00c3\u00b8cker Smith Glacier between 2016-05-08 and 2016-05-18, generated using Sentinel-2 data, v1.0"
     },
     "esacci.ICESHEETS.unspecified.Unspecified.IV.MSI-(Sentinel-2).multi-platform.UNSPECIFIED.1-1.greenland_s2_50m_seasonal_20170501_20170829_Helheim": {
         "data_type": "dataset",
@@ -1011,16 +1011,6 @@
         ],
         "title": "ESA Greenland Ice Sheet Climate Change Initiative (Greenland_Ice_Sheet_cci): Greenland Surface Elevation Change 1992-2014, v1.2"
     },
-    "esacci.LAKES.day.L3S.LK_PRODUCTS.multi-sensor.multi-platform.MERGED.2-0-1.r1": {
-        "data_type": "dataset",
-        "verification_flags": [
-            "open",
-            "constrain_time",
-            "constrain_region",
-            "write_zarr"
-        ],
-        "title": "ESA Lakes Climate Change Initiative (Lakes_cci):  Lake products, Version 2.0.1"
-    },
     "esacci.LAKES.day.L3S.LK_PRODUCTS.multi-sensor.multi-platform.MERGED.v1-0.r1": {
         "data_type": "dataset",
         "verification_flags": [
@@ -1040,6 +1030,16 @@
             "write_zarr"
         ],
         "title": "ESA Lakes Climate Change Initiative (Lakes_cci):  Lake products, Version 1.1"
+    },
+    "esacci.LAKES.day.L3S.LK_PRODUCTS.multi-sensor.multi-platform.MERGED.v2-0-2.r1": {
+        "data_type": "dataset",
+        "verification_flags": [
+            "open",
+            "constrain_time",
+            "constrain_region",
+            "write_zarr"
+        ],
+        "title": "ESA Lakes Climate Change Initiative (Lakes_cci):  Lake products, Version 2.0.2"
     },
     "esacci.LC.13-yrs.L4.WB.ASAR.Envisat.Map.4-0.r1": {
         "data_type": "dataset",
@@ -1231,6 +1231,126 @@
         ],
         "title": "ESA Land Surface Temperature Climate Change Initiative (LST_cci): Multisensor Infra-Red (IR) Low Earth Orbit (LEO) land surface temperature (LST) time series level 3 supercollated (L3S) global product (1995-2020), version 2.00"
     },
+    "esacci.LST.mon.L3C.LST.AATSR.Envisat.ATSR_3.3-00.DAY": {
+        "data_type": "dataset",
+        "verification_flags": [
+            "open",
+            "constrain_time",
+            "constrain_region",
+            "write_zarr"
+        ],
+        "title": "ESA Land Surface Temperature Climate Change Initiative (LST_cci): Monthly land surface temperature from AATSR (Advanced Along-Track Scanning Radiometer), level 3 collated (L3C) global product (2002-2012), version 3.00"
+    },
+    "esacci.LST.mon.L3C.LST.AATSR.Envisat.ATSR_3.3-00.NIGHT": {
+        "data_type": "dataset",
+        "verification_flags": [
+            "open",
+            "constrain_time",
+            "constrain_region",
+            "write_zarr"
+        ],
+        "title": "ESA Land Surface Temperature Climate Change Initiative (LST_cci): Monthly land surface temperature from AATSR (Advanced Along-Track Scanning Radiometer), level 3 collated (L3C) global product (2002-2012), version 3.00"
+    },
+    "esacci.LST.mon.L3C.LST.ATSR-2.ERS-2.ATSR_2.3-00.DAY": {
+        "data_type": "dataset",
+        "verification_flags": [
+            "open",
+            "constrain_time",
+            "constrain_region",
+            "write_zarr"
+        ],
+        "title": "ESA Land Surface Temperature Climate Change Initiative (LST_cci): Monthly land surface temperature from ATSR-2 (Along-Track Scanning Radiometer 2),  level 3 collated (L3C) global product (1995-2013), version 3.00"
+    },
+    "esacci.LST.mon.L3C.LST.ATSR-2.ERS-2.ATSR_2.3-00.NIGHT": {
+        "data_type": "dataset",
+        "verification_flags": [
+            "open",
+            "constrain_time",
+            "constrain_region",
+            "write_zarr"
+        ],
+        "title": "ESA Land Surface Temperature Climate Change Initiative (LST_cci): Monthly land surface temperature from ATSR-2 (Along-Track Scanning Radiometer 2),  level 3 collated (L3C) global product (1995-2013), version 3.00"
+    },
+    "esacci.LST.mon.L3C.LST.MODIS.Aqua.MODISA.3-00.DAY": {
+        "data_type": "dataset",
+        "verification_flags": [
+            "open",
+            "constrain_time",
+            "constrain_region",
+            "write_zarr"
+        ],
+        "title": "ESA Land Surface Temperature Climate Change Initiative (LST_cci): Monthly land surface temperature from  MODIS (Moderate resolution Infra-red Spectroradiometer) on Aqua, level 3 collated (L3C) global product (2002-2018), version 3.00"
+    },
+    "esacci.LST.mon.L3C.LST.MODIS.Aqua.MODISA.3-00.NIGHT": {
+        "data_type": "dataset",
+        "verification_flags": [
+            "open",
+            "constrain_time",
+            "constrain_region",
+            "write_zarr"
+        ],
+        "title": "ESA Land Surface Temperature Climate Change Initiative (LST_cci): Monthly land surface temperature from  MODIS (Moderate resolution Infra-red Spectroradiometer) on Aqua, level 3 collated (L3C) global product (2002-2018), version 3.00"
+    },
+    "esacci.LST.mon.L3C.LST.MODIS.Terra.MODIST.3-00.DAY": {
+        "data_type": "dataset",
+        "verification_flags": [
+            "open",
+            "constrain_time",
+            "constrain_region",
+            "write_zarr"
+        ],
+        "title": "ESA Land Surface Temperature Climate Change Initiative (LST_cci): Monthly land surface temperature from  MODIS (Moderate resolution Infra-red Spectroradiometer) on Terra, level 3 collated (L3C) global product (2000-2018), version 3.00"
+    },
+    "esacci.LST.mon.L3C.LST.MODIS.Terra.MODIST.3-00.NIGHT": {
+        "data_type": "dataset",
+        "verification_flags": [
+            "open",
+            "constrain_time",
+            "constrain_region",
+            "write_zarr"
+        ],
+        "title": "ESA Land Surface Temperature Climate Change Initiative (LST_cci): Monthly land surface temperature from  MODIS (Moderate resolution Infra-red Spectroradiometer) on Terra, level 3 collated (L3C) global product (2000-2018), version 3.00"
+    },
+    "esacci.LST.mon.L3C.LST.SLSTR.Sentinel-3A.SLSTRA.3-00.DAY": {
+        "data_type": "dataset",
+        "verification_flags": [
+            "open",
+            "constrain_time",
+            "constrain_region",
+            "write_zarr"
+        ],
+        "title": "ESA Land Surface Temperature Climate Change Initiative (LST_cci): Monthly land surface temperature from SLSTR (Sea and Land Surface Temperature Radiometer) on Sentinel 3A, level 3 collated (L3C) global product (2016-2020), version 3.00"
+    },
+    "esacci.LST.mon.L3C.LST.SLSTR.Sentinel-3A.SLSTRA.3-00.NIGHT": {
+        "data_type": "dataset",
+        "verification_flags": [
+            "open",
+            "constrain_time",
+            "constrain_region",
+            "write_zarr"
+        ],
+        "title": "ESA Land Surface Temperature Climate Change Initiative (LST_cci): Monthly land surface temperature from SLSTR (Sea and Land Surface Temperature Radiometer) on Sentinel 3A, level 3 collated (L3C) global product (2016-2020), version 3.00"
+    },
+    "esacci.LST.mon.L3C.LST.SLSTR.Sentinel-3B.SLSTRB.3-00.DAY": {
+        "data_type": "dataset",
+        "verification_flags": [
+            "open",
+            "constrain_time",
+            "constrain_region",
+            "write_zarr"
+        ],
+        "title": "ESA Land Surface Temperature Climate Change Initiative (LST_cci): Monthly land surface temperature from SLSTR (Sea and Land Surface Temperature Radiometer) on Sentinel 3B, level 3 collated (L3C) global product (2018-2020), version 3.00"
+    },
+    "esacci.LST.mon.L3C.LST.SLSTR.Sentinel-3B.SLSTRB.3-00.NIGHT": {
+        "data_type": "dataset",
+        "verification_flags": [
+            "open",
+            "constrain_time",
+            "constrain_region",
+            "write_zarr"
+        ],
+        "title": "ESA Land Surface Temperature Climate Change Initiative (LST_cci): Monthly land surface temperature from SLSTR (Sea and Land Surface Temperature Radiometer) on Sentinel 3B, level 3 collated (L3C) global product (2018-2020), version 3.00"
+    },
     "esacci.LST.mon.L3C.LST.multi-sensor.multi-platform.SSMI_SSMIS.v2-23.ASC": {
         "data_type": "dataset",
         "verification_flags": [
@@ -1250,6 +1370,106 @@
             "write_zarr"
         ],
         "title": "ESA Land Surface Temperature Climate Change Initiative (LST_cci): All-weather MicroWave Land Surface Temperature (MW-LST) global data record (1996-2020)"
+    },
+    "esacci.LST.mon.L3S.LST.multi-sensor.multi-platform.IRCDR.2-00.DAY": {
+        "data_type": "dataset",
+        "verification_flags": [
+            "open",
+            "constrain_time",
+            "constrain_region",
+            "write_zarr"
+        ],
+        "title": "ESA Land Surface Temperature Climate Change Initiative (LST_cci): Monthly Multisensor Infra-Red (IR) Low Earth Orbit (LEO) land surface temperature (LST) time series level 3 supercollated (L3S) global product (1995-2020), version 2.00"
+    },
+    "esacci.LST.mon.L3S.LST.multi-sensor.multi-platform.IRCDR.2-00.NIGHT": {
+        "data_type": "dataset",
+        "verification_flags": [
+            "open",
+            "constrain_time",
+            "constrain_region",
+            "write_zarr"
+        ],
+        "title": "ESA Land Surface Temperature Climate Change Initiative (LST_cci): Monthly Multisensor Infra-Red (IR) Low Earth Orbit (LEO) land surface temperature (LST) time series level 3 supercollated (L3S) global product (1995-2020), version 2.00"
+    },
+    "esacci.LST.mon.L3S.LST.multi-sensor.multi-platform.IRMGP.1-00.00:00UTC": {
+        "data_type": "dataset",
+        "verification_flags": [
+            "open",
+            "constrain_time",
+            "constrain_region",
+            "write_zarr"
+        ],
+        "title": "ESA Land Surface Temperature Climate Change Initiative (LST_cci): Monthly multisensor Infra-Red (IR) Low Earth Orbit (LEO) and Geostationary Earth Orbit (GEO) land surface temperature (LST) level 3 supercollated (L3S) global product (2009-2020), version 1.00"
+    },
+    "esacci.LST.mon.L3S.LST.multi-sensor.multi-platform.IRMGP.1-00.03:00UTC": {
+        "data_type": "dataset",
+        "verification_flags": [
+            "open",
+            "constrain_time",
+            "constrain_region",
+            "write_zarr"
+        ],
+        "title": "ESA Land Surface Temperature Climate Change Initiative (LST_cci): Monthly multisensor Infra-Red (IR) Low Earth Orbit (LEO) and Geostationary Earth Orbit (GEO) land surface temperature (LST) level 3 supercollated (L3S) global product (2009-2020), version 1.00"
+    },
+    "esacci.LST.mon.L3S.LST.multi-sensor.multi-platform.IRMGP.1-00.06:00UTC": {
+        "data_type": "dataset",
+        "verification_flags": [
+            "open",
+            "constrain_time",
+            "constrain_region",
+            "write_zarr"
+        ],
+        "title": "ESA Land Surface Temperature Climate Change Initiative (LST_cci): Monthly multisensor Infra-Red (IR) Low Earth Orbit (LEO) and Geostationary Earth Orbit (GEO) land surface temperature (LST) level 3 supercollated (L3S) global product (2009-2020), version 1.00"
+    },
+    "esacci.LST.mon.L3S.LST.multi-sensor.multi-platform.IRMGP.1-00.09:00UTC": {
+        "data_type": "dataset",
+        "verification_flags": [
+            "open",
+            "constrain_time",
+            "constrain_region",
+            "write_zarr"
+        ],
+        "title": "ESA Land Surface Temperature Climate Change Initiative (LST_cci): Monthly multisensor Infra-Red (IR) Low Earth Orbit (LEO) and Geostationary Earth Orbit (GEO) land surface temperature (LST) level 3 supercollated (L3S) global product (2009-2020), version 1.00"
+    },
+    "esacci.LST.mon.L3S.LST.multi-sensor.multi-platform.IRMGP.1-00.12:00UTC": {
+        "data_type": "dataset",
+        "verification_flags": [
+            "open",
+            "constrain_time",
+            "constrain_region",
+            "write_zarr"
+        ],
+        "title": "ESA Land Surface Temperature Climate Change Initiative (LST_cci): Monthly multisensor Infra-Red (IR) Low Earth Orbit (LEO) and Geostationary Earth Orbit (GEO) land surface temperature (LST) level 3 supercollated (L3S) global product (2009-2020), version 1.00"
+    },
+    "esacci.LST.mon.L3S.LST.multi-sensor.multi-platform.IRMGP.1-00.15:00UTC": {
+        "data_type": "dataset",
+        "verification_flags": [
+            "open",
+            "constrain_time",
+            "constrain_region",
+            "write_zarr"
+        ],
+        "title": "ESA Land Surface Temperature Climate Change Initiative (LST_cci): Monthly multisensor Infra-Red (IR) Low Earth Orbit (LEO) and Geostationary Earth Orbit (GEO) land surface temperature (LST) level 3 supercollated (L3S) global product (2009-2020), version 1.00"
+    },
+    "esacci.LST.mon.L3S.LST.multi-sensor.multi-platform.IRMGP.1-00.18:00UTC": {
+        "data_type": "dataset",
+        "verification_flags": [
+            "open",
+            "constrain_time",
+            "constrain_region",
+            "write_zarr"
+        ],
+        "title": "ESA Land Surface Temperature Climate Change Initiative (LST_cci): Monthly multisensor Infra-Red (IR) Low Earth Orbit (LEO) and Geostationary Earth Orbit (GEO) land surface temperature (LST) level 3 supercollated (L3S) global product (2009-2020), version 1.00"
+    },
+    "esacci.LST.mon.L3S.LST.multi-sensor.multi-platform.IRMGP.1-00.21:00UTC": {
+        "data_type": "dataset",
+        "verification_flags": [
+            "open",
+            "constrain_time",
+            "constrain_region",
+            "write_zarr"
+        ],
+        "title": "ESA Land Surface Temperature Climate Change Initiative (LST_cci): Monthly multisensor Infra-Red (IR) Low Earth Orbit (LEO) and Geostationary Earth Orbit (GEO) land surface temperature (LST) level 3 supercollated (L3S) global product (2009-2020), version 1.00"
     },
     "esacci.LST.yr.L3C.LST.multi-sensor.multi-platform.SSMI_SSMIS.v2-23.ASC": {
         "data_type": "dataset",
@@ -2185,9 +2405,7 @@
         "data_type": "dataset",
         "verification_flags": [
             "open",
-            "constrain_time",
-            "constrain_region",
-            "write_zarr"
+            "constrain_time"
         ],
         "title": "ESA Ozone Climate Change Initiative (Ozone CCI): Level 3 Total Ozone Merged Data Product, version 01"
     },
@@ -2455,71 +2673,6 @@
         ],
         "title": "ESA Sea Level Climate Change Initiative (Sea_Level_cci): Time series of gridded Sea Level Anomalies (SLA), Version 2.0"
     },
-    "esacci.SEASTATE.mon.L4.SWH.multi-sensor.multi-platform.MULTI_1M.1-1.r1": {
-        "data_type": "dataset",
-        "verification_flags": [
-            "open",
-            "constrain_time",
-            "constrain_region",
-            "write_zarr"
-        ],
-        "title": "ESA Sea State Climate Change Initiative (Sea_State_cci) : Global remote sensing merged multi-mission monthly gridded significant wave height,  L4 product, version 1.1"
-    },
-    "esacci.SEASTATE.satellite-orbit-frequency.L2P.SWH.AltiKa.SARAL.Saral.1-1.r1": {
-        "data_type": "dataset",
-        "verification_flags": [],
-        "title": "ESA Sea State Climate Change Initiative (Sea_State_cci): Global remote sensing multi-mission along-track significant wave height, L2P product, version 1.1"
-    },
-    "esacci.SEASTATE.satellite-orbit-frequency.L2P.SWH.GFO-RA.GFO.GFO.1-1.r1": {
-        "data_type": "dataset",
-        "verification_flags": [],
-        "title": "ESA Sea State Climate Change Initiative (Sea_State_cci): Global remote sensing multi-mission along-track significant wave height, L2P product, version 1.1"
-    },
-    "esacci.SEASTATE.satellite-orbit-frequency.L2P.SWH.NRA.Topex-Poseidon.Topex-Poseidon.1-1.r1": {
-        "data_type": "dataset",
-        "verification_flags": [],
-        "title": "ESA Sea State Climate Change Initiative (Sea_State_cci): Global remote sensing multi-mission along-track significant wave height, L2P product, version 1.1"
-    },
-    "esacci.SEASTATE.satellite-orbit-frequency.L2P.SWH.Poseidon-2.Jason-1.Jason-1.1-1.r1": {
-        "data_type": "dataset",
-        "verification_flags": [],
-        "title": "ESA Sea State Climate Change Initiative (Sea_State_cci): Global remote sensing multi-mission along-track significant wave height, L2P product, version 1.1"
-    },
-    "esacci.SEASTATE.satellite-orbit-frequency.L2P.SWH.Poseidon-3.Jason-2.Jason-2.1-1.r1": {
-        "data_type": "dataset",
-        "verification_flags": [],
-        "title": "ESA Sea State Climate Change Initiative (Sea_State_cci): Global remote sensing multi-mission along-track significant wave height, L2P product, version 1.1"
-    },
-    "esacci.SEASTATE.satellite-orbit-frequency.L2P.SWH.Poseidon-3B.Jason-3.Jason-3.1-1.r1": {
-        "data_type": "dataset",
-        "verification_flags": [],
-        "title": "ESA Sea State Climate Change Initiative (Sea_State_cci): Global remote sensing multi-mission along-track significant wave height, L2P product, version 1.1"
-    },
-    "esacci.SEASTATE.satellite-orbit-frequency.L2P.SWH.RA-2.Envisat.Envisat.1-1.r1": {
-        "data_type": "dataset",
-        "verification_flags": [],
-        "title": "ESA Sea State Climate Change Initiative (Sea_State_cci): Global remote sensing multi-mission along-track significant wave height, L2P product, version 1.1"
-    },
-    "esacci.SEASTATE.satellite-orbit-frequency.L2P.SWH.RA.ERS-1.ERS-1.1-1.r1": {
-        "data_type": "dataset",
-        "verification_flags": [],
-        "title": "ESA Sea State Climate Change Initiative (Sea_State_cci): Global remote sensing multi-mission along-track significant wave height, L2P product, version 1.1"
-    },
-    "esacci.SEASTATE.satellite-orbit-frequency.L2P.SWH.RA.ERS-2.ERS-2.1-1.r1": {
-        "data_type": "dataset",
-        "verification_flags": [],
-        "title": "ESA Sea State Climate Change Initiative (Sea_State_cci): Global remote sensing multi-mission along-track significant wave height, L2P product, version 1.1"
-    },
-    "esacci.SEASTATE.satellite-orbit-frequency.L2P.SWH.SIRAL.CryoSat-2.CryoSat-2.1-1.r1": {
-        "data_type": "dataset",
-        "verification_flags": [],
-        "title": "ESA Sea State Climate Change Initiative (Sea_State_cci): Global remote sensing multi-mission along-track significant wave height, L2P product, version 1.1"
-    },
-    "esacci.SEASTATE.satellite-orbit-frequency.L3.SWH.multi-sensor.multi-platform.MULTI_1D.1-1.r1": {
-        "data_type": "dataset",
-        "verification_flags": [],
-        "title": "ESA Sea State Climate Change Initiative (Sea_State_cci) : Global remote sensing daily merged multi-mission along-track significant wave height, L3 product, version 1.1"
-    },
     "esacci.SEASURFACESALINITY.15-days.L4.SSS.multi-sensor.multi-platform.MERGED_OI_Monthly_CENTRED_15Day_25km.2-31.r1": {
         "data_type": "dataset",
         "verification_flags": [
@@ -2640,7 +2793,7 @@
             "constrain_region",
             "write_zarr"
         ],
-        "title": "ESA Snow Climate Change Initiative (Snow_cci): Snow Water Equivalent (SWE) level 3C daily global climate research data package (CRDP) (1979 \u2013 2018), version 1.0"
+        "title": "ESA Snow Climate Change Initiative (Snow_cci): Snow Water Equivalent (SWE) level 3C daily global climate research data package (CRDP) (1979 \u00e2\u20ac\u201c 2018), version 1.0"
     },
     "esacci.SNOW.day.L3C.SWE.multi-sensor.multi-platform.MERGED.2-0.r1": {
         "data_type": "dataset",
@@ -2650,7 +2803,7 @@
             "constrain_region",
             "write_zarr"
         ],
-        "title": "ESA Snow Climate Change Initiative (Snow_cci): Snow Water Equivalent (SWE) level 3C daily global climate research data package (CRDP)  (1979 \u2013 2020), version 2.0"
+        "title": "ESA Snow Climate Change Initiative (Snow_cci): Snow Water Equivalent (SWE) level 3C daily global climate research data package (CRDP)  (1979 \u00e2\u20ac\u201c 2020), version 2.0"
     },
     "esacci.SOILMOISTURE.day.L3S.SSMS.multi-sensor.multi-platform.ACTIVE.05-2.r1": {
         "data_type": "dataset",
