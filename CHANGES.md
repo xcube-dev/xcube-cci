@@ -1,7 +1,8 @@
-## Changes in 0.9.7 (in development)
+## Changes in 0.9.7
 
 * Zarr Datastore reads data ids from json file if provided
-* Updated CCI Store to set zarr store (from here on, xcube 0.12.1 is required)
+* Updated CCI Store to set zarr store (from here on, xcube 0.12.1 is required) 
+  [#62](https://github.com/dcs4cop/xcube-cci/issues/62)
 
 ## Changes in 0.9.6
 
