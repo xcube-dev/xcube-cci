@@ -1,3 +1,5 @@
+## Changes in 0.9.8 (in development)
+
 ## Changes in 0.9.7
 
 * Zarr Datastore reads data ids from json file if provided
