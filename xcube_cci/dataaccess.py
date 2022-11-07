@@ -35,6 +35,7 @@ from xcube.core.store import DataStore
 from xcube.core.store import DataStoreError
 from xcube.core.store import DataType
 from xcube.core.store import DatasetDescriptor
+from xcube.core.store import MULTI_LEVEL_DATASET_TYPE
 from xcube.core.store import VariableDescriptor
 from xcube.util.jsonschema import JsonArraySchema
 from xcube.util.jsonschema import JsonBooleanSchema
@@ -50,6 +51,7 @@ from xcube_cci.constants import DATASET_OPENER_ID
 from xcube_cci.constants import DEFAULT_NUM_RETRIES
 from xcube_cci.constants import DEFAULT_RETRY_BACKOFF_BASE
 from xcube_cci.constants import DEFAULT_RETRY_BACKOFF_MAX
+from xcube_cci.constants import MULTI_LEVEL_DATASET_OPENER_ID
 from xcube_cci.constants import OPENSEARCH_CEDA_URL
 from xcube_cci.normalize import normalize_coord_names
 from xcube_cci.normalize import normalize_dims_description
@@ -350,6 +352,17 @@ class CciOdpDatasetOpener(CciOdpDataOpener):
             CciOdp(**odp_params),
             DATASET_OPENER_ID,
             DATASET_TYPE,
+            normalize_data=normalize_data,
+        )
+
+
+class CciOdpMultiLevelDatasetOpener(CciOdpDataOpener):
+
+    def __init__(self, normalize_data: bool = True, **odp_params):
+        super().__init__(
+            CciOdp(**odp_params),
+            MULTI_LEVEL_DATASET_OPENER_ID,
+            MULTI_LEVEL_DATASET_TYPE,
             normalize_data=normalize_data,
         )
 

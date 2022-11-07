@@ -22,6 +22,7 @@
 DATA_STORE_ID = 'cciodp'
 DATASET_OPENER_ID = f'dataset:zarr:{DATA_STORE_ID}'
 DATA_ARRAY_NAME = 'var_data'
+MULTI_LEVEL_DATASET_OPENER_ID = f'mldataset:levels:{DATA_STORE_ID}'
 
 ZARR_DATA_STORE_ID = 'ccizarr'
 
