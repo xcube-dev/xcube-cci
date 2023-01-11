@@ -1145,7 +1145,8 @@ class CciOdp:
         meta_info_dict = {}
         if odd_url:
             meta_info_dict = await self._extract_metadata_from_odd_url(session, odd_url)
-        if metadata_url:
+        read_ceda_catalogue = os.environ.get("READ_CEDA_CATALOGUE", None)
+        if metadata_url and read_ceda_catalogue:
             desc_metadata = await self._extract_metadata_from_descxml_url(session, metadata_url)
             for item in desc_metadata:
                 if item not in meta_info_dict:
