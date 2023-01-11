@@ -125,7 +125,7 @@ def _convert_time_from_drs_id(time_value: str) -> str:
 
 async def _run_with_session_executor(async_function, *params, headers):
     async with aiohttp.ClientSession(connector=aiohttp.TCPConnector(limit=50),
-                                     headers=headers, trust_env=True) as session:
+                                     headers=headers) as session:
         return await async_function(session, *params)
 
 
