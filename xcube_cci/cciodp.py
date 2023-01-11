@@ -79,6 +79,8 @@ DESC_NS = {'gmd': 'http://www.isotc211.org/2005/gmd',
 _FEATURE_LIST_LOCK = asyncio.Lock()
 
 _TIMESTAMP_FORMAT = "%Y-%m-%dT%H:%M:%S"
+_EARLY_START_TIME = '1000-01-01T00:00:00',
+_LATE_END_TIME = '3000-12-31T23:59:59'
 
 nest_asyncio.apply()
 
@@ -439,14 +441,24 @@ class CciOdp:
             self._get_crs(dataset_metadata.get('variable_infos', {}))
         data_info['y_res'] = _get_res(nc_attrs, 'lat')
         data_info['x_res'] = _get_res(nc_attrs, 'lon')
-        data_info['bbox'] = (float(dataset_metadata['bbox_minx']),
-                             float(dataset_metadata['bbox_miny']),
-                             float(dataset_metadata['bbox_maxx']),
-                             float(dataset_metadata['bbox_maxy']))
+        data_info['bbox'] = (float(dataset_metadata.get('bbox_minx', np.nan)),
+                             float(dataset_metadata.get('bbox_miny', np.nan)),
+                             float(dataset_metadata.get('bbox_maxx', np.nan)),
+                             float(dataset_metadata.get('bbox_maxy', np.nan)))
+        if np.isnan(data_info['bbox']).all():
+            data_info['bbox'] = None
         data_info['temporal_coverage_start'] = \
-            dataset_metadata.get('temporal_coverage_start', '')
+            dataset_metadata.get('temporal_coverage_start')
         data_info['temporal_coverage_end'] = \
-            dataset_metadata.get('temporal_coverage_end', '')
+            dataset_metadata.get('temporal_coverage_end')
+        if not data_info['temporal_coverage_start'] and \
+                not data_info['temporal_coverage_end']:
+            time_ranges = self.get_time_ranges_from_data(dataset_id)
+            if len(time_ranges) > 0:
+                data_info['temporal_coverage_start'] = \
+                    time_ranges[0][0].tz_localize(None).isoformat()
+                data_info['temporal_coverage_end'] = \
+                    time_ranges[-1][1].tz_localize(None).isoformat()
         data_info['var_names'], data_info['coord_names'] = \
             self.var_and_coord_names(dataset_id)
         return data_info
@@ -681,23 +693,27 @@ class CciOdp:
                     != data_source_info['platform_id']:
                 continue
             if bbox:
-                if float(data_source_info['bbox_minx']) > bbox[2]:
+                if float(data_source_info.get('bbox_minx', np.inf)) > bbox[2]:
                     continue
-                if float(data_source_info['bbox_maxx']) < bbox[0]:
+                if float(data_source_info.get('bbox_maxx', np.NINF)) < bbox[0]:
                     continue
-                if float(data_source_info['bbox_miny']) > bbox[3]:
+                if float(data_source_info.get('bbox_miny', np.inf)) > bbox[3]:
                     continue
-                if float(data_source_info['bbox_maxy']) < bbox[1]:
+                if float(data_source_info.get('bbox_maxy', np.NINF)) < bbox[1]:
                     continue
             if start_date:
-                data_source_end = datetime.strptime(data_source_info['temporal_coverage_end'],
-                                                    _TIMESTAMP_FORMAT)
+                data_source_end = datetime.strptime(
+                    data_source_info['temporal_coverage_end'],
+                    _TIMESTAMP_FORMAT
+                )
                 # noinspection PyUnboundLocalVariable
                 if converted_start_date > data_source_end:
                     continue
             if end_date:
-                data_source_start = datetime.strptime(data_source_info['temporal_coverage_start'],
-                                                      _TIMESTAMP_FORMAT)
+                data_source_start = datetime.strptime(
+                    data_source_info['temporal_coverage_start'],
+                    _TIMESTAMP_FORMAT
+                )
                 # noinspection PyUnboundLocalVariable
                 if converted_end_date < data_source_start:
                     continue
@@ -907,8 +923,10 @@ class CciOdp:
                 end_time = pd.Timestamp(datetime.strftime(end_time, _TIMESTAMP_FORMAT))
                 features.append((start_time, end_time, opendap_url))
 
-    def get_time_ranges_from_data(self, dataset_name: str, start_time: str, end_time: str) -> \
-            List[Tuple[datetime, datetime]]:
+    def get_time_ranges_from_data(self, dataset_name: str,
+                                  start_time: str = _EARLY_START_TIME,
+                                  end_time: str = _LATE_END_TIME
+                                  ) -> List[Tuple[datetime, datetime]]:
         return self._run_with_session(self._get_time_ranges_from_data,
                                       dataset_name,
                                       start_time,
@@ -1144,10 +1162,14 @@ class CciOdp:
                                metadata_url: str) -> Dict:
         meta_info_dict = {}
         if odd_url:
-            meta_info_dict = await self._extract_metadata_from_odd_url(session, odd_url)
-        read_ceda_catalogue = os.environ.get("READ_CEDA_CATALOGUE", None)
+            meta_info_dict = await self._extract_metadata_from_odd_url(
+                session, odd_url
+            )
+        read_ceda_catalogue = os.environ.get("READ_CEDA_CATALOGUE", False)
         if metadata_url and read_ceda_catalogue:
-            desc_metadata = await self._extract_metadata_from_descxml_url(session, metadata_url)
+            desc_metadata = await self._extract_metadata_from_descxml_url(
+                session, metadata_url
+            )
             for item in desc_metadata:
                 if item not in meta_info_dict:
                     meta_info_dict[item] = desc_metadata[item]

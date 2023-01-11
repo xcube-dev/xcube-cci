@@ -848,7 +848,7 @@ class CciChunkStore(RemoteChunkStore):
         temporal_start = self._metadata.get('temporal_coverage_start', None)
         temporal_end = self._metadata.get('temporal_coverage_end', None)
         if not temporal_start or not temporal_end:
-            time_ranges = self._cci_odp.get_time_ranges_from_data(ds_id, '1000-01-01', '3000-12-31')
+            time_ranges = self._cci_odp.get_time_ranges_from_data(ds_id)
             if not temporal_start:
                 if len(time_ranges) == 0:
                     raise ValueError(

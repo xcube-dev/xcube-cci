@@ -154,8 +154,12 @@ class CciOdpDataOpener(DataOpener):
         bbox = dataset_info['bbox']
         crs = dataset_info['crs']
         # only use date parts of times
-        temporal_coverage = (dataset_info['temporal_coverage_start'].split('T')[0],
-                             dataset_info['temporal_coverage_end'].split('T')[0])
+        temporal_coverage = (
+            dataset_info['temporal_coverage_start'].split('T')[0]
+            if dataset_info['temporal_coverage_start'] else None,
+            dataset_info['temporal_coverage_end'].split('T')[0]
+            if dataset_info['temporal_coverage_end'] else None
+        )
         var_infos = self._normalize_var_infos(
             ds_metadata.get('variable_infos', {})
         )
