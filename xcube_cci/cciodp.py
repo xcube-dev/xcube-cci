@@ -79,7 +79,7 @@ DESC_NS = {'gmd': 'http://www.isotc211.org/2005/gmd',
 _FEATURE_LIST_LOCK = asyncio.Lock()
 
 _TIMESTAMP_FORMAT = "%Y-%m-%dT%H:%M:%S"
-_EARLY_START_TIME = '1000-01-01T00:00:00',
+_EARLY_START_TIME = '1000-01-01T00:00:00'
 _LATE_END_TIME = '3000-12-31T23:59:59'
 
 nest_asyncio.apply()
