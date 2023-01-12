@@ -1,5 +1,8 @@
 ## Changes in 0.9.8 (in development)
 
+* Consider environment parameter `READ_CEDA_CATALOGUE` to trigger whether 
+  metadata from the ceda catalogue shall be read. Enabled by default.
+
 ## Changes in 0.9.7
 
 * Zarr Datastore reads data ids from json file if provided
