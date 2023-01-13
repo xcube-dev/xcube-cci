@@ -543,6 +543,11 @@
         ],
         "title": "ESA Greenland Ice Sheet Climate Change Initiative (Greenland_Ice_Sheet_cci): Ice Velocity time series for the Helheim Glacier for 2015-2017 from Sentinel-1 data, v1.1"
     },
+    "esacci.ICESHEETS.unspecified.L4.SEC.multi-sensor.multi-platform.UNSPECIFIED.0-1.greenland_sec_saral_altika": {
+        "data_type": "dataset",
+        "verification_flags": [],
+        "title": "ESA Greenland Ice Sheet Climate Change Initiative (Greenland_Ice_Sheet_cci): Greenland Surface Elevation Change grid from SARAL-AltiKa for 2013-2017, v0.1"
+    },
     "esacci.ICESHEETS.unspecified.Unspecified.CFL.multi-sensor.multi-platform.UNSPECIFIED.v3-0.greenland": {
         "data_type": "dataset",
         "verification_flags": [],
@@ -2639,6 +2644,31 @@
         "verification_flags": [],
         "title": "ESA Sea Ice Climate Change Initiative (Sea_Ice_cci):  Southern hemisphere sea ice thickness from CryoSat-2 on the satellite swath (L2P), v2.0"
     },
+        "esacci.SEALEVEL.10-days.L3.SLA.multi-sensor.multi-platform.NE_ATL.1-1.r1": {
+        "data_type": "dataset",
+        "verification_flags": [],
+        "title": "ESA Sea Level Climate Change Initiative (Sea_Level_cci): Altimeter along-track high resolution sea level anomalies in some coastal regions (2002-2018) from the JASON satellites, v1.1"
+    },
+    "esacci.SEALEVEL.10-days.L3.SLA.multi-sensor.multi-platform.N_INDIAN.1-1.r1": {
+        "data_type": "dataset",
+        "verification_flags": [],
+        "title": "ESA Sea Level Climate Change Initiative (Sea_Level_cci): Altimeter along-track high resolution sea level anomalies in some coastal regions (2002-2018) from the JASON satellites, v1.1"
+    },
+    "esacci.SEALEVEL.10-days.L3.SLA.multi-sensor.multi-platform.SE_ASIA.1-1.r1": {
+        "data_type": "dataset",
+        "verification_flags": [],
+        "title": "ESA Sea Level Climate Change Initiative (Sea_Level_cci): Altimeter along-track high resolution sea level anomalies in some coastal regions (2002-2018) from the JASON satellites, v1.1"
+    },
+    "esacci.SEALEVEL.10-days.L3.SLA.multi-sensor.multi-platform.S_AUSTRALIA.1-1.r1": {
+        "data_type": "dataset",
+        "verification_flags": [],
+        "title": "ESA Sea Level Climate Change Initiative (Sea_Level_cci): Altimeter along-track high resolution sea level anomalies in some coastal regions (2002-2018) from the JASON satellites, v1.1"
+    },
+    "esacci.SEALEVEL.10-days.L3.SLA.multi-sensor.multi-platform.WAFRICA.1-1.r1": {
+        "data_type": "dataset",
+        "verification_flags": [],
+        "title": "ESA Sea Level Climate Change Initiative (Sea_Level_cci): Altimeter along-track high resolution sea level anomalies in some coastal regions (2002-2018) from the JASON satellites, v1.1"
+    },
     "esacci.SEALEVEL.mon.IND.MSL.multi-sensor.multi-platform.MERGED.2-0.r1": {
         "data_type": "dataset",
         "verification_flags": [
@@ -2657,6 +2687,36 @@
         ],
         "title": "ESA Sea Level Climate Change Initiative (Sea_Level_cci): Oceanic Indicators of Mean Sea Level Changes,  Version 2.0"
     },
+    "esacci.SEALEVEL.mon.IND.MSLTR.multi-sensor.multi-platform.MERGED.1-1.MED_SEA": {
+        "data_type": "dataset",
+        "verification_flags": [],
+        "title": "ESA Sea Level Climate Change Initiative (Sea_Level_cci): A database of coastal sea level anomalies and associated trends from Jason satellite altimetry from 2002 to 2018"
+    },
+    "esacci.SEALEVEL.mon.IND.MSLTR.multi-sensor.multi-platform.MERGED.1-1.NE_ATL": {
+        "data_type": "dataset",
+        "verification_flags": [],
+        "title": "ESA Sea Level Climate Change Initiative (Sea_Level_cci): A database of coastal sea level anomalies and associated trends from Jason satellite altimetry from 2002 to 2018"
+    },
+    "esacci.SEALEVEL.mon.IND.MSLTR.multi-sensor.multi-platform.MERGED.1-1.N_INDIAN": {
+        "data_type": "dataset",
+        "verification_flags": [],
+        "title": "ESA Sea Level Climate Change Initiative (Sea_Level_cci): A database of coastal sea level anomalies and associated trends from Jason satellite altimetry from 2002 to 2018"
+    },
+    "esacci.SEALEVEL.mon.IND.MSLTR.multi-sensor.multi-platform.MERGED.1-1.SE_ASIA": {
+        "data_type": "dataset",
+        "verification_flags": [],
+        "title": "ESA Sea Level Climate Change Initiative (Sea_Level_cci): A database of coastal sea level anomalies and associated trends from Jason satellite altimetry from 2002 to 2018"
+    },
+    "esacci.SEALEVEL.mon.IND.MSLTR.multi-sensor.multi-platform.MERGED.1-1.S_AUSTRALIA": {
+        "data_type": "dataset",
+        "verification_flags": [],
+        "title": "ESA Sea Level Climate Change Initiative (Sea_Level_cci): A database of coastal sea level anomalies and associated trends from Jason satellite altimetry from 2002 to 2018"
+    },
+    "esacci.SEALEVEL.mon.IND.MSLTR.multi-sensor.multi-platform.MERGED.1-1.WAFRICA": {
+        "data_type": "dataset",
+        "verification_flags": [],
+        "title": "ESA Sea Level Climate Change Initiative (Sea_Level_cci): A database of coastal sea level anomalies and associated trends from Jason satellite altimetry from 2002 to 2018"
+    },
     "esacci.SEALEVEL.mon.IND.MSLTR.multi-sensor.multi-platform.MERGED.2-0.r1": {
         "data_type": "dataset",
         "verification_flags": [
@@ -2672,6 +2732,56 @@
             "constrain_time"
         ],
         "title": "ESA Sea Level Climate Change Initiative (Sea_Level_cci): Time series of gridded Sea Level Anomalies (SLA), Version 2.0"
+    },
+        "esacci.SEALEVEL.satellite-orbit-frequency.L1.UNSPECIFIED.AltiKa.SARAL.UNSPECIFIED.v2-0.r1": {
+        "data_type": "dataset",
+        "verification_flags": [],
+        "title": "ESA Sea Level Climate Change Initiative (Sea_Level_cci): Fundamental Climate Data Records of sea level anomalies and altimeter standards, Version 2.0"
+    },
+    "esacci.SEALEVEL.satellite-orbit-frequency.L1.UNSPECIFIED.GFO-RA.GFO.UNSPECIFIED.v2-0.r1": {
+        "data_type": "dataset",
+        "verification_flags": [],
+        "title": "ESA Sea Level Climate Change Initiative (Sea_Level_cci): Fundamental Climate Data Records of sea level anomalies and altimeter standards, Version 2.0"
+    },
+    "esacci.SEALEVEL.satellite-orbit-frequency.L1.UNSPECIFIED.Poseidon-2.Jason-1.UNSPECIFIED.v2-0.r1": {
+        "data_type": "dataset",
+        "verification_flags": [],
+        "title": "ESA Sea Level Climate Change Initiative (Sea_Level_cci): Fundamental Climate Data Records of sea level anomalies and altimeter standards, Version 2.0"
+    },
+    "esacci.SEALEVEL.satellite-orbit-frequency.L1.UNSPECIFIED.Poseidon-3.Jason-2.UNSPECIFIED.v2-0.r1": {
+        "data_type": "dataset",
+        "verification_flags": [],
+        "title": "ESA Sea Level Climate Change Initiative (Sea_Level_cci): Fundamental Climate Data Records of sea level anomalies and altimeter standards, Version 2.0"
+    },
+    "esacci.SEALEVEL.satellite-orbit-frequency.L1.UNSPECIFIED.RA-2.Envisat.UNSPECIFIED.v2-0.r1": {
+        "data_type": "dataset",
+        "verification_flags": [],
+        "title": "ESA Sea Level Climate Change Initiative (Sea_Level_cci): Fundamental Climate Data Records of sea level anomalies and altimeter standards, Version 2.0"
+    },
+    "esacci.SEALEVEL.satellite-orbit-frequency.L1.UNSPECIFIED.RA.ERS-1.UNSPECIFIED.v2-0.r1": {
+        "data_type": "dataset",
+        "verification_flags": [],
+        "title": "ESA Sea Level Climate Change Initiative (Sea_Level_cci): Fundamental Climate Data Records of sea level anomalies and altimeter standards, Version 2.0"
+    },
+    "esacci.SEALEVEL.satellite-orbit-frequency.L1.UNSPECIFIED.RA.ERS-2.UNSPECIFIED.v2-0.r1": {
+        "data_type": "dataset",
+        "verification_flags": [],
+        "title": "ESA Sea Level Climate Change Initiative (Sea_Level_cci): Fundamental Climate Data Records of sea level anomalies and altimeter standards, Version 2.0"
+    },
+    "esacci.SEALEVEL.satellite-orbit-frequency.L1.UNSPECIFIED.SIRAL.CryoSat-2.UNSPECIFIED.v2-0.r1": {
+        "data_type": "dataset",
+        "verification_flags": [],
+        "title": "ESA Sea Level Climate Change Initiative (Sea_Level_cci): Fundamental Climate Data Records of sea level anomalies and altimeter standards, Version 2.0"
+    },
+    "esacci.SEALEVEL.satellite-orbit-frequency.L1.UNSPECIFIED.SSALT.Topex-Poseidon.UNSPECIFIED.v2-0.r1": {
+        "data_type": "dataset",
+        "verification_flags": [],
+        "title": "ESA Sea Level Climate Change Initiative (Sea_Level_cci): Fundamental Climate Data Records of sea level anomalies and altimeter standards, Version 2.0"
+    },
+    "esacci.SEALEVEL.unspecified.L3.SLA.multi-sensor.multi-platform.MED_SEA.1-1.r1": {
+        "data_type": "dataset",
+        "verification_flags": [],
+        "title": "ESA Sea Level Climate Change Initiative (Sea_Level_cci): Altimeter along-track high resolution sea level anomalies in some coastal regions (2002-2018) from the JASON satellites, v1.1"
     },
     "esacci.SEASURFACESALINITY.15-days.L4.SSS.multi-sensor.multi-platform.MERGED_OI_Monthly_CENTRED_15Day_25km.2-31.r1": {
         "data_type": "dataset",

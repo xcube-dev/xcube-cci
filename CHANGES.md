@@ -2,6 +2,8 @@
 
 * Consider environment parameter `READ_CEDA_CATALOGUE` to trigger whether 
   metadata from the ceda catalogue shall be read. Enabled by default.
+* Updated list of supported datasets. 
+  No odp-provided datasets are excluded anymore.  
 
 ## Changes in 0.9.7
 
