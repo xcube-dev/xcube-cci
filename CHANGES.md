@@ -1,4 +1,4 @@
-## Changes in 0.9.8 (in development)
+## Changes in 0.9.8
 
 * Consider environment parameter `READ_CEDA_CATALOGUE` to trigger whether 
   metadata from the ceda catalogue shall be read. Enabled by default.
