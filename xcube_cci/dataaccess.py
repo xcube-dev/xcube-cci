@@ -301,10 +301,7 @@ class CciOdpDataOpener(DataOpener):
             'time_range',
             'bbox'
         ))
-        max_cache_size: int = 2 ** 30
         chunk_store = CciChunkStore(self._cci_odp, data_id, cube_kwargs)
-        if max_cache_size:
-            chunk_store = zarr.LRUStoreCache(chunk_store, max_cache_size)
         ds = xr.open_zarr(chunk_store, consolidated=False)
         ds.zarr_store.set(chunk_store)
         ds = self._normalize_dataset(ds)

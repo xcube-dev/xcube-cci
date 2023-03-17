@@ -1,5 +1,7 @@
 ## Changes in 0.9.9 (in development)
 
+* Removed cache
+
 ## Changes in 0.9.8
 
 * Consider environment parameter `READ_CEDA_CATALOGUE` to trigger whether 
