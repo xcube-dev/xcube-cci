@@ -40,6 +40,11 @@ import pandas as pd
 from .cciodp import CciOdp
 from .constants import COMMON_COORD_VAR_NAMES
 
+_MIN_CHUNK_SIZE = 512*512
+# _MIN_CHUNK_SIZE = 900000
+_MAX_CHUNK_SIZE = 2048*2048
+# _MAX_CHUNK_SIZE = 1100000
+
 _STATIC_ARRAY_COMPRESSOR_PARAMS = dict(cname='zstd', clevel=1, shuffle=Blosc.SHUFFLE, blocksize=0)
 _STATIC_ARRAY_COMPRESSOR_CONFIG = dict(id='blosc', **_STATIC_ARRAY_COMPRESSOR_PARAMS)
 _STATIC_ARRAY_COMPRESSOR = Blosc(**_STATIC_ARRAY_COMPRESSOR_PARAMS)
@@ -376,17 +381,22 @@ class RemoteChunkStore(MutableMapping, metaclass=ABCMeta):
 
     @classmethod
     def _adjust_chunk_sizes(cls, chunks, sizes, time_dimension):
+        # check whether chunks are acceptable:
+        sum_chunks = np.prod(chunks, dtype=np.int64)
+        if cls._is_of_acceptable_chunk_size(sum_chunks):
+            return chunks
         # check if we can actually read in everything as one big chunk
         sum_sizes = np.prod(sizes, dtype=np.int64)
         if time_dimension >= 0:
             sum_sizes = sum_sizes / sizes[time_dimension] * chunks[time_dimension]
-            if sum_sizes < 1000000:
+            if cls._is_of_acceptable_chunk_size(sum_sizes):
                 best_chunks = sizes.copy()
                 best_chunks[time_dimension] = chunks[time_dimension]
                 return best_chunks
-        if sum_sizes < 1000000:
+        if cls._is_of_acceptable_chunk_size(sum_sizes):
             return sizes
-        # determine valid values for a chunk size. A value is valid if the size can be divided by it without remainder
+        # determine valid values for a chunk size.
+        # A value is valid if the size can be divided by it without remainder
         valid_chunk_sizes = []
         best_chunks = chunks.copy()
         for i, chunk, size in zip(range(len(chunks)), chunks, sizes):
@@ -395,29 +405,39 @@ class RemoteChunkStore(MutableMapping, metaclass=ABCMeta):
                 valid_chunk_sizes.append([chunk])
                 continue
             valid_dim_chunk_sizes = []
-            half_chunk = chunk
-            while half_chunk % 2 == 0:
-                half_chunk /= 2
-                valid_dim_chunk_sizes.insert(0, int(half_chunk))
-            # handle case that the size cannot be divided evenly by the chunk
-            if size % chunk > 0:
-                if np.prod(chunks, dtype=np.int64) / chunk * size < 1000000:
-                    # if the size is small enough to be ingested in single chunk, take it
-                    valid_dim_chunk_sizes.append(size)
-                    best_chunks[i] = size
-                else:
-                    # otherwise, give in to that we cannot chunk the data evenly
-                    valid_dim_chunk_sizes += (list(range(chunk, size + 1, chunk)))
-                valid_chunk_sizes.append(valid_dim_chunk_sizes)
-                continue
-            for r in range(chunk, size + 1, chunk):
-                if size % r == 0:
-                    valid_dim_chunk_sizes.append(r)
+            if sum_chunks > _MAX_CHUNK_SIZE:
+                valid_dim_chunk_sizes.append(chunk)
+                half_chunk = chunk
+                while half_chunk % 2 == 0:
+                    half_chunk /= 2
+                    valid_dim_chunk_sizes.append(int(half_chunk))
+            else:   # sum_chunks < _MIN_CHUNK_SIZE
+                # handle case that the size cannot be
+                # divided evenly by the chunk
+                if size % chunk > 0:
+                    if np.prod(chunks, dtype=np.int64) / chunk * size \
+                            < _MAX_CHUNK_SIZE:
+                        # if the size is small enough to be ingested
+                        # in single chunk, take it
+                        valid_dim_chunk_sizes.append(size)
+                    else:
+                        # otherwise, give in to that we cannot
+                        # chunk the data evenly
+                        valid_dim_chunk_sizes += \
+                            (list(range(chunk, size + 1, chunk)))
+                    valid_chunk_sizes.append(valid_dim_chunk_sizes)
+                    continue
+                for r in range(chunk, size + 1, chunk):
+                    if size % r == 0:
+                        valid_dim_chunk_sizes.append(r)
             valid_chunk_sizes.append(valid_dim_chunk_sizes)
-        # recursively determine the chunking with the biggest size smaller than 1000000
+        # recursively determine the chunking most similar to the original
+        # file chunking with an acceptable size
         orig_indexes = cls.index_of_list(valid_chunk_sizes, best_chunks)
+        initial_best_chunks = [vcs[-1] for vcs in valid_chunk_sizes]
         chunks, chunk_size = cls._get_best_chunks(chunks, valid_chunk_sizes,
-                                                  best_chunks, orig_indexes, 0, 0,
+                                                  initial_best_chunks,
+                                                  orig_indexes, 0, 0,
                                                   time_dimension)
         return chunks
 
@@ -434,18 +454,13 @@ class RemoteChunkStore(MutableMapping, metaclass=ABCMeta):
                                          time_dimension)
             else:
                 test_chunk_size = np.prod(test_chunks, dtype=np.int64)
-                if test_chunk_size > 1000000:
-                    break
-            if test_chunk_size > best_chunk_size:
-                best_chunk_size = test_chunk_size
-                best_chunks = test_chunks.copy()
-            elif test_chunk_size == best_chunk_size:
-                # in case two chunkings have the same size,
-                # choose the one which is more similar to the original chunking
+            if cls._is_of_acceptable_chunk_size(test_chunk_size):
                 best_indexes = cls.index_of_list(valid_sizes, best_chunks)
-                best_deviation = cls.compare_lists(best_indexes, orig_indexes)
+                best_deviation = cls.compare_lists(best_indexes,
+                                                   orig_indexes)
                 test_indexes = cls.index_of_list(valid_sizes, test_chunks)
-                test_deviation = cls.compare_lists(test_indexes, orig_indexes)
+                test_deviation = cls.compare_lists(test_indexes,
+                                                   orig_indexes)
                 if test_deviation < best_deviation:
                     best_chunk_size = test_chunk_size
                     best_chunks = test_chunks.copy()
@@ -453,8 +468,10 @@ class RemoteChunkStore(MutableMapping, metaclass=ABCMeta):
                     # choose the one where values are more similar
                     where = np.full(len(test_chunks), fill_value=True)
                     where[time_dimension] = False
-                    test_min_chunk = np.max(test_chunks, initial=0, where=where)
-                    best_min_chunk = np.max(best_chunks, initial=0, where=where)
+                    test_min_chunk = np.max(test_chunks, initial=0,
+                                            where=where)
+                    best_min_chunk = np.max(best_chunks, initial=0,
+                                            where=where)
                     if best_min_chunk > test_min_chunk:
                         best_chunk_size = test_chunk_size
                         best_chunks = test_chunks.copy()
@@ -475,15 +492,8 @@ class RemoteChunkStore(MutableMapping, metaclass=ABCMeta):
         return deviation
 
     @classmethod
-    def _adjust_size(cls, size: int, tile_size: int) -> int:
-        if size > tile_size:
-            num_tiles = cls._safe_int_div(size, tile_size)
-            size = num_tiles * tile_size
-        return size
-
-    @classmethod
-    def _safe_int_div(cls, x: int, y: int) -> int:
-        return (x + y - 1) // y
+    def _is_of_acceptable_chunk_size(cls, size: int):
+        return _MIN_CHUNK_SIZE <= size <= _MAX_CHUNK_SIZE
 
     @classmethod
     def _extract_time_as_string(cls, time: Union[pd.Timestamp, str]) -> str:

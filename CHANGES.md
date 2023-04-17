@@ -2,6 +2,7 @@
 
 * Removed cache
 * Pinned pydap version
+* Improved determination of CCI data chunks
 
 ## Changes in 0.9.8
 
