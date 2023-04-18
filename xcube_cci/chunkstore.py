@@ -388,12 +388,13 @@ class RemoteChunkStore(MutableMapping, metaclass=ABCMeta):
         # check if we can actually read in everything as one big chunk
         sum_sizes = np.prod(sizes, dtype=np.int64)
         if time_dimension >= 0:
-            sum_sizes = sum_sizes / sizes[time_dimension] * chunks[time_dimension]
+            sum_sizes = sum_sizes / \
+                        sizes[time_dimension] * chunks[time_dimension]
             if cls._is_of_acceptable_chunk_size(sum_sizes):
                 best_chunks = sizes.copy()
                 best_chunks[time_dimension] = chunks[time_dimension]
                 return best_chunks
-        if cls._is_of_acceptable_chunk_size(sum_sizes):
+        if sum_sizes < _MAX_CHUNK_SIZE:
             return sizes
         # determine valid values for a chunk size.
         # A value is valid if the size can be divided by it without remainder
@@ -433,37 +434,40 @@ class RemoteChunkStore(MutableMapping, metaclass=ABCMeta):
             valid_chunk_sizes.append(valid_dim_chunk_sizes)
         # recursively determine the chunking most similar to the original
         # file chunking with an acceptable size
-        orig_indexes = cls.index_of_list(valid_chunk_sizes, best_chunks)
+        orig_indexes = [0] * len(best_chunks)
         initial_best_chunks = [vcs[-1] for vcs in valid_chunk_sizes]
-        chunks, chunk_size = cls._get_best_chunks(chunks, valid_chunk_sizes,
-                                                  initial_best_chunks,
-                                                  orig_indexes, 0, 0,
-                                                  time_dimension)
+        best_deviation = math.inf
+        chunks, chunk_size, chunk_deviation = cls._get_best_chunks(
+            chunks, valid_chunk_sizes, initial_best_chunks, orig_indexes, 0, 0,
+            time_dimension, best_deviation
+        )
         return chunks
 
     @classmethod
     def _get_best_chunks(cls, chunks, valid_sizes, best_chunks, orig_indexes,
-                         best_chunk_size, index, time_dimension):
+                         best_chunk_size, index, time_dimension,
+                         best_deviation):
         for valid_size in valid_sizes[index]:
             test_chunks = chunks.copy()
             test_chunks[index] = valid_size
             if index < len(chunks) - 1:
-                test_chunks, test_chunk_size = \
+                test_chunks, test_chunk_size, test_deviation = \
                     cls._get_best_chunks(test_chunks, valid_sizes, best_chunks,
-                                         orig_indexes, best_chunk_size, index + 1,
-                                         time_dimension)
+                                         orig_indexes, best_chunk_size,
+                                         index + 1,
+                                         time_dimension, best_deviation)
+                if test_chunks == best_chunks:
+                    continue
             else:
                 test_chunk_size = np.prod(test_chunks, dtype=np.int64)
-            if cls._is_of_acceptable_chunk_size(test_chunk_size):
-                best_indexes = cls.index_of_list(valid_sizes, best_chunks)
-                best_deviation = cls.compare_lists(best_indexes,
-                                                   orig_indexes)
                 test_indexes = cls.index_of_list(valid_sizes, test_chunks)
                 test_deviation = cls.compare_lists(test_indexes,
                                                    orig_indexes)
+            if cls._is_of_acceptable_chunk_size(test_chunk_size):
                 if test_deviation < best_deviation:
                     best_chunk_size = test_chunk_size
                     best_chunks = test_chunks.copy()
+                    best_deviation = test_deviation
                 elif test_deviation == best_deviation:
                     # choose the one where values are more similar
                     where = np.full(len(test_chunks), fill_value=True)
@@ -475,7 +479,10 @@ class RemoteChunkStore(MutableMapping, metaclass=ABCMeta):
                     if best_min_chunk > test_min_chunk:
                         best_chunk_size = test_chunk_size
                         best_chunks = test_chunks.copy()
-        return best_chunks, best_chunk_size
+                        best_deviation = test_deviation
+                else:
+                    break
+        return best_chunks, best_chunk_size, best_deviation
 
     @classmethod
     def index_of_list(cls, lists, indexes):

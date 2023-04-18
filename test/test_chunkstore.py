@@ -168,27 +168,48 @@ class CciChunkStoreTest(unittest.TestCase):
         self.assertEqual(['time', 'lat', 'lon'], attrs['dimensions'])
 
     def test_adjust_chunk_sizes(self):
-        store = self._get_test_store()
         chunk_sizes = [1, 128, 128]
-        chunk_sizes = store._adjust_chunk_sizes(chunk_sizes, [2024, 4096, 4096], 0)
+        chunk_sizes = CciChunkStore._adjust_chunk_sizes(
+            chunk_sizes, [2024, 4096, 4096], 0
+        )
         self.assertEqual([1, 512, 512], chunk_sizes)
 
         chunk_sizes = [128, 128, 1]
-        chunk_sizes = store._adjust_chunk_sizes(chunk_sizes, [4096, 4096, 2048], 2)
+        chunk_sizes = CciChunkStore._adjust_chunk_sizes(
+            chunk_sizes, [4096, 4096, 2048], 2
+        )
         self.assertEqual([512, 512, 1], chunk_sizes)
 
         chunk_sizes = [1, 128, 128]
-        chunk_sizes = store._adjust_chunk_sizes(chunk_sizes, [2024, 128, 2048], 0)
+        chunk_sizes = CciChunkStore._adjust_chunk_sizes(
+            chunk_sizes, [2024, 128, 2048], 0
+        )
         self.assertEqual([1, 128, 2048], chunk_sizes)
 
         chunk_sizes = [1, 64, 128, 32]
-        chunk_sizes = store._adjust_chunk_sizes(chunk_sizes, [2048, 1024, 2048, 1024], 0)
+        chunk_sizes = CciChunkStore._adjust_chunk_sizes(
+            chunk_sizes, [2048, 1024, 2048, 1024], 0
+        )
         self.assertEqual([1, 64, 128, 32], chunk_sizes)
 
         chunk_sizes = [1, 90, 180]
-        chunk_sizes = store._adjust_chunk_sizes(chunk_sizes, [1, 3600, 7200], 0)
+        chunk_sizes = CciChunkStore._adjust_chunk_sizes(
+            chunk_sizes, [1, 3600, 7200], 0
+        )
         self.assertEqual([1, 450, 720], chunk_sizes)
-
+        #
         chunk_sizes = [1, 2048, 2048]
-        chunk_sizes = store._adjust_chunk_sizes(chunk_sizes, [1, 64800, 129600], 0)
+        chunk_sizes = CciChunkStore._adjust_chunk_sizes(
+            chunk_sizes, [1, 64800, 129600], 0
+        )
         self.assertEqual([1, 2048, 2048], chunk_sizes)
+
+        chunk_sizes = [1, 4096, 4096]
+        chunk_sizes = CciChunkStore._adjust_chunk_sizes(
+            chunk_sizes, [1, 64800, 129600], 0)
+        self.assertEqual([1, 2048, 2048], chunk_sizes
+                         )
+
+        chunk_sizes = [1]
+        chunk_sizes = CciChunkStore._adjust_chunk_sizes(chunk_sizes, [1], -1)
+        self.assertEqual([1], chunk_sizes)
