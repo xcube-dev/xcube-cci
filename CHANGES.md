@@ -1,4 +1,4 @@
-## Changes in 0.9.9 (in development)
+## Changes in 0.9.9
 
 * Removed cache
 * Pinned pydap version
