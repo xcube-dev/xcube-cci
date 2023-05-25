@@ -89,7 +89,7 @@ class CciZarrDataStoreTest(unittest.TestCase):
              'mask_and_scale'},
             set(schema.properties.keys())
         )
-        self.assertEqual(set(), schema.required)
+        self.assertEqual([], schema.required)
 
     def test_get_data_writer_ids(self):
         self.assertEqual((), self.store.get_data_writer_ids())

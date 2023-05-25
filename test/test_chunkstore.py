@@ -135,7 +135,7 @@ class CciChunkStoreTest(unittest.TestCase):
         self.assertEqual(slice(None, None, None), dim_indexes[0])
         self.assertEqual(slice(0, 17), dim_indexes[1])
         self.assertEqual(slice(0, 180), dim_indexes[2])
-        self.assertEqual(slice(0, 180), dim_indexes[3])
+        self.assertEqual(slice(0, 360), dim_indexes[3])
 
     @skipIf(os.environ.get('XCUBE_DISABLE_WEB_TESTS', None) == '1', 'XCUBE_DISABLE_WEB_TESTS = 1')
     def test_get_encoding(self):
