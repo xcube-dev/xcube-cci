@@ -381,21 +381,26 @@ class RemoteChunkStore(MutableMapping, metaclass=ABCMeta):
 
     @classmethod
     def _adjust_chunk_sizes(cls, chunks, sizes, time_dimension):
-        # check whether chunks are acceptable:
-        sum_chunks = np.prod(chunks, dtype=np.int64)
-        if cls._is_of_acceptable_chunk_size(sum_chunks):
-            return chunks
-        # check if we can actually read in everything as one big chunk
+        # check if we can read in everything as chunks only chunked by time
         sum_sizes = np.prod(sizes, dtype=np.int64)
         if time_dimension >= 0:
             sum_sizes = sum_sizes / \
                         sizes[time_dimension] * chunks[time_dimension]
-            if cls._is_of_acceptable_chunk_size(sum_sizes):
-                best_chunks = sizes.copy()
-                best_chunks[time_dimension] = chunks[time_dimension]
-                return best_chunks
         if sum_sizes < _MAX_CHUNK_SIZE:
-            return sizes
+            best_chunks = sizes.copy()
+            if time_dimension >= 0:
+                best_chunks[time_dimension] = chunks[time_dimension]
+            return best_chunks
+        # check whether default chunks are acceptable:
+        sum_chunks = np.prod(chunks, dtype=np.int64)
+        if cls._is_of_acceptable_chunk_size(sum_chunks):
+            chunks_are_acceptable = True
+            for i in range(len(chunks)):
+                if i != time_dimension and chunks[i] > sizes[i]:
+                    chunks_are_acceptable = False
+                    break
+            if chunks_are_acceptable:
+                return chunks
         # determine valid values for a chunk size.
         # A value is valid if the size can be divided by it without remainder
         valid_chunk_sizes = []
