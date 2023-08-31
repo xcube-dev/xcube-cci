@@ -15,7 +15,7 @@ for:
     only:
       - image: macos
   install:
-    - curl -L https://repo.continuum.io/miniconda/Miniconda3-latest-MacOSX-x86_64.sh > miniconda.sh
+    - curl -L https://repo.continuum.io/miniconda/Miniconda3-py310_23.3.1-0-MacOSX-x86_64.sh > miniconda.sh
     - bash miniconda.sh -b -p $HOME/miniconda
 -
   matrix:
@@ -39,7 +39,7 @@ build_script:
   # Install mamba as a dramatically faster conda replacement. Specifying a
   # fixed version makes the installation of mamba itself much faster, and
   # avoids potential breakage due to changes in mamba behaviour.
-  - conda install -c conda-forge mamba=1.0.0
+  - conda install -c conda-forge mamba=1.5.0
 
   - git clone https://github.com/dcs4cop/xcube.git
   - cd xcube
