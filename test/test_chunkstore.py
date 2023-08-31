@@ -100,8 +100,8 @@ class CciChunkStoreTest(unittest.TestCase):
                       pd.to_datetime('2002-07-27', utc=True))
         cube_params = dict(time_range=time_range)
         time_ranges = store.get_time_ranges(
-            'esacci.OC.5-days.L3S.OC_PRODUCTS.multi-sensor.multi-platform.'
-            'MERGED.4-2.sinusoidal', cube_params)
+            'esacci.OC.5-days.L3S.K_490.multi-sensor.multi-platform.MERGED.6-0.'
+            'sinusoidal', cube_params)
         self.assertEqual([('2002-06-30T00:00:00', '2002-07-04T23:59:00'),
                           ('2002-07-05T00:00:00', '2002-07-09T23:59:00'),
                           ('2002-07-10T00:00:00', '2002-07-14T23:59:00'),

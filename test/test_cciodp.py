@@ -48,26 +48,32 @@ class CciOdpTest(unittest.TestCase):
         self.assertIsNotNone(dataset_names)
         list(dataset_names)
         self.assertTrue(len(dataset_names) > 250)
-        self.assertTrue('esacci.AEROSOL.day.L3C.AER_PRODUCTS.AATSR.Envisat.ORAC.04-01-.r1'
-                        in dataset_names)
-        self.assertTrue('esacci.OC.day.L3S.K_490.multi-sensor.multi-platform.MERGED.3-1.sinusoidal'
-                        in dataset_names)
         self.assertTrue(
-            'esacci.SST.satellite-orbit-frequency.L3U.SSTskin.AVHRR-3.NOAA-19.AVHRR19_G.2-1.r1'
-            in dataset_names)
+            'esacci.AEROSOL.day.L3C.AER_PRODUCTS.AATSR.Envisat.ORAC.04-01-.r1'
+            in dataset_names
+        )
+        self.assertTrue(
+            'esacci.OC.day.L3S.K_490.multi-sensor.multi-platform.MERGED.6-0.sinusoidal'
+            in dataset_names
+        )
+        self.assertTrue(
+            'esacci.SST.satellite-orbit-frequency.L3U.SSTskin.AVHRR-3.NOAA-19.'
+            'AVHRR19_G.2-1.r1' in dataset_names
+        )
 
     @skipIf(os.environ.get('XCUBE_DISABLE_WEB_TESTS', None) == '1',
             'XCUBE_DISABLE_WEB_TESTS = 1')
     def test_var_and_coord_names(self):
         cci_odp = CciOdp()
         var_names, coord_names = cci_odp.var_and_coord_names(
-            'esacci.OC.mon.L3S.K_490.multi-sensor.multi-platform.'
-            'MERGED.3-1.geographic')
+            'esacci.OC.5-days.L3S.K_490.multi-sensor.multi-platform.MERGED.6-0.'
+            'geographic')
         self.assertIsNotNone(var_names)
-        self.assertEqual(['MERIS_nobs_sum', 'MODISA_nobs_sum',
-                          'SeaWiFS_nobs_sum', 'VIIRS_nobs_sum', 'crs', 'kd_490',
-                          'kd_490_bias', 'kd_490_rmsd', 'total_nobs_sum'],
-                         var_names)
+        self.assertEqual(
+            ['MERIS_nobs_sum', 'MODISA_nobs_sum', 'OLCI-A_nobs_sum', 'OLCI-B_nobs_sum',
+             'SeaWiFS_nobs_sum', 'VIIRS_nobs_sum', 'crs', 'kd_490', 'kd_490_bias',
+             'kd_490_rmsd', 'total_nobs_sum'], var_names
+        )
         self.assertIsNotNone(coord_names)
         self.assertEqual(['lat', 'lon', 'time'], coord_names)
 
@@ -126,10 +132,12 @@ class CciOdpTest(unittest.TestCase):
         self.assertTrue('temporal_coverage_end' in dataset_info)
         self.assertEqual('2014-12-31T23:59:59', dataset_info['temporal_coverage_end'])
 
-    @skipIf(os.environ.get('XCUBE_DISABLE_WEB_TESTS', None) == '1', 'XCUBE_DISABLE_WEB_TESTS = 1')
+    @skipIf(os.environ.get('XCUBE_DISABLE_WEB_TESTS', None) == '1',
+            'XCUBE_DISABLE_WEB_TESTS = 1')
     def test_fetch_data_source_list_json(self):
         cci_odp = CciOdp()
-        drs_id = 'esacci.OC.5-days.L3S.CHLOR_A.multi-sensor.multi-platform.MERGED.3-1.geographic'
+        drs_id = 'esacci.OC.5-days.L3S.K_490.multi-sensor.multi-platform.MERGED.6-0.' \
+                 'sinusoidal'
         async def fetch_data_source_list_json(session):
             return await cci_odp._fetch_data_source_list_json(session,
                                                               OPENSEARCH_CEDA_URL,
@@ -138,29 +146,43 @@ class CciOdpTest(unittest.TestCase):
         data_source_list = cci_odp._run_with_session(fetch_data_source_list_json)
         self.assertIsNotNone(data_source_list)
         self.assertEqual(1, len(data_source_list))
-        self.assertTrue('12d6f4bdabe144d7836b0807e65aa0e2' in data_source_list)
-        self.assertTrue(len(data_source_list['12d6f4bdabe144d7836b0807e65aa0e2'].items()) >= 6)
-        self.assertEqual('12d6f4bdabe144d7836b0807e65aa0e2',
-                         data_source_list['12d6f4bdabe144d7836b0807e65aa0e2'].get('uuid', ''))
-        self.assertEqual('ESA Ocean Colour Climate Change Initiative (Ocean_Colour_cci): '
-                         'Global chlorophyll-a data products gridded on a geographic projection, '
-                         'Version 3.1',
-                         data_source_list['12d6f4bdabe144d7836b0807e65aa0e2'].get('title', ''))
-        self.assertTrue('variables' in data_source_list['12d6f4bdabe144d7836b0807e65aa0e2'])
-        self.assertTrue('odd_url' in data_source_list['12d6f4bdabe144d7836b0807e65aa0e2'])
-        self.assertTrue(data_source_list['12d6f4bdabe144d7836b0807e65aa0e2'].
-                        get('metadata_url', '').
-                        endswith('12d6f4bdabe144d7836b0807e65aa0e2.xml'))
-        self.assertEqual('https://catalogue.ceda.ac.uk/uuid/12d6f4bdabe144d7836b0807e65aa0e2',
-                         data_source_list['12d6f4bdabe144d7836b0807e65aa0e2'].
-                         get('catalog_url', ''))
+        self.assertTrue('3bdb21a4cd004e5f8cc148fea5f1d4e3' in data_source_list)
+        self.assertTrue(
+            len(data_source_list['3bdb21a4cd004e5f8cc148fea5f1d4e3'].items()) >= 6
+        )
+        self.assertEqual(
+            '3bdb21a4cd004e5f8cc148fea5f1d4e3',
+            data_source_list['3bdb21a4cd004e5f8cc148fea5f1d4e3'].get('uuid', '')
+        )
+        self.assertEqual(
+            'ESA Ocean Colour Climate Change Initiative (Ocean_Colour_cci): '
+            'Global attenuation coefficient for downwelling irradiance (Kd490) '
+            'gridded on a sinusoidal projection at 4km resolution, Version 6.0',
+            data_source_list['3bdb21a4cd004e5f8cc148fea5f1d4e3'].get('title', '')
+        )
+        self.assertTrue(
+            'variables' in data_source_list['3bdb21a4cd004e5f8cc148fea5f1d4e3']
+        )
+        self.assertTrue(
+            'odd_url' in data_source_list['3bdb21a4cd004e5f8cc148fea5f1d4e3']
+        )
+        self.assertTrue(
+            data_source_list['3bdb21a4cd004e5f8cc148fea5f1d4e3'].
+                get('metadata_url', '').endswith('3bdb21a4cd004e5f8cc148fea5f1d4e3.xml')
+        )
+        self.assertEqual(
+            'https://catalogue.ceda.ac.uk/uuid/3bdb21a4cd004e5f8cc148fea5f1d4e3',
+            data_source_list['3bdb21a4cd004e5f8cc148fea5f1d4e3'].get('catalog_url', '')
+        )
 
-    @skipIf(os.environ.get('XCUBE_DISABLE_WEB_TESTS', None) == '1', 'XCUBE_DISABLE_WEB_TESTS = 1')
+    @skipIf(os.environ.get('XCUBE_DISABLE_WEB_TESTS', None) == '1',
+            'XCUBE_DISABLE_WEB_TESTS = 1')
     def test_get_datasets_metadata(self):
         cci_odp = CciOdp()
-        datasets = ['esacci.OC.day.L3S.CHLOR_A.multi-sensor.multi-platform.MERGED.3-1.geographic',
+        datasets = ['esacci.OC.day.L3S.CHLOR_A.multi-sensor.multi-platform.MERGED.'
+                    '6-0.geographic',
                     'esacci.OC.5-days.L3S.CHLOR_A.multi-sensor.'
-                    'multi-platform.MERGED.3-1.geographic',
+                    'multi-platform.MERGED.6-0.geographic',
                     'esacci.SEAICE.mon.L3C.SITHICK.SIRAL.CryoSat-2.NH25KMEASE2.2-0.r1'
                     ]
         datasets_metadata = cci_odp.get_datasets_metadata(datasets)
@@ -327,7 +349,8 @@ class CciOdpTest(unittest.TestCase):
         self.assertEqual(0, timedelta.minutes)
         self.assertEqual(-1, timedelta.seconds)
 
-    @skipIf(os.environ.get('XCUBE_DISABLE_WEB_TESTS', None) == '1', 'XCUBE_DISABLE_WEB_TESTS = 1')
+    @skipIf(os.environ.get('XCUBE_DISABLE_WEB_TESTS', None) == '1',
+            'XCUBE_DISABLE_WEB_TESTS = 1')
     def test_get_variable_data(self):
         cci_odp = CciOdp()
         dimension_data = cci_odp.get_variable_data(
@@ -357,17 +380,18 @@ class CciOdpTest(unittest.TestCase):
         self.assertEqual(dimension_data['aerosol_type']['data'][-1], 9)
 
         dimension_data = cci_odp.get_variable_data(
-            'esacci.OC.day.L3S.K_490.multi-sensor.multi-platform.MERGED.3-1.sinusoidal',
+            'esacci.OC.day.L3S.K_490.multi-sensor.multi-platform.MERGED.6-0.sinusoidal',
             {'lat': 23761676, 'lon': 23761676})
         self.assertIsNotNone(dimension_data)
         self.assertEqual(dimension_data['lat']['size'], 23761676)
-        self.assertEqual(dimension_data['lat']['chunkSize'], 1048576)
+        self.assertEqual(dimension_data['lat']['chunkSize'], 72900)
         self.assertEqual(len(dimension_data['lat']['data']), 0)
         self.assertEqual(dimension_data['lon']['size'], 23761676)
-        self.assertEqual(dimension_data['lon']['chunkSize'], 1048576)
+        self.assertEqual(dimension_data['lon']['chunkSize'], 72900)
         self.assertEqual(len(dimension_data['lon']['data']), 0)
 
-    @skipIf(os.environ.get('XCUBE_DISABLE_WEB_TESTS', None) == '1', 'XCUBE_DISABLE_WEB_TESTS = 1')
+    @skipIf(os.environ.get('XCUBE_DISABLE_WEB_TESTS', None) == '1',
+            'XCUBE_DISABLE_WEB_TESTS = 1')
     def test_search_ecv(self):
         cci_odp = CciOdp()
         aerosol_sources = cci_odp.search(
@@ -380,7 +404,8 @@ class CciOdpTest(unittest.TestCase):
         )
         self.assertTrue(len(aerosol_sources) > 13)
 
-    @skipIf(os.environ.get('XCUBE_DISABLE_WEB_TESTS', None) == '1', 'XCUBE_DISABLE_WEB_TESTS = 1')
+    @skipIf(os.environ.get('XCUBE_DISABLE_WEB_TESTS', None) == '1',
+            'XCUBE_DISABLE_WEB_TESTS = 1')
     def test_search_frequency(self):
         cci_odp = CciOdp()
         five_day_sources = cci_odp.search(
@@ -391,9 +416,10 @@ class CciOdpTest(unittest.TestCase):
                 frequency='5 days'
             )
         )
-        self.assertTrue(len(five_day_sources) > 18)
+        self.assertTrue(len(five_day_sources) > 10)
 
-    @skipIf(os.environ.get('XCUBE_DISABLE_WEB_TESTS', None) == '1', 'XCUBE_DISABLE_WEB_TESTS = 1')
+    @skipIf(os.environ.get('XCUBE_DISABLE_WEB_TESTS', None) == '1',
+            'XCUBE_DISABLE_WEB_TESTS = 1')
     def test_search_processing_level(self):
         cci_odp = CciOdp()
         l2p_sources = cci_odp.search(
@@ -406,7 +432,8 @@ class CciOdpTest(unittest.TestCase):
         )
         self.assertTrue(len(l2p_sources) > 20)
 
-    @skipIf(os.environ.get('XCUBE_DISABLE_WEB_TESTS', None) == '1', 'XCUBE_DISABLE_WEB_TESTS = 1')
+    @skipIf(os.environ.get('XCUBE_DISABLE_WEB_TESTS', None) == '1',
+            'XCUBE_DISABLE_WEB_TESTS = 1')
     def test_search_product_string(self):
         cci_odp = CciOdp()
         avhrr19g_sources = cci_odp.search(
@@ -419,7 +446,8 @@ class CciOdpTest(unittest.TestCase):
         )
         self.assertTrue(len(avhrr19g_sources) > 3)
 
-    @skipIf(os.environ.get('XCUBE_DISABLE_WEB_TESTS', None) == '1', 'XCUBE_DISABLE_WEB_TESTS = 1')
+    @skipIf(os.environ.get('XCUBE_DISABLE_WEB_TESTS', None) == '1',
+            'XCUBE_DISABLE_WEB_TESTS = 1')
     def test_search_product_version(self):
         cci_odp = CciOdp()
         v238_sources = cci_odp.search(
@@ -464,7 +492,7 @@ class CciOdpTest(unittest.TestCase):
         cci_odp = CciOdp()
         first_time_ranges = cci_odp.get_time_ranges_from_data(
             dataset_name='esacci.OC.5-days.L3S.RRS.multi-sensor.multi-platform.'
-            'MERGED.3-1.geographic',
+            'MERGED.6-0.geographic',
             start_time='1997-09-03T00:00:00',
             end_time='1997-09-10T00:00:00'
         )
@@ -476,7 +504,7 @@ class CciOdpTest(unittest.TestCase):
         self.assertIsNotNone(first_time_ranges)
         second_time_ranges = cci_odp.get_time_ranges_from_data(
             dataset_name='esacci.OC.5-days.L3S.RRS.multi-sensor.multi-platform.'
-            'MERGED.3-1.geographic',
+            'MERGED.6-0.geographic',
             start_time='1997-09-10T00:00:00',
             end_time='1997-09-30T00:00:00'
         )
