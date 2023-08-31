@@ -41,3 +41,6 @@ CCI_MAX_IMAGE_SIZE = 2500
 
 COMMON_COORD_VAR_NAMES = ['time', 'lat', 'lon', 'latitude', 'longitude',
                      'latitude_centers', 'x', 'y', 'xc', 'yc']
+
+MONTHS = ['JANUARY', 'FEBRUARY', 'MARCH', 'APRIL', 'MAY', 'JUNE', 'JULY', 'AUGUST',
+          'SEPTEMBER', 'OCTOBER', 'NOVEMBER', 'DECEMBER']

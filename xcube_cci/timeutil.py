@@ -21,6 +21,7 @@
 
 from xcube.core.timecoord import get_timestamps_from_string
 
+from xcube_cci.constants import MONTHS
 
 def get_timestrings_from_string(string: str) -> (str, str):
     first_time, second_time = get_timestamps_from_string(string)
@@ -28,4 +29,9 @@ def get_timestrings_from_string(string: str) -> (str, str):
         first_time = first_time.isoformat()
     if second_time:
         second_time = second_time.isoformat()
+    if not first_time:
+        for i, month in enumerate(MONTHS):
+            if month in string:
+                first_time = i + 1
+                break
     return first_time, second_time

@@ -137,13 +137,14 @@ class CciOdpDataOpener(DataOpener):
                                            data_id: str,
                                            metadata: dict) -> DatasetDescriptor:
         ds_metadata = metadata.copy()
+        is_climatology = ds_metadata.get('time_frequency', '') == 'climatology'
         dims = self._normalize_dims(ds_metadata.get('dimensions', {}))
         bounds_dim_name = None
         for dim_name, dim_size in dims.items():
             if dim_size == 2:
                 bounds_dim_name = dim_name
                 break
-        if not bounds_dim_name:
+        if not bounds_dim_name and not is_climatology:
             bounds_dim_name = 'bnds'
             dims['bnds'] = 2
         temporal_resolution = _get_temporal_resolution_from_id(data_id)
@@ -154,47 +155,58 @@ class CciOdpDataOpener(DataOpener):
         bbox = dataset_info['bbox']
         crs = dataset_info['crs']
         # only use date parts of times
-        temporal_coverage = (
-            dataset_info['temporal_coverage_start'].split('T')[0]
-            if dataset_info['temporal_coverage_start'] else None,
-            dataset_info['temporal_coverage_end'].split('T')[0]
-            if dataset_info['temporal_coverage_end'] else None
-        )
+        if is_climatology:
+            temporal_coverage = None
+        else:
+            temporal_coverage = (
+                dataset_info['temporal_coverage_start'].split('T')[0]
+                if dataset_info['temporal_coverage_start'] else None,
+                dataset_info['temporal_coverage_end'].split('T')[0]
+                if dataset_info['temporal_coverage_end'] else None
+            )
         var_infos = self._normalize_var_infos(
             ds_metadata.get('variable_infos', {})
         )
         coord_names = self._normalize_coord_names(dataset_info['coord_names'])
+        time_dim_name = 'month' if is_climatology else 'time'
         var_descriptors = self._get_variable_descriptors(
-            dataset_info['var_names'], var_infos
+            dataset_info['var_names'], var_infos, time_dim_name
         )
         coord_descriptors = self._get_variable_descriptors(coord_names,
                                                            var_infos,
+                                                           time_dim_name,
                                                            normalize_dims=False)
         if 'time' not in coord_descriptors.keys() and \
-                't' not in coord_descriptors.keys():
-            time_attrs = {
-                "units": "seconds since 1970-01-01T00:00:00Z",
-                "calendar": "proleptic_gregorian",
-                "standard_name": "time"
-            }
-            coord_descriptors['time'] = VariableDescriptor('time',
-                                                           dtype='int64',
-                                                           dims=('time',),
-                                                           attrs=time_attrs)
-        if 'time_bnds' in coord_descriptors.keys():
-            coord_descriptors.pop('time_bnds')
-        if 'time_bounds' in coord_descriptors.keys():
-            coord_descriptors.pop('time_bounds')
-        time_bnds_attrs = {
-            "units": "seconds since 1970-01-01T00:00:00Z",
-            "calendar": "proleptic_gregorian",
-            "standard_name": "time_bnds",
-        }
-        coord_descriptors['time_bnds'] = \
-            VariableDescriptor('time_bnds',
-                               dtype='int64',
-                               dims=('time', bounds_dim_name),
-                               attrs=time_bnds_attrs)
+                't' not in coord_descriptors.keys() and \
+                'month' not in coord_descriptors.keys():
+            if is_climatology:
+                coord_descriptors['month'] = VariableDescriptor('month',
+                                                               dtype='int8',
+                                                               dims=('month',))
+            else:
+                time_attrs = {
+                    "units": "seconds since 1970-01-01T00:00:00Z",
+                    "calendar": "proleptic_gregorian",
+                    "standard_name": "time"
+                }
+                coord_descriptors['time'] = VariableDescriptor('time',
+                                                               dtype='int64',
+                                                               dims=('time',),
+                                                               attrs=time_attrs)
+                if 'time_bnds' in coord_descriptors.keys():
+                    coord_descriptors.pop('time_bnds')
+                if 'time_bounds' in coord_descriptors.keys():
+                    coord_descriptors.pop('time_bounds')
+                time_bnds_attrs = {
+                    "units": "seconds since 1970-01-01T00:00:00Z",
+                    "calendar": "proleptic_gregorian",
+                    "standard_name": "time_bnds",
+                }
+                coord_descriptors['time_bnds'] = \
+                    VariableDescriptor('time_bnds',
+                                       dtype='int64',
+                                       dims=('time', bounds_dim_name),
+                                       attrs=time_bnds_attrs)
 
         if 'variables' in ds_metadata:
             ds_metadata.pop('variables')
@@ -222,6 +234,7 @@ class CciOdpDataOpener(DataOpener):
     def _get_variable_descriptors(self,
                                   var_names: List[str],
                                   var_infos: dict,
+                                  time_dim_name: str,
                                   normalize_dims: bool = True) \
             -> Dict[str, VariableDescriptor]:
         var_descriptors = {}
@@ -229,7 +242,8 @@ class CciOdpDataOpener(DataOpener):
             if var_name in var_infos:
                 var_info = var_infos[var_name]
                 var_dtype = var_info['data_type']
-                var_dims = self._normalize_var_dims(var_info['dimensions']) \
+                var_dims = self._normalize_var_dims(
+                    var_info['dimensions'], time_dim_name) \
                     if normalize_dims else var_info['dimensions']
                 var_descriptors[var_name] = \
                     VariableDescriptor(var_name, var_dtype, var_dims, attrs=var_info)
@@ -260,15 +274,20 @@ class CciOdpDataOpener(DataOpener):
 
     @staticmethod
     def _get_open_data_params_schema(dsd: DatasetDescriptor = None) -> JsonObjectSchema:
-        min_date = dsd.time_range[0] if dsd and dsd.time_range else None
-        max_date = dsd.time_range[1] if dsd and dsd.time_range else None
         # noinspection PyUnresolvedReferences
         dataset_params = dict(
             normalize_data=JsonBooleanSchema(default=True),
             variable_names=JsonArraySchema(items=JsonStringSchema(
-                enum=dsd.data_vars.keys() if dsd and dsd.data_vars else None)),
-            time_range=JsonDateSchema.new_range(min_date, max_date)
+                enum=dsd.data_vars.keys() if dsd and dsd.data_vars else None))
         )
+        if dsd:
+            min_date = dsd.time_range[0] if dsd.time_range else None
+            max_date = dsd.time_range[1] if dsd.time_range else None
+            if min_date or max_date:
+                dataset_params['time_range'] = JsonDateSchema.new_range(min_date,
+                                                                        max_date)
+        else:
+            dataset_params['time_range'] = JsonDateSchema.new_range(None, None)
         if dsd:
             try:
                 if pyproj.CRS.from_string(dsd.crs).is_geographic:
@@ -324,12 +343,13 @@ class CciOdpDataOpener(DataOpener):
             return normalize_dims_description(dims)
         return dims.copy()
 
-    def _normalize_var_dims(self, var_dims: List[str]) -> Optional[List[str]]:
+    def _normalize_var_dims(self, var_dims: List[str], time_dim_name: str) \
+            -> Optional[List[str]]:
         if self._normalize_data:
             return normalize_variable_dims_description(var_dims)
         new_var_dims = var_dims.copy()
-        if 'time' not in new_var_dims and len(new_var_dims) > 0:
-            new_var_dims.insert(0, 'time')
+        if time_dim_name not in new_var_dims and len(new_var_dims) > 0:
+            new_var_dims.insert(0, time_dim_name)
         return new_var_dims
 
     def _normalize_var_infos(self, var_infos: Dict[str, Dict[str, Any]]) -> \

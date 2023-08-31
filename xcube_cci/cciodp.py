@@ -602,8 +602,8 @@ class CciOdp:
                 and 'attributes' in data_source:
             return
         data_fid = await self._get_dataset_id(session, dataset_name)
-        await self._set_variable_infos(self._opensearch_url, data_fid, dataset_name, session,
-                                       data_source)
+        await self._set_variable_infos(self._opensearch_url, data_fid, dataset_name,
+                                       session, data_source)
 
     @staticmethod
     def _get_data_var_and_coord_names(data_source) \
@@ -827,14 +827,22 @@ class CciOdp:
     async def _get_feature_list(self, session, request):
         ds_id = request['drsId']
         start_date_str = request['startDate']
-        start_date = datetime.strptime(start_date_str, _TIMESTAMP_FORMAT)
+        try:
+            start_date = datetime.strptime(start_date_str, _TIMESTAMP_FORMAT)
+        except:
+            start_date = int(start_date_str)
         end_date_str = request['endDate']
-        end_date = datetime.strptime(end_date_str, _TIMESTAMP_FORMAT)
+        try:
+            end_date = datetime.strptime(end_date_str, _TIMESTAMP_FORMAT)
+        except:
+            end_date = int(end_date_str)
         feature_list = []
         if ds_id not in self._features or len(self._features[ds_id]) == 0:
             self._features[ds_id] = []
-            await self._fetch_opensearch_feature_list(session, self._opensearch_url, feature_list,
-                                                      self._extract_times_and_opendap_url, request)
+            await self._fetch_opensearch_feature_list(
+                session, self._opensearch_url, feature_list,
+                self._extract_times_and_opendap_url, request
+            )
             if len(feature_list) == 0:
                 # try without dates. For some data sets, this works better
                 if 'startDate' in request:
@@ -913,14 +921,28 @@ class CciOdp:
                 if title:
                     start_time, end_time = get_timestrings_from_string(title)
                     if start_time:
-                        start_time = datetime.strptime(start_time, _TIMESTAMP_FORMAT)
+                        try:
+                            start_time = datetime.strptime(start_time, _TIMESTAMP_FORMAT)
+                        except TypeError:
+                            # just use the previous start value
+                            pass
                     if end_time:
-                        end_time = datetime.strptime(end_time, _TIMESTAMP_FORMAT)
+                        try:
+                            end_time = datetime.strptime(end_time, _TIMESTAMP_FORMAT)
+                        except TypeError:
+                            # just use the previous end value
+                            pass
                     else:
                         end_time = start_time
             if start_time:
-                start_time = pd.Timestamp(datetime.strftime(start_time, _TIMESTAMP_FORMAT))
-                end_time = pd.Timestamp(datetime.strftime(end_time, _TIMESTAMP_FORMAT))
+                try:
+                    start_time = pd.Timestamp(datetime.strftime(start_time,
+                                                            _TIMESTAMP_FORMAT))
+                    end_time = pd.Timestamp(datetime.strftime(end_time,
+                                                              _TIMESTAMP_FORMAT))
+                except:
+                    # just use the previous values
+                    pass
                 features.append((start_time, end_time, opendap_url))
 
     def get_time_ranges_from_data(self, dataset_name: str,
@@ -1121,16 +1143,14 @@ class CciOdp:
                 for index, dimension in enumerate(variable_infos[variable_info]['dimensions']):
                     if dimension not in dimensions:
                         dimensions[dimension] = variable_infos[variable_info]['shape'][index]
-            dimensions['time'] = time_dimension_size * dimensions.get(
-                'time', 1)
+            time_name = 'month' if 'climatology' in dataset_name else 'time'
+            dimensions[time_name] = time_dimension_size * dimensions.get(time_name, 1)
             for variable_info in variable_infos.values():
                 if 'time' in variable_info['dimensions']:
                     time_index = variable_info['dimensions'].index('time')
                     if 'shape' in variable_info:
-                        variable_info['shape'][time_index] = dimensions[
-                            'time']
-                        variable_info['size'] = np.prod(
-                            variable_info['shape'])
+                        variable_info['shape'][time_index] = dimensions[time_name]
+                        variable_info['size'] = np.prod(variable_info['shape'])
         data_source['dimensions'] = dimensions
         data_source['variable_infos'] = variable_infos
         data_source['attributes'] = attributes

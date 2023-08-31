@@ -98,6 +98,19 @@ class CciOdpDatasetOpenerTest(unittest.TestCase):
 
     @skipIf(os.environ.get('XCUBE_DISABLE_WEB_TESTS', None) == '1',
             'XCUBE_DISABLE_WEB_TESTS = 1')
+    def test_describe_climatology_dataset(self):
+        descriptor = self.opener.describe_data(
+            'esacci.AEROSOL.climatology.L3.AAI.multi-sensor.multi-platform.MSAAI.1-7.r1'
+        )
+        self.assertIsNotNone(descriptor)
+        self.assertTrue('absorbing_aerosol_index' in descriptor.data_vars.keys())
+        self.assertEqual(
+            {'longitude', 'latitude', 'month'}, set(descriptor.coords.keys())
+        )
+        self.assertIsNone(descriptor.time_range)
+
+    @skipIf(os.environ.get('XCUBE_DISABLE_WEB_TESTS', None) == '1',
+            'XCUBE_DISABLE_WEB_TESTS = 1')
     def test_describe_data(self):
         descriptor = self.opener.describe_data(
             'esacci.OZONE.mon.L3.NP.multi-sensor.multi-platform.'

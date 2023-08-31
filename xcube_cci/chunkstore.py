@@ -39,11 +39,10 @@ import pandas as pd
 
 from .cciodp import CciOdp
 from .constants import COMMON_COORD_VAR_NAMES
+from .constants import MONTHS
 
 _MIN_CHUNK_SIZE = 512*512
-# _MIN_CHUNK_SIZE = 900000
 _MAX_CHUNK_SIZE = 2048*2048
-# _MAX_CHUNK_SIZE = 1100000
 
 _STATIC_ARRAY_COMPRESSOR_PARAMS = dict(cname='zstd', clevel=1, shuffle=Blosc.SHUFFLE, blocksize=0)
 _STATIC_ARRAY_COMPRESSOR_CONFIG = dict(id='blosc', **_STATIC_ARRAY_COMPRESSOR_PARAMS)
@@ -90,6 +89,7 @@ class RemoteChunkStore(MutableMapping, metaclass=ABCMeta):
 
         self._dataset_name = data_id
         self._time_ranges = self.get_time_ranges(data_id, cube_params)
+        is_climatology = 'climatology' in data_id
         logging.debug('Determined time ranges')
         if not self._time_ranges:
             raise ValueError('Could not determine any valid time stamps')
@@ -108,17 +108,20 @@ class RemoteChunkStore(MutableMapping, metaclass=ABCMeta):
                                  * self._time_chunking)
             self._time_ranges = all_ranges[new_first_index:new_last_index]
 
-        t_array = [s.to_pydatetime()
-                   + 0.5 * (e.to_pydatetime() - s.to_pydatetime())
-                   for s, e in self._time_ranges]
-        t_array = np.array(t_array).astype('datetime64[s]').astype(np.int64)
-        t_bnds_array = \
-            np.array(self._time_ranges).astype('datetime64[s]').astype(np.int64)
-        time_coverage_start = self._time_ranges[0][0]
-        time_coverage_end = self._time_ranges[-1][1]
-        cube_params['time_range'] = (self._extract_time_range_as_strings(
-            cube_params.get('time_range',
-                            self.get_default_time_range(data_id))))
+        if is_climatology:
+            t_array = np.array(range(1, 13), dtype=np.int8)
+        else:
+            t_array = [s.to_pydatetime()
+                       + 0.5 * (e.to_pydatetime() - s.to_pydatetime())
+                       for s, e in self._time_ranges]
+            t_array = np.array(t_array).astype('datetime64[s]').astype(np.int64)
+            t_bnds_array = \
+                np.array(self._time_ranges).astype('datetime64[s]').astype(np.int64)
+            time_coverage_start = self._time_ranges[0][0]
+            time_coverage_end = self._time_ranges[-1][1]
+            cube_params['time_range'] = (self._extract_time_range_as_strings(
+                cube_params.get('time_range',
+                                self.get_default_time_range(data_id))))
 
         self._vfs = {}
         self._var_name_to_ranges = {}
@@ -131,24 +134,36 @@ class RemoteChunkStore(MutableMapping, metaclass=ABCMeta):
         self._dimension_chunk_offsets = {}
         self._dimensions = self.get_dimensions()
         self._num_data_var_chunks_not_in_vfs = 0
+
         coords_data = self.get_coords_data(data_id)
+
         logging.debug('Determined coordinates')
-        coords_data['time'] = {}
-        coords_data['time']['size'] = len(t_array)
-        coords_data['time']['data'] = t_array
-        if 'time_bounds' in coords_data:
-            coords_data.pop('time_bounds')
-        coords_data['time_bnds'] = {}
-        coords_data['time_bnds']['size'] = len(t_bnds_array)
-        coords_data['time_bnds']['data'] = t_bnds_array
+
+        if is_climatology:
+            coords_data['month'] = {}
+            coords_data['month']['size'] = len(t_array)
+            coords_data['month']['data'] = t_array
+        else:
+            coords_data['time'] = {}
+            coords_data['time']['size'] = len(t_array)
+            coords_data['time']['data'] = t_array
+            if 'time_bounds' in coords_data:
+                coords_data.pop('time_bounds')
+            coords_data['time_bnds'] = {}
+            coords_data['time_bnds']['size'] = len(t_bnds_array)
+            coords_data['time_bnds']['data'] = t_bnds_array
+
         sorted_coords_names = list(coords_data.keys())
         sorted_coords_names.sort()
+
         lat_min_offset = -1
         lat_max_offset = -1
         lon_min_offset = -1
         lon_max_offset = -1
+
         for coord_name in sorted_coords_names:
-            if coord_name == 'time' or coord_name == 'time_bnds':
+            if coord_name == 'time' or coord_name == 'time_bnds' or \
+                    coord_name == 'month':
                 continue
             coord_attrs = self.get_attrs(coord_name)
             coord_attrs['_ARRAY_DIMENSIONS'] = coord_attrs['dimensions']
@@ -210,22 +225,28 @@ class RemoteChunkStore(MutableMapping, metaclass=ABCMeta):
                 self._add_remote_array(coord_name, shape, chunk_size,
                                        encoding, coord_attrs)
 
-        time_attrs = {
-            "_ARRAY_DIMENSIONS": ['time'],
-            "units": "seconds since 1970-01-01T00:00:00Z",
-            "calendar": "proleptic_gregorian",
-            "standard_name": "time",
-            "bounds": "time_bnds",
-        }
-        time_bnds_attrs = {
-            "_ARRAY_DIMENSIONS": ['time', 'bnds'],
-            "units": "seconds since 1970-01-01T00:00:00Z",
-            "calendar": "proleptic_gregorian",
-            "standard_name": "time_bnds",
-        }
-
-        self._add_static_array('time', t_array, time_attrs)
-        self._add_static_array('time_bnds', t_bnds_array, time_bnds_attrs)
+        if is_climatology:
+            month_attrs = {
+                "_ARRAY_DIMENSIONS": ['time'],
+                "standard_name": "month"
+            }
+            self._add_static_array('month', t_array, month_attrs)
+        else:
+            time_attrs = {
+                "_ARRAY_DIMENSIONS": ['time'],
+                "units": "seconds since 1970-01-01T00:00:00Z",
+                "calendar": "proleptic_gregorian",
+                "standard_name": "time",
+                "bounds": "time_bnds",
+            }
+            time_bnds_attrs = {
+                "_ARRAY_DIMENSIONS": ['time', 'bnds'],
+                "units": "seconds since 1970-01-01T00:00:00Z",
+                "calendar": "proleptic_gregorian",
+                "standard_name": "time_bnds",
+            }
+            self._add_static_array('time', t_array, time_attrs)
+            self._add_static_array('time_bnds', t_bnds_array, time_bnds_attrs)
 
         coordinate_names = [coord for coord in coords_data.keys()
                             if coord not in COMMON_COORD_VAR_NAMES]
@@ -236,12 +257,13 @@ class RemoteChunkStore(MutableMapping, metaclass=ABCMeta):
             coordinates=coordinate_names,
             title=data_id,
             date_created=pd.Timestamp.now().isoformat(),
-            processing_level=self._dataset_name.split('.')[3],
-            time_coverage_start=time_coverage_start.isoformat(),
-            time_coverage_end=time_coverage_end.isoformat(),
-            time_coverage_duration=
-                (time_coverage_end - time_coverage_start).isoformat(),
+            processing_level=self._dataset_name.split('.')[3]
         )
+        if not is_climatology:
+            global_attrs['time_coverage_start'] = time_coverage_start.isoformat()
+            global_attrs['time_coverage_end'] = time_coverage_end.isoformat()
+            global_attrs['time_coverage_duration'] = \
+                (time_coverage_end - time_coverage_start).isoformat()
 
         self._time_indexes = {}
         remove = []
@@ -251,6 +273,7 @@ class RemoteChunkStore(MutableMapping, metaclass=ABCMeta):
             grid_mapping_name = var_attrs.get('grid_mapping', variable_name)
             if grid_mapping_name not in self._variable_names:
                 self._variable_names.append(grid_mapping_name)
+        time_dim_name = 'month' if is_climatology else 'time'
         for variable_name in self._variable_names:
             if variable_name in coords_data or variable_name == 'time_bnds':
                 remove.append(variable_name)
@@ -262,8 +285,8 @@ class RemoteChunkStore(MutableMapping, metaclass=ABCMeta):
             chunk_sizes = var_attrs.get('chunk_sizes', [-1] * len(dimensions))
             if isinstance(chunk_sizes, int):
                 chunk_sizes = [chunk_sizes]
-            if len(dimensions) > 0 and 'time' not in dimensions:
-                dimensions.insert(0, 'time')
+            if len(dimensions) > 0 and time_dim_name not in dimensions:
+                dimensions.insert(0, time_dim_name)
                 chunk_sizes.insert(0, 1)
             var_attrs.update(_ARRAY_DIMENSIONS=dimensions)
             sizes = []
@@ -274,7 +297,7 @@ class RemoteChunkStore(MutableMapping, metaclass=ABCMeta):
                     sizes.append(coords_data[coord_name]['size'])
                 else:
                     sizes.append(self._dimensions.get(coord_name))
-                if coord_name == 'time':
+                if coord_name == time_dim_name:
                     self._time_indexes[variable_name] = i
                     time_dimension = i
                     chunk_sizes[i] = self._time_chunking
@@ -590,7 +613,7 @@ class RemoteChunkStore(MutableMapping, metaclass=ABCMeta):
 
         return x1, y1, x2, y2
 
-    def request_time_range(self, time_index: int) -> Tuple[pd.Timestamp, pd.Timestamp]:
+    def request_time_range(self, time_index: int) -> Tuple:
         start_index = time_index * self._time_chunking
         end_index = ((time_index + 1) * self._time_chunking) - 1
         start_time = self._time_ranges[start_index][0]
@@ -677,7 +700,7 @@ class RemoteChunkStore(MutableMapping, metaclass=ABCMeta):
                     key: str,
                     var_name: str,
                     chunk_index: Tuple[int, ...],
-                    time_range: Tuple[pd.Timestamp, pd.Timestamp]
+                    time_range: Tuple
                     ) -> bytes:
         """
         Fetch chunk data from remote.
@@ -844,12 +867,14 @@ class CciChunkStore(RemoteChunkStore):
         elif time_period == 'month' or time_period == 'mon':
             start_time = datetime(year=start_time.year, month=start_time.month, day=1)
             end_time = datetime(year=end_time.year, month=end_time.month, day=1)
-            delta = relativedelta(months=+1)
+            delta = relativedelta(months=1)
             end_time += delta
         elif time_period == 'year' or time_period == 'yr':
             start_time = datetime(year=start_time.year, month=1, day=1)
             end_time = datetime(year=end_time.year, month=12, day=31)
             delta = relativedelta(years=1)
+        elif time_period == 'climatology':
+            return [(i + 1, i + 1) for i, month in enumerate(MONTHS)]
         else:
             end_time = end_time.replace(hour=23, minute=59, second=59)
             end_time_str = datetime.strftime(end_time, _TIMESTAMP_FORMAT)
@@ -901,10 +926,13 @@ class CciChunkStore(RemoteChunkStore):
         return dimension_data
 
     def get_variable_data(self, dataset_id: str, variable_dict: Dict[str, int]):
-        return self._cci_odp.get_variable_data(dataset_id,
-                                               variable_dict,
-                                               self._time_ranges[0][0].strftime(_TIMESTAMP_FORMAT),
-                                               self._time_ranges[0][1].strftime(_TIMESTAMP_FORMAT))
+        try:
+            start = self._time_ranges[0][0].strftime(_TIMESTAMP_FORMAT)
+            end = self._time_ranges[0][1].strftime(_TIMESTAMP_FORMAT)
+        except:
+            start = self._time_ranges[0][0]
+            end = self._time_ranges[0][1]
+        return self._cci_odp.get_variable_data(dataset_id, variable_dict, start, end)
 
     def get_encoding(self, var_name: str) -> Dict[str, Any]:
         encoding_dict = {}
@@ -922,17 +950,21 @@ class CciChunkStore(RemoteChunkStore):
                     key: str,
                     var_name: str,
                     chunk_index: Tuple[int, ...],
-                    time_range: Tuple[pd.Timestamp, pd.Timestamp]) -> bytes:
+                    time_range: Tuple) -> bytes:
 
         start_time, end_time = time_range
         identifier = self._cci_odp.get_dataset_id(self._dataset_name)
-        iso_start_date = start_time.tz_localize(None).isoformat()
-        iso_end_date = end_time.tz_localize(None).isoformat()
+        try:
+            start_time = start_time.tz_localize(None).isoformat()
+            end_time = end_time.tz_localize(None).isoformat()
+        except:
+            # use unconverted time range values
+            pass
         dim_indexes = self._get_dimension_indexes_for_chunk(var_name, chunk_index)
         request = dict(parentIdentifier=identifier,
                        varNames=[var_name],
-                       startDate=iso_start_date,
-                       endDate=iso_end_date,
+                       startDate=start_time,
+                       endDate=end_time,
                        drsId=self._dataset_name,
                        fileFormat='.nc'
                        )
