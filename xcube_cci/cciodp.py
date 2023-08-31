@@ -42,7 +42,6 @@ from dateutil.relativedelta import relativedelta
 from typing import List, Dict, Tuple, Optional, Union, Mapping
 from urllib.parse import quote
 
-from distributed.compatibility import WINDOWS
 from pydap.handlers.dap import BaseProxy
 from pydap.handlers.dap import SequenceProxy
 from pydap.handlers.dap import unpack_data
@@ -56,7 +55,6 @@ from pydap.parsers import parse_ce
 from pydap.parsers.dds import build_dataset
 from pydap.parsers.das import parse_das, add_attributes
 from six.moves.urllib.parse import urlsplit, urlunsplit
-from tornado.platform.asyncio import AnyThreadEventLoopPolicy
 
 from xcube_cci.constants import CCI_ODD_URL
 from xcube_cci.constants import DEFAULT_NUM_RETRIES
@@ -83,10 +81,6 @@ _EARLY_START_TIME = '1000-01-01T00:00:00'
 _LATE_END_TIME = '3000-12-31T23:59:59'
 
 nest_asyncio.apply()
-
-# handling else case to https://github.com/dask/distributed/blob/cc3a6dfca71e1304f1e87ae996be87c615f297f6/distributed/config.py#L170
-if not WINDOWS:
-    asyncio.set_event_loop_policy(AnyThreadEventLoopPolicy())
 
 _RE_TO_DATETIME_FORMATS = \
     [(re.compile(14 * '\\d'), '%Y%m%d%H%M%S', relativedelta()),
@@ -421,11 +415,12 @@ class CciOdp:
     def _run_with_session(self, async_function, *params):
         # See https://github.com/aio-libs/aiohttp/blob/master/docs/
         # client_advanced.rst#graceful-shutdown
-        loop = asyncio.get_event_loop()
+        loop = asyncio.new_event_loop()
         coro = _run_with_session_executor(async_function, *params, headers=self._headers)
         result = loop.run_until_complete(coro)
-        # Zero-sleep to allow underlying connections to close
-        loop.run_until_complete(asyncio.sleep(0))
+        # Short sleep to allow underlying connections to close
+        loop.run_until_complete(asyncio.sleep(.1))
+        loop.close()
         return result
 
     @property

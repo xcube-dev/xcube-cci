@@ -1,6 +1,9 @@
-## Changes in 0.9.10 (in development)
+## Changes in 0.10 (in development)
 
 * Support Climatology Datasets
+* Ensure compatiblity with Python versions > 3.10. This concerns the way 
+  new event loops are created within threads. A deprecated event loop 
+  policy has been removed.
 
 ## Changes in 0.9.9
 

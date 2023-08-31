@@ -3,8 +3,10 @@ channels:
   - conda-forge
   - defaults
 dependencies:
+  # Python
+  - python >=3.10
   # Required
-  - xcube >= 0.12.1
+  - xcube >= 1.0.3
   - aiohttp >= 3.6
   - gdal >=3.0,<3.6.3
   - lxml >= 4.5
