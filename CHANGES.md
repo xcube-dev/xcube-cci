@@ -3,7 +3,9 @@
 * Support Climatology Datasets
 * Ensure compatiblity with Python versions > 3.10. This concerns the way 
   new event loops are created within threads. A deprecated event loop 
-  policy has been removed.
+  policy has been removed. 
+  Solves issues [#61](https://github.com/dcs4cop/xcube-cci/issues/61)
+  and [#64](https://github.com/dcs4cop/xcube-cci/issues/64)
 
 ## Changes in 0.9.9
 
