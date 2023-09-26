@@ -1,4 +1,4 @@
-## Changes in 0.10.1 (in development)
+## Changes in 0.10.1
 
 * Fixed support for SST climatology dataset 
 
