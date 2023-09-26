@@ -250,6 +250,16 @@ class CciOdpDatasetOpenerTest(unittest.TestCase):
 
     @skipIf(os.environ.get(
         'XCUBE_DISABLE_WEB_TESTS', None) == '1', 'XCUBE_DISABLE_WEB_TESTS = 1')
+    def test_open_climatology_data(self):
+        dataset = self.opener.open_data(
+            'esacci.SST.climatology.L4.SSTdepth.multi-sensor.multi-platform.'
+            'OSTIA.2-1.r1',
+        )
+        self.assertIsNotNone(dataset)
+
+
+    @skipIf(os.environ.get(
+        'XCUBE_DISABLE_WEB_TESTS', None) == '1', 'XCUBE_DISABLE_WEB_TESTS = 1')
     def test_open_data_with_crs(self):
         dataset = self.opener.open_data(
             'esacci.ICESHEETS.yr.Unspecified.IV.PALSAR.ALOS.UNSPECIFIED.1-1.'
@@ -275,6 +285,22 @@ class CciOdpDatasetOpenerTest(unittest.TestCase):
                                         )
         self.assertIsNotNone(dataset)
         self.assertEqual({'approximate_altitude', 'ozone_mixing_ratio', 'sample_standard_deviation'},
+                         # set(dataset.data_vars))
+        # self.assertEqual({'time', 'air_pressure', 'latitude_centers'},
+        #                  dataset.ozone_mixing_ratio.dims)
+        # self.assertEqual({1, 32, 18}, dataset.ozone_mixing_ratio.chunk_sizes)
+    #
+    # @skipIf(os.environ.get('XCUBE_DISABLE_WEB_TESTS', None) == '1', 'XCUBE_DISABLE_WEB_TESTS = 1')
+    # def test_open_lc_data(self):
+    #     dataset = self.opener.describe_data('esacci.PERMAFROST.yr.L4.GTD.multi-sensor.multi-platform.ERA5_MODISLST_BIASCORRECTED.03-0.r1',
+    #                                     variable_names=['lccs_class'],
+    #                                     time_range=['2014-01-01', '2016-12-31']
+    #                                     time_range=['2009-05-02', '2009-08-31'],
+    #                                     bbox=[-10.0, 40.0, 10.0, 60.0]
+                                        # )
+        # print(dataset.GST.values)
+        # self.assertIsNotNone(dataset)
+        # self.assertEqual({'approximate_altitude', 'ozone_mixing_ratio', 'sample_standard_deviation'},
                          set(dataset.data_vars))
         self.assertEqual({'time', 'air_pressure', 'latitude_centers'},
                          dataset.ozone_mixing_ratio.dims)

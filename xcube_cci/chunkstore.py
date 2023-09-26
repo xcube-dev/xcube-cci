@@ -89,7 +89,7 @@ class RemoteChunkStore(MutableMapping, metaclass=ABCMeta):
 
         self._dataset_name = data_id
         self._time_ranges = self.get_time_ranges(data_id, cube_params)
-        is_climatology = 'climatology' in data_id
+        is_climatology = 'aerosol.climatology' in data_id
         logging.debug('Determined time ranges')
         if not self._time_ranges:
             raise ValueError('Could not determine any valid time stamps')
@@ -858,6 +858,7 @@ class CciChunkStore(RemoteChunkStore):
         start_time, end_time, iso_start_time, iso_end_time = \
             self._extract_time_range_as_datetime(
                 cube_params.get('time_range', self.get_default_time_range(dataset_id)))
+        ecv = dataset_id.split('.')[1]
         time_period = dataset_id.split('.')[2]
         if time_period == 'day':
             start_time = datetime(year=start_time.year, month=start_time.month, day=start_time.day)
@@ -873,7 +874,7 @@ class CciChunkStore(RemoteChunkStore):
             start_time = datetime(year=start_time.year, month=1, day=1)
             end_time = datetime(year=end_time.year, month=12, day=31)
             delta = relativedelta(years=1)
-        elif time_period == 'climatology':
+        elif time_period == 'climatology' and ecv == 'aerosol':
             return [(i + 1, i + 1) for i, month in enumerate(MONTHS)]
         else:
             end_time = end_time.replace(hour=23, minute=59, second=59)

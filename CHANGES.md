@@ -1,4 +1,8 @@
-## Changes in 0.10 (in development)
+## Changes in 0.10.1 (in development)
+
+* Fixed support for SST climatology dataset 
+
+## Changes in 0.10
 
 * Support Climatology Datasets
 * Ensure compatiblity with Python versions > 3.10. This concerns the way 
