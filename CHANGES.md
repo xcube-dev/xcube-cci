@@ -1,4 +1,6 @@
-## Changes in 0.10.2 (in development)
+## Changes in 0.10.2
+
+* Fixed support for climatology datasets
 
 ## Changes in 0.10.1
 
