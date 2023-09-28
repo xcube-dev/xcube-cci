@@ -89,7 +89,7 @@ class RemoteChunkStore(MutableMapping, metaclass=ABCMeta):
 
         self._dataset_name = data_id
         self._time_ranges = self.get_time_ranges(data_id, cube_params)
-        is_climatology = 'aerosol.climatology' in data_id
+        is_climatology = 'AEROSOL.climatology' in data_id
         logging.debug('Determined time ranges')
         if not self._time_ranges:
             raise ValueError('Could not determine any valid time stamps')

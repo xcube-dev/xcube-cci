@@ -138,7 +138,7 @@ class CciOdpDataOpener(DataOpener):
                                            metadata: dict) -> DatasetDescriptor:
         ds_metadata = metadata.copy()
         is_climatology = ds_metadata.get('time_frequency', '') == 'climatology'\
-                         and 'aerosol' in data_id
+                         and 'AEROSOL' in data_id
         dims = self._normalize_dims(ds_metadata.get('dimensions', {}))
         bounds_dim_name = None
         for dim_name, dim_size in dims.items():

@@ -1138,7 +1138,7 @@ class CciOdp:
                 for index, dimension in enumerate(variable_infos[variable_info]['dimensions']):
                     if dimension not in dimensions:
                         dimensions[dimension] = variable_infos[variable_info]['shape'][index]
-            time_name = 'month' if 'aerosol.climatology' in dataset_name \
+            time_name = 'month' if 'AEROSOL.climatology' in dataset_name \
                 else 'time'
             dimensions[time_name] = time_dimension_size * dimensions.get(time_name, 1)
             for variable_info in variable_infos.values():
