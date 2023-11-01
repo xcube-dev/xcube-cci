@@ -47,7 +47,7 @@ build_script:
   - conda activate xcube
   - python setup.py develop
   - cd ..
-  - mamba install -c conda-forge lxml aiohttp nest-asyncio pydap=3.3 "gdal<3.6.4"
+  - mamba install -c conda-forge lxml aiohttp nest-asyncio pydap=3.3
 
   # Environments created by mamba can't be referenced by name from conda
   # (presumably a bug), so we use an explicit path instead.
