@@ -31,7 +31,6 @@ CCI_ODD_URL = 'https://archive.opensearch.ceda.ac.uk/opensearch/description.xml?
 # OPENSEARCH_CEDA_URL = "http://opensearch-test.ceda.ac.uk/opensearch/request"
 # CCI_ODD_URL = 'http://opensearch-test.ceda.ac.uk/opensearch/description.xml?parentIdentifier=cci'
 
-DEFAULT_CRS = 'http://www.opengis.net/def/crs/EPSG/0/4326'
 DEFAULT_TILE_SIZE = 1000
 DEFAULT_RETRY_BACKOFF_MAX = 40  # milliseconds
 DEFAULT_RETRY_BACKOFF_BASE = 1.001
