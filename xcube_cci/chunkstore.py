@@ -874,7 +874,7 @@ class CciChunkStore(RemoteChunkStore):
             start_time = datetime(year=start_time.year, month=1, day=1)
             end_time = datetime(year=end_time.year, month=12, day=31)
             delta = relativedelta(years=1)
-        elif time_period == 'climatology' and ecv == 'aerosol':
+        elif time_period == 'climatology':
             return [(i + 1, i + 1) for i, month in enumerate(MONTHS)]
         else:
             end_time = end_time.replace(hour=23, minute=59, second=59)
