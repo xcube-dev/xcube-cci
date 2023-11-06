@@ -252,8 +252,8 @@ class CciOdpDatasetOpenerTest(unittest.TestCase):
         'XCUBE_DISABLE_WEB_TESTS', None) == '1', 'XCUBE_DISABLE_WEB_TESTS = 1')
     def test_open_climatology_data(self):
         dataset = self.opener.open_data(
-            'esacci.SST.climatology.L4.SSTdepth.multi-sensor.multi-platform.'
-            'OSTIA.2-1.r1',
+            'esacci.AEROSOL.climatology.L3.AAI.multi-sensor.multi-platform.'
+            'MSAAI.1-7.r1',
         )
         self.assertIsNotNone(dataset)
 
