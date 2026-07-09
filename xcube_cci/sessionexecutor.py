@@ -116,7 +116,7 @@ class SessionExecutor:
                     if resp.status == 200:
                         return await resp.read()
                     elif 500 <= resp.status < 600:
-                        error_message = f"Error {resp.status}: Cannot access url."
+                        error_message = f"Error {resp.status}: Cannot access url '{url}'"
                         if self._enable_warnings:
                             LOG.warning(error_message)
                     elif resp.status == 429:
