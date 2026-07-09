@@ -1471,7 +1471,6 @@ class CciOdp:
         """
         start_page = 1
         initial_maximum_records = min(1000, max_wanted_results)
-        maximum_records = 10000
         total_results = await self._fetch_opensearch_feature_part_list(
             session, base_url, query_args, start_page, initial_maximum_records,
             extension, extender, None, None, name_filter
@@ -1504,29 +1503,24 @@ class CciOdp:
                     task_end = current_time.strftime(TIMESTAMP_FORMAT)
                     tasks.append(self._fetch_opensearch_feature_part_list(
                         session, base_url, query_args, start_page,
-                        maximum_records, extension, extender,
+                        None, extension, extender,
                         task_start, task_end, name_filter)
                     )
                     current_time += one_second
                 await asyncio.gather(*tasks)
                 num_results = total_results
             else:
-                tasks = []
-                # do not have more than 4 open connections at the same time
-                while len(tasks) < 4 and num_results < total_results:
-                    tasks.append(self._fetch_opensearch_feature_part_list(
-                        session, base_url, query_args, start_page,
-                        maximum_records, extension, extender, None, None, name_filter)
-                    )
-                    start_page += 1
-                    num_results += maximum_records
-                await asyncio.gather(*tasks)
+                await self._fetch_opensearch_feature_part_list(
+                    session, base_url, query_args, start_page,
+                    None, extension, extender, None, None, name_filter)
+                num_results = len(extension)
 
     async def _fetch_opensearch_feature_part_list(
-            self, session, base_url, query_args, start_page, maximum_records,
+            self, session, base_url, query_args, start_page, max_records,
             extension, extender, start_date, end_date, name_filter
     ) -> int:
         paging_query_args = dict(query_args or {})
+        maximum_records = max_records if max_records else 10000
         paging_query_args.update(startPage=start_page,
                                  maximumRecords=maximum_records,
                                  httpAccept='application/geo+json')
@@ -1534,17 +1528,24 @@ class CciOdp:
             paging_query_args.update(startDate=start_date)
         if end_date:
             paging_query_args.update(endDate=end_date)
+        total_results = 0
         url = base_url + '?' + urllib.parse.urlencode(paging_query_args)
-        resp_content = await self._session_executor.get_response_content_from_session(
-            session, url
-        )
-        if resp_content:
-            json_dict = json.loads(resp_content.decode('utf-8'))
-            if extender:
-                feature_list = json_dict.get("features", [])
-                extender(extension, feature_list, name_filter)
-            return json_dict['totalResults']
-        return 0
+        while url is not None:
+            resp_content = await self._session_executor.get_response_content_from_session(
+                session, url
+            )
+            url = None
+            if resp_content:
+                json_dict = json.loads(resp_content.decode('utf-8'))
+                next_links = json_dict.get("links", {}).get("next")
+                url = next_links[0].get("href") if next_links is not None else None
+                if extender:
+                    feature_list = json_dict.get("features", [])
+                    extender(extension, feature_list, name_filter)
+                total_results = json_dict['totalResults']
+                if max_records is not None and max_records <= total_results:
+                    break
+        return total_results
 
     async def _set_variable_infos(self, opensearch_url: str, dataset_id: str,
                                   dataset_name: str, session, data_source):
