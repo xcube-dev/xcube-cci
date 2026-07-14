@@ -1,7 +1,10 @@
 ## Changes in 0.14.1 (in development)
 
 * Chunks are cached with the dataset id as key (avoiding issue when using the same store
-  to open multiple datasets)
+  to open multiple datasets)   
+* Improved error messages when data cannot be accessed from opendap by also stating the url
+* Avoid access errors when accessing all features over opendap (usually an issue when determining time steps)
+
 
 ## Changes in 0.14
 
