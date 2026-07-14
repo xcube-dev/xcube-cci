@@ -1,4 +1,4 @@
-## Changes in 0.14.1 (in development)
+## Changes in 0.14.1
 
 * Chunks are cached with the dataset id as key (avoiding issue when using the same store
   to open multiple datasets)   
