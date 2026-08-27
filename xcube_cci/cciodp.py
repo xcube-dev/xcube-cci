@@ -823,8 +823,8 @@ class CciOdp:
 
     def get_variable_data(self, dataset_name: str,
                           variable_dict: Dict[str, List[int]],
-                          start_time: str = '1900-01-01T00:00:00',
-                          end_time: str = '3001-12-31T00:00:00'):
+                          start_time: str = None,
+                          end_time: str = None):
         dimension_data = self._session_executor.run_with_session(
             self._get_var_data, dataset_name, variable_dict,
             start_time, end_time
@@ -835,22 +835,22 @@ class CciOdp:
                             session,
                             dataset_name: str,
                             variable_dict: Dict[str, List[int]],
-                            start_time: str,
-                            end_time: str):
+                            start_time: str = None,
+                            end_time: str = None):
+        await self._ensure_in_data_sources(session, [dataset_name])
         dataset_id = await self._get_dataset_id(session, dataset_name)
+        request_start_time = start_time or self._data_sources[dataset_name]["temporal_coverage_start"]
+        request_end_time = end_time or self._data_sources[dataset_name]["temporal_coverage_end"]
         request = dict(parentIdentifier=dataset_id,
-                       startDate=start_time,
-                       endDate=end_time,
+                       startDate=request_start_time,
+                       endDate=request_end_time,
                        drsId=dataset_name
                        )
+        orig_request = copy.deepcopy(request)
         opendap_url = await self._get_opendap_url(session, request)
         var_data = {}
         if not opendap_url:
-            request = dict(parentIdentifier=dataset_id,
-                           startDate=start_time,
-                           endDate=end_time,
-                           drsId=dataset_name
-                           )
+            request = copy.deepcopy(orig_request)
             tar_url = await self._get_tar_url(session, request)
             if tar_url is not None:
                 tif_files = await self._get_tif_files_from_tar_url(tar_url, session)
@@ -865,11 +865,7 @@ class CciOdp:
                                                   chunkSize=array[var_name].shape,
                                                   data=list(data))
             else:
-                request = dict(parentIdentifier=dataset_id,
-                               startDate=start_time,
-                               endDate=end_time,
-                               drsId=dataset_name
-                               )
+                request = copy.deepcopy(orig_request)
                 tif_url = await self._get_tif_url(session, request)
                 if tif_url is not None:
                     array = rioxarray.open_rasterio(tif_url, chunks=dict(x=512, y=512))
