@@ -23,7 +23,7 @@ import asyncio
 import random
 import threading
 from typing import Optional
-
+import aiolimiter
 import aiohttp
 
 from .constants import (DEFAULT_NUM_RETRIES, DEFAULT_RETRY_BACKOFF_BASE,
@@ -108,10 +108,17 @@ class SessionExecutor:
         retry_backoff_max = self._retry_backoff_max
         retry_backoff_base = self._retry_backoff_base
         error_message = "Max number of retries exceeded"
+
+        # Client limits - define in "Constants", use env variables, or other mechanism, 
+        # depending on if you want users to be able to reconfigure this (environment
+        # variables overriding defaults would be my recommendation)
+        concurrency = asyncio.Semaphore(100) # Max concurrent requests
+        rate_limiter = aiolimiter.AsyncLimiter(120,1) # Max 120 new requests in 1 second
+
         for i in range(num_retries):
             retry_min = 100
             try:
-                async with session.get(url) as resp:
+                async with rate_limiter, concurrency, session.get(url) as resp:
                     retry_min = int(resp.headers.get('Retry-After', '100'))
                     if resp.status == 200:
                         return await resp.read()
