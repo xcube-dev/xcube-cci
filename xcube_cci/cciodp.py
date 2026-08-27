@@ -1339,9 +1339,9 @@ class CciOdp:
     async def _get_dataset_chunk(
             self, session, request: Dict, dim_indexes: Tuple, to_bytes: bool = True
     ) -> Optional[bytes]:
-        var_name = request['varNames'][0]
         drs_id = request.get("drsId")
         orig_request = copy.deepcopy(request)
+        var_name = request.pop('varNames')[0]
         opendap_url = await self._get_opendap_url(session, request)
         await self._ensure_all_info_in_data_sources(
             session, [drs_id]
