@@ -2134,6 +2134,21 @@ class CciOdp:
         return self._session_executor.run_with_session(self._get_opendap_dataset, url)
 
     async def _get_result_dict(self, session, url: str):
+        key = url
+        try:
+            return await self._task_cache[key]
+        except KeyError:
+            pass
+        task = asyncio.create_task(
+            self._get_result_dict_impl(session, url)
+        )
+        self._task_cache[key] = task
+        try:
+            return await task
+        finally:
+            self._task_cache.pop(key, None)
+
+    async def _get_result_dict_impl(self, session, url: str):
         if url in self._result_dicts:
             return self._result_dicts[url]
         tasks = []
