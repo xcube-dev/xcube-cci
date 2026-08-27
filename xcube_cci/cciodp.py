@@ -925,91 +925,92 @@ class CciOdp:
         return var_data
 
     async def _get_feature_list(self, session, request, file_format):
-        request["fileFormat"] = file_format
-        extender = self._extract_times_and_opendap_url
-        if file_format != ".nc":
-            extender = self._extract_times_and_download_url
-        ds_id = request['drsId']
-        sdrsid = ds_id.split("~")
-        ds_id = sdrsid[0]
-        name_filter = ""
-        if len(sdrsid) > 1:
-            request['drsId'] = ds_id
-            name_filter = sdrsid[1]
-        start_date_str = request['startDate']
-        try:
-            start_date = datetime.strptime(start_date_str, TIMESTAMP_FORMAT)
-        except (TypeError, IndexError, ValueError, KeyError):
-            start_date = int(start_date_str)
-        end_date_str = request['endDate']
-        try:
-            end_date = datetime.strptime(end_date_str, TIMESTAMP_FORMAT)
-        except (TypeError, IndexError, ValueError, KeyError):
-            end_date = int(end_date_str)
-        feature_list = []
-        if ds_id not in self._features:
-            self._features[ds_id] = {}
-        if len(self._features[ds_id].get(file_format, {})) == 0:
-            self._features[ds_id][file_format] = []
-            await self._fetch_opensearch_feature_list(
-                session, self._opensearch_url, feature_list,
-                extender, request, ""
-            )
-            if len(feature_list) == 0:
-                # try without dates. For some data sets, this works better
-                if 'startDate' in request:
-                    request.pop('startDate')
-                if 'endDate' in request:
-                    request.pop('endDate')
+        async with _FEATURE_LIST_LOCK:
+            request["fileFormat"] = file_format
+            extender = self._extract_times_and_opendap_url
+            if file_format != ".nc":
+                extender = self._extract_times_and_download_url
+            ds_id = request['drsId']
+            sdrsid = ds_id.split("~")
+            ds_id = sdrsid[0]
+            name_filter = ""
+            if len(sdrsid) > 1:
+                request['drsId'] = ds_id
+                name_filter = sdrsid[1]
+            start_date_str = request['startDate']
+            try:
+                start_date = datetime.strptime(start_date_str, TIMESTAMP_FORMAT)
+            except (TypeError, IndexError, ValueError, KeyError):
+                start_date = int(start_date_str)
+            end_date_str = request['endDate']
+            try:
+                end_date = datetime.strptime(end_date_str, TIMESTAMP_FORMAT)
+            except (TypeError, IndexError, ValueError, KeyError):
+                end_date = int(end_date_str)
+            feature_list = []
+            if ds_id not in self._features:
+                self._features[ds_id] = {}
+            if len(self._features[ds_id].get(file_format, {})) == 0:
+                self._features[ds_id][file_format] = []
                 await self._fetch_opensearch_feature_list(
                     session, self._opensearch_url, feature_list,
                     extender, request, ""
                 )
-            feature_list.sort(key=lambda x: x[0])
-            self._features[ds_id][file_format] = feature_list
-        else:
-            if start_date < self._features[ds_id][file_format][0][0]:
-                request['endDate'] = datetime.strftime(
-                    self._features[ds_id][file_format][0][0], TIMESTAMP_FORMAT
-                )
-                await self._fetch_opensearch_feature_list(
-                    session, self._opensearch_url, feature_list,
-                    extender, request, ""
-                )
-                if len(feature_list) > 0:
-                    feature_list.sort(key=lambda x: x[0])
-                    end_offset = -1
-                    while feature_list[end_offset] in self._features[ds_id][file_format] \
-                            and end_offset > 0:
-                        end_offset -= 1
-                    self._features[ds_id][file_format] = \
-                        feature_list[:end_offset] + self._features[ds_id][file_format]
-            if end_date > self._features[ds_id][file_format][-1][1]:
-                request['startDate'] = datetime.strftime(
-                    self._features[ds_id][file_format][-1][1], TIMESTAMP_FORMAT
-                )
-                request['endDate'] = end_date_str
-                await self._fetch_opensearch_feature_list(
-                    session, self._opensearch_url, feature_list,
-                    extender, request, ""
-                )
-                if len(feature_list) > 0:
-                    feature_list.sort(key=lambda x: x[0])
-                    end_offset = 0
-                    while feature_list[end_offset] in self._features[ds_id][file_format] \
-                            and end_offset < len(feature_list) - 1:
-                        end_offset += 1
-                    if feature_list[end_offset] not in self._features[ds_id][file_format]:
+                if len(feature_list) == 0:
+                    # try without dates. For some data sets, this works better
+                    if 'startDate' in request:
+                        request.pop('startDate')
+                    if 'endDate' in request:
+                        request.pop('endDate')
+                    await self._fetch_opensearch_feature_list(
+                        session, self._opensearch_url, feature_list,
+                        extender, request, ""
+                    )
+                feature_list.sort(key=lambda x: x[0])
+                self._features[ds_id][file_format] = feature_list
+            else:
+                if start_date < self._features[ds_id][file_format][0][0]:
+                    request['endDate'] = datetime.strftime(
+                        self._features[ds_id][file_format][0][0], TIMESTAMP_FORMAT
+                    )
+                    await self._fetch_opensearch_feature_list(
+                        session, self._opensearch_url, feature_list,
+                        extender, request, ""
+                    )
+                    if len(feature_list) > 0:
+                        feature_list.sort(key=lambda x: x[0])
+                        end_offset = -1
+                        while feature_list[end_offset] in self._features[ds_id][file_format] \
+                                and end_offset > 0:
+                            end_offset -= 1
                         self._features[ds_id][file_format] = \
-                            self._features[ds_id][file_format] + feature_list[end_offset:]
-        sub_feature_list = [f for f in self._features[ds_id][file_format] if name_filter in f[2]]
-        start = bisect.bisect_left(
-            [feature[1] for feature in sub_feature_list], start_date
-        )
-        end = bisect.bisect_right(
-            [feature[0] for feature in sub_feature_list], end_date
-        )
-        return sub_feature_list[start:end]
+                            feature_list[:end_offset] + self._features[ds_id][file_format]
+                if end_date > self._features[ds_id][file_format][-1][1]:
+                    request['startDate'] = datetime.strftime(
+                        self._features[ds_id][file_format][-1][1], TIMESTAMP_FORMAT
+                    )
+                    request['endDate'] = end_date_str
+                    await self._fetch_opensearch_feature_list(
+                        session, self._opensearch_url, feature_list,
+                        extender, request, ""
+                    )
+                    if len(feature_list) > 0:
+                        feature_list.sort(key=lambda x: x[0])
+                        end_offset = 0
+                        while feature_list[end_offset] in self._features[ds_id][file_format] \
+                                and end_offset < len(feature_list) - 1:
+                            end_offset += 1
+                        if feature_list[end_offset] not in self._features[ds_id][file_format]:
+                            self._features[ds_id][file_format] = \
+                                self._features[ds_id][file_format] + feature_list[end_offset:]
+            sub_feature_list = [f for f in self._features[ds_id][file_format] if name_filter in f[2]]
+            start = bisect.bisect_left(
+                [feature[1] for feature in sub_feature_list], start_date
+            )
+            end = bisect.bisect_right(
+                [feature[0] for feature in sub_feature_list], end_date
+            )
+            return sub_feature_list[start:end]
 
     @staticmethod
     def _extract_times_and_opendap_url(
