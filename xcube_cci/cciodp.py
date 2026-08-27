@@ -1494,7 +1494,6 @@ class CciOdp:
                 end_time = datetime(end_time.year, month=12, day=31, hour=23, minute=59, second=59)
                 one_year = relativedelta(years=1, seconds=-1)
                 one_second = relativedelta(seconds=1)
-                tasks = []
                 current_time = start_time
                 while current_time < end_time:
                     task_start = current_time.strftime(TIMESTAMP_FORMAT)
@@ -1502,13 +1501,12 @@ class CciOdp:
                     if current_time > end_time:
                         current_time = end_time
                     task_end = current_time.strftime(TIMESTAMP_FORMAT)
-                    tasks.append(self._fetch_opensearch_feature_part_list(
+                    await self._fetch_opensearch_feature_part_list(
                         session, base_url, query_args, start_page,
                         None, extension, extender,
-                        task_start, task_end, name_filter)
+                        task_start, task_end, name_filter
                     )
                     current_time += one_second
-                await asyncio.gather(*tasks)
                 num_results = total_results
             else:
                 await self._fetch_opensearch_feature_part_list(
