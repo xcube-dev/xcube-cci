@@ -109,6 +109,8 @@ class SessionExecutor:
         retry_backoff_base = self._retry_backoff_base
         error_message = "Max number of retries exceeded"
         for i in range(num_retries):
+            if i > 0:
+                LOG.debug(f"Accessing {url} attempt #{i}")
             retry_min = 100
             try:
                 async with session.get(url) as resp:
