@@ -823,8 +823,8 @@ class CciOdp:
 
     def get_variable_data(self, dataset_name: str,
                           variable_dict: Dict[str, List[int]],
-                          start_time: str = '1900-01-01T00:00:00',
-                          end_time: str = '3001-12-31T00:00:00'):
+                          start_time: str = None,
+                          end_time: str = None):
         dimension_data = self._session_executor.run_with_session(
             self._get_var_data, dataset_name, variable_dict,
             start_time, end_time
@@ -835,22 +835,22 @@ class CciOdp:
                             session,
                             dataset_name: str,
                             variable_dict: Dict[str, List[int]],
-                            start_time: str,
-                            end_time: str):
+                            start_time: str = None,
+                            end_time: str = None):
+        await self._ensure_in_data_sources(session, [dataset_name])
         dataset_id = await self._get_dataset_id(session, dataset_name)
+        request_start_time = start_time or self._data_sources[dataset_name]["temporal_coverage_start"]
+        request_end_time = end_time or self._data_sources[dataset_name]["temporal_coverage_end"]
         request = dict(parentIdentifier=dataset_id,
-                       startDate=start_time,
-                       endDate=end_time,
+                       startDate=request_start_time,
+                       endDate=request_end_time,
                        drsId=dataset_name
                        )
+        orig_request = copy.deepcopy(request)
         opendap_url = await self._get_opendap_url(session, request)
         var_data = {}
         if not opendap_url:
-            request = dict(parentIdentifier=dataset_id,
-                           startDate=start_time,
-                           endDate=end_time,
-                           drsId=dataset_name
-                           )
+            request = copy.deepcopy(orig_request)
             tar_url = await self._get_tar_url(session, request)
             if tar_url is not None:
                 tif_files = await self._get_tif_files_from_tar_url(tar_url, session)
@@ -865,11 +865,7 @@ class CciOdp:
                                                   chunkSize=array[var_name].shape,
                                                   data=list(data))
             else:
-                request = dict(parentIdentifier=dataset_id,
-                               startDate=start_time,
-                               endDate=end_time,
-                               drsId=dataset_name
-                               )
+                request = copy.deepcopy(orig_request)
                 tif_url = await self._get_tif_url(session, request)
                 if tif_url is not None:
                     array = rioxarray.open_rasterio(tif_url, chunks=dict(x=512, y=512))
@@ -925,91 +921,92 @@ class CciOdp:
         return var_data
 
     async def _get_feature_list(self, session, request, file_format):
-        request["fileFormat"] = file_format
-        extender = self._extract_times_and_opendap_url
-        if file_format != ".nc":
-            extender = self._extract_times_and_download_url
-        ds_id = request['drsId']
-        sdrsid = ds_id.split("~")
-        ds_id = sdrsid[0]
-        name_filter = ""
-        if len(sdrsid) > 1:
-            request['drsId'] = ds_id
-            name_filter = sdrsid[1]
-        start_date_str = request['startDate']
-        try:
-            start_date = datetime.strptime(start_date_str, TIMESTAMP_FORMAT)
-        except (TypeError, IndexError, ValueError, KeyError):
-            start_date = int(start_date_str)
-        end_date_str = request['endDate']
-        try:
-            end_date = datetime.strptime(end_date_str, TIMESTAMP_FORMAT)
-        except (TypeError, IndexError, ValueError, KeyError):
-            end_date = int(end_date_str)
-        feature_list = []
-        if ds_id not in self._features:
-            self._features[ds_id] = {}
-        if len(self._features[ds_id].get(file_format, {})) == 0:
-            self._features[ds_id][file_format] = []
-            await self._fetch_opensearch_feature_list(
-                session, self._opensearch_url, feature_list,
-                extender, request, ""
-            )
-            if len(feature_list) == 0:
-                # try without dates. For some data sets, this works better
-                if 'startDate' in request:
-                    request.pop('startDate')
-                if 'endDate' in request:
-                    request.pop('endDate')
+        async with _FEATURE_LIST_LOCK:
+            request["fileFormat"] = file_format
+            extender = self._extract_times_and_opendap_url
+            if file_format != ".nc":
+                extender = self._extract_times_and_download_url
+            ds_id = request['drsId']
+            sdrsid = ds_id.split("~")
+            ds_id = sdrsid[0]
+            name_filter = ""
+            if len(sdrsid) > 1:
+                request['drsId'] = ds_id
+                name_filter = sdrsid[1]
+            start_date_str = request['startDate']
+            try:
+                start_date = datetime.strptime(start_date_str, TIMESTAMP_FORMAT)
+            except (TypeError, IndexError, ValueError, KeyError):
+                start_date = int(start_date_str)
+            end_date_str = request['endDate']
+            try:
+                end_date = datetime.strptime(end_date_str, TIMESTAMP_FORMAT)
+            except (TypeError, IndexError, ValueError, KeyError):
+                end_date = int(end_date_str)
+            feature_list = []
+            if ds_id not in self._features:
+                self._features[ds_id] = {}
+            if len(self._features[ds_id].get(file_format, {})) == 0:
+                self._features[ds_id][file_format] = []
                 await self._fetch_opensearch_feature_list(
                     session, self._opensearch_url, feature_list,
                     extender, request, ""
                 )
-            feature_list.sort(key=lambda x: x[0])
-            self._features[ds_id][file_format] = feature_list
-        else:
-            if start_date < self._features[ds_id][file_format][0][0]:
-                request['endDate'] = datetime.strftime(
-                    self._features[ds_id][file_format][0][0], TIMESTAMP_FORMAT
-                )
-                await self._fetch_opensearch_feature_list(
-                    session, self._opensearch_url, feature_list,
-                    extender, request, ""
-                )
-                if len(feature_list) > 0:
-                    feature_list.sort(key=lambda x: x[0])
-                    end_offset = -1
-                    while feature_list[end_offset] in self._features[ds_id][file_format] \
-                            and end_offset > 0:
-                        end_offset -= 1
-                    self._features[ds_id][file_format] = \
-                        feature_list[:end_offset] + self._features[ds_id][file_format]
-            if end_date > self._features[ds_id][file_format][-1][1]:
-                request['startDate'] = datetime.strftime(
-                    self._features[ds_id][file_format][-1][1], TIMESTAMP_FORMAT
-                )
-                request['endDate'] = end_date_str
-                await self._fetch_opensearch_feature_list(
-                    session, self._opensearch_url, feature_list,
-                    extender, request, ""
-                )
-                if len(feature_list) > 0:
-                    feature_list.sort(key=lambda x: x[0])
-                    end_offset = 0
-                    while feature_list[end_offset] in self._features[ds_id][file_format] \
-                            and end_offset < len(feature_list) - 1:
-                        end_offset += 1
-                    if feature_list[end_offset] not in self._features[ds_id][file_format]:
+                if len(feature_list) == 0:
+                    # try without dates. For some data sets, this works better
+                    if 'startDate' in request:
+                        request.pop('startDate')
+                    if 'endDate' in request:
+                        request.pop('endDate')
+                    await self._fetch_opensearch_feature_list(
+                        session, self._opensearch_url, feature_list,
+                        extender, request, ""
+                    )
+                feature_list.sort(key=lambda x: x[0])
+                self._features[ds_id][file_format] = feature_list
+            else:
+                if start_date < self._features[ds_id][file_format][0][0]:
+                    request['endDate'] = datetime.strftime(
+                        self._features[ds_id][file_format][0][0], TIMESTAMP_FORMAT
+                    )
+                    await self._fetch_opensearch_feature_list(
+                        session, self._opensearch_url, feature_list,
+                        extender, request, ""
+                    )
+                    if len(feature_list) > 0:
+                        feature_list.sort(key=lambda x: x[0])
+                        end_offset = -1
+                        while feature_list[end_offset] in self._features[ds_id][file_format] \
+                                and end_offset > 0:
+                            end_offset -= 1
                         self._features[ds_id][file_format] = \
-                            self._features[ds_id][file_format] + feature_list[end_offset:]
-        sub_feature_list = [f for f in self._features[ds_id][file_format] if name_filter in f[2]]
-        start = bisect.bisect_left(
-            [feature[1] for feature in sub_feature_list], start_date
-        )
-        end = bisect.bisect_right(
-            [feature[0] for feature in sub_feature_list], end_date
-        )
-        return sub_feature_list[start:end]
+                            feature_list[:end_offset] + self._features[ds_id][file_format]
+                if end_date > self._features[ds_id][file_format][-1][1]:
+                    request['startDate'] = datetime.strftime(
+                        self._features[ds_id][file_format][-1][1], TIMESTAMP_FORMAT
+                    )
+                    request['endDate'] = end_date_str
+                    await self._fetch_opensearch_feature_list(
+                        session, self._opensearch_url, feature_list,
+                        extender, request, ""
+                    )
+                    if len(feature_list) > 0:
+                        feature_list.sort(key=lambda x: x[0])
+                        end_offset = 0
+                        while feature_list[end_offset] in self._features[ds_id][file_format] \
+                                and end_offset < len(feature_list) - 1:
+                            end_offset += 1
+                        if feature_list[end_offset] not in self._features[ds_id][file_format]:
+                            self._features[ds_id][file_format] = \
+                                self._features[ds_id][file_format] + feature_list[end_offset:]
+            sub_feature_list = [f for f in self._features[ds_id][file_format] if name_filter in f[2]]
+            start = bisect.bisect_left(
+                [feature[1] for feature in sub_feature_list], start_date
+            )
+            end = bisect.bisect_right(
+                [feature[0] for feature in sub_feature_list], end_date
+            )
+            return sub_feature_list[start:end]
 
     @staticmethod
     def _extract_times_and_opendap_url(
@@ -1339,9 +1336,9 @@ class CciOdp:
     async def _get_dataset_chunk(
             self, session, request: Dict, dim_indexes: Tuple, to_bytes: bool = True
     ) -> Optional[bytes]:
-        var_name = request['varNames'][0]
         drs_id = request.get("drsId")
         orig_request = copy.deepcopy(request)
+        var_name = request.pop('varNames')[0]
         opendap_url = await self._get_opendap_url(session, request)
         await self._ensure_all_info_in_data_sources(
             session, [drs_id]
@@ -1493,7 +1490,6 @@ class CciOdp:
                 end_time = datetime(end_time.year, month=12, day=31, hour=23, minute=59, second=59)
                 one_year = relativedelta(years=1, seconds=-1)
                 one_second = relativedelta(seconds=1)
-                tasks = []
                 current_time = start_time
                 while current_time < end_time:
                     task_start = current_time.strftime(TIMESTAMP_FORMAT)
@@ -1501,13 +1497,12 @@ class CciOdp:
                     if current_time > end_time:
                         current_time = end_time
                     task_end = current_time.strftime(TIMESTAMP_FORMAT)
-                    tasks.append(self._fetch_opensearch_feature_part_list(
+                    await self._fetch_opensearch_feature_part_list(
                         session, base_url, query_args, start_page,
                         None, extension, extender,
-                        task_start, task_end, name_filter)
+                        task_start, task_end, name_filter
                     )
                     current_time += one_second
-                await asyncio.gather(*tasks)
                 num_results = total_results
             else:
                 await self._fetch_opensearch_feature_part_list(
@@ -2134,6 +2129,21 @@ class CciOdp:
         return self._session_executor.run_with_session(self._get_opendap_dataset, url)
 
     async def _get_result_dict(self, session, url: str):
+        key = url
+        try:
+            return await self._task_cache[key]
+        except KeyError:
+            pass
+        task = asyncio.create_task(
+            self._get_result_dict_impl(session, url)
+        )
+        self._task_cache[key] = task
+        try:
+            return await task
+        finally:
+            self._task_cache.pop(key, None)
+
+    async def _get_result_dict_impl(self, session, url: str):
         if url in self._result_dicts:
             return self._result_dicts[url]
         tasks = []

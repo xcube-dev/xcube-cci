@@ -116,6 +116,8 @@ class SessionExecutor:
         rate_limiter = aiolimiter.AsyncLimiter(120,1) # Max 120 new requests in 1 second
 
         for i in range(num_retries):
+            if i > 0:
+                LOG.debug(f"Accessing {url} attempt #{i}")
             retry_min = 100
             try:
                 async with rate_limiter, concurrency, session.get(url) as resp:
