@@ -9,7 +9,6 @@
 * Improved error messages when data cannot be accessed from opendap by also stating the url
 * Avoid access errors when accessing all features over opendap (usually an issue when determining time steps)
 
-
 ## Changes in 0.14
 
   * Improved error messages when data cannot be accessed from opendap
