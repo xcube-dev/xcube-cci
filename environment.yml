@@ -12,7 +12,7 @@ dependencies:
   - rioxarray
   - xarray >= 2025.4.0
   - xcube >= 1.8.0
-  - xvec
+  - xvec >= 0.5.0
   - zarr <3  # until we can ensure zarr 3 compatibility
   # Test libs
   - pytest
