@@ -1,6 +1,7 @@
-## Changes in 0.14.2 (in development)
+## Changes in 0.14.2
 * Avoid redundant requests to the open data portal, 
   thereby preventing time out errors and improving performance
+* Updated list of data states
 
 ## Changes in 0.14.1
 
