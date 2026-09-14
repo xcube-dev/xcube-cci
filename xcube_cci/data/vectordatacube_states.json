@@ -1,221 +1,219 @@
 {
     "esacci.ICESHEETS.yr.Unspecified.GMB.GRACE-instrument.GRACE.UNSPECIFIED.1-2.greenland_gmb_mass_trends": {
         "data_type": "vectordatacube",
+        "title": "ESA Greenland Ice Sheet Climate Change Initiative (Greenland_Ice_Sheet_cci): Greenland Gravimetric Mass Balance from GRACE data, derived by TU Dresden, v1.2",
         "verification_flags": [
             "open"
-        ],
-        "title": "ESA Greenland Ice Sheet Climate Change Initiative (Greenland_Ice_Sheet_cci): Greenland Gravimetric Mass Balance from GRACE data, derived by TU Dresden, v1.2"
+        ]
     },
     "esacci.ICESHEETS.yr.Unspecified.GMB.GRACE-instrument.GRACE.UNSPECIFIED.1-3.greenland_gmb_mass_trends": {
         "data_type": "vectordatacube",
+        "title": "ESA Greenland Ice Sheet Climate Change Initiative (Greenland_Ice_Sheet_cci): Greenland Gravimetric Mass Balance from GRACE data (CSR RL06), derived by TU Dresden, v1.3",
         "verification_flags": [
             "open"
-        ],
-        "title": "ESA Greenland Ice Sheet Climate Change Initiative (Greenland_Ice_Sheet_cci): Greenland Gravimetric Mass Balance from GRACE data (CSR RL06), derived by TU Dresden, v1.3"
+        ]
     },
     "esacci.ICESHEETS.yr.Unspecified.GMB.GRACE-instrument.GRACE.UNSPECIFIED.1-4.greenland_gmb_mass_trends": {
         "data_type": "vectordatacube",
+        "title": "ESA Greenland Ice Sheet Climate Change Initiative (Greenland_Ice_Sheet_cci): Greenland Gravimetric Mass Balance from GRACE data, derived by DTU Space,  v1.4",
         "verification_flags": [
             "open"
-        ],
-        "title": "ESA Greenland Ice Sheet Climate Change Initiative (Greenland_Ice_Sheet_cci): Greenland Gravimetric Mass Balance from GRACE data, derived by DTU Space,  v1.4"
+        ]
     },
     "esacci.ICESHEETS.yr.Unspecified.GMB.GRACE-instrument.GRACE.UNSPECIFIED.1-5.greenland_gmb_mass_trends": {
         "data_type": "vectordatacube",
+        "title": "ESA Greenland Ice Sheet Climate Change Initiative (Greenland_Ice_Sheet_cci): Greenland Gravimetric Mass Balance from GRACE data (CSR RL06), derived by DTU Space, v1.5",
         "verification_flags": [
             "open"
-        ],
-        "title": "ESA Greenland Ice Sheet Climate Change Initiative (Greenland_Ice_Sheet_cci): Greenland Gravimetric Mass Balance from GRACE data (CSR RL06), derived by DTU Space, v1.5"
+        ]
     },
     "esacci.SEALEVEL.10-days.IND.MSLTR.multi-sensor.multi-platform.MERGED.3-0.AZORES": {
         "data_type": "vectordatacube",
-        "verification_flags": [],
-        "title": "ESA Sea Level Climate Change Initiative (Sea_Level_cci): New network of virtual altimetry stations for measuring sea level along the world coastlines from 2002 to 2021, v3.0"
+        "title": "ESA Sea Level Climate Change Initiative (Sea_Level_cci): New network of virtual altimetry stations for measuring sea level along the world coastlines from 2002 to 2021, v3.0",
+        "verification_flags": []
     },
     "esacci.SEALEVEL.10-days.IND.MSLTR.multi-sensor.multi-platform.MERGED.3-0.BALTIC_SEA": {
         "data_type": "vectordatacube",
-        "verification_flags": [],
-        "title": "ESA Sea Level Climate Change Initiative (Sea_Level_cci): New network of virtual altimetry stations for measuring sea level along the world coastlines from 2002 to 2021, v3.0"
+        "title": "ESA Sea Level Climate Change Initiative (Sea_Level_cci): New network of virtual altimetry stations for measuring sea level along the world coastlines from 2002 to 2021, v3.0",
+        "verification_flags": []
     },
     "esacci.SEALEVEL.10-days.IND.MSLTR.multi-sensor.multi-platform.MERGED.3-0.CARIBBEAN": {
         "data_type": "vectordatacube",
-        "verification_flags": [],
-        "title": "ESA Sea Level Climate Change Initiative (Sea_Level_cci): New network of virtual altimetry stations for measuring sea level along the world coastlines from 2002 to 2021, v3.0"
+        "title": "ESA Sea Level Climate Change Initiative (Sea_Level_cci): New network of virtual altimetry stations for measuring sea level along the world coastlines from 2002 to 2021, v3.0",
+        "verification_flags": []
     },
     "esacci.SEALEVEL.10-days.IND.MSLTR.multi-sensor.multi-platform.MERGED.3-0.C_PAC": {
         "data_type": "vectordatacube",
-        "verification_flags": [],
-        "title": "ESA Sea Level Climate Change Initiative (Sea_Level_cci): New network of virtual altimetry stations for measuring sea level along the world coastlines from 2002 to 2021, v3.0"
+        "title": "ESA Sea Level Climate Change Initiative (Sea_Level_cci): New network of virtual altimetry stations for measuring sea level along the world coastlines from 2002 to 2021, v3.0",
+        "verification_flags": []
     },
     "esacci.SEALEVEL.10-days.IND.MSLTR.multi-sensor.multi-platform.MERGED.3-0.GULFSTREAM": {
         "data_type": "vectordatacube",
-        "verification_flags": [],
-        "title": "ESA Sea Level Climate Change Initiative (Sea_Level_cci): New network of virtual altimetry stations for measuring sea level along the world coastlines from 2002 to 2021, v3.0"
+        "title": "ESA Sea Level Climate Change Initiative (Sea_Level_cci): New network of virtual altimetry stations for measuring sea level along the world coastlines from 2002 to 2021, v3.0",
+        "verification_flags": []
     },
     "esacci.SEALEVEL.10-days.IND.MSLTR.multi-sensor.multi-platform.MERGED.3-0.HAWAII": {
         "data_type": "vectordatacube",
-        "verification_flags": [],
-        "title": "ESA Sea Level Climate Change Initiative (Sea_Level_cci): New network of virtual altimetry stations for measuring sea level along the world coastlines from 2002 to 2021, v3.0"
+        "title": "ESA Sea Level Climate Change Initiative (Sea_Level_cci): New network of virtual altimetry stations for measuring sea level along the world coastlines from 2002 to 2021, v3.0",
+        "verification_flags": []
     },
     "esacci.SEALEVEL.10-days.IND.MSLTR.multi-sensor.multi-platform.MERGED.3-0.MED_SEA": {
         "data_type": "vectordatacube",
-        "verification_flags": [],
-        "title": "ESA Sea Level Climate Change Initiative (Sea_Level_cci): New network of virtual altimetry stations for measuring sea level along the world coastlines from 2002 to 2021, v3.0"
+        "title": "ESA Sea Level Climate Change Initiative (Sea_Level_cci): New network of virtual altimetry stations for measuring sea level along the world coastlines from 2002 to 2021, v3.0",
+        "verification_flags": []
     },
     "esacci.SEALEVEL.10-days.IND.MSLTR.multi-sensor.multi-platform.MERGED.3-0.NE_AMERICA": {
         "data_type": "vectordatacube",
-        "verification_flags": [],
-        "title": "ESA Sea Level Climate Change Initiative (Sea_Level_cci): New network of virtual altimetry stations for measuring sea level along the world coastlines from 2002 to 2021, v3.0"
+        "title": "ESA Sea Level Climate Change Initiative (Sea_Level_cci): New network of virtual altimetry stations for measuring sea level along the world coastlines from 2002 to 2021, v3.0",
+        "verification_flags": []
     },
     "esacci.SEALEVEL.10-days.IND.MSLTR.multi-sensor.multi-platform.MERGED.3-0.NE_ATL": {
         "data_type": "vectordatacube",
-        "verification_flags": [],
-        "title": "ESA Sea Level Climate Change Initiative (Sea_Level_cci): New network of virtual altimetry stations for measuring sea level along the world coastlines from 2002 to 2021, v3.0"
+        "title": "ESA Sea Level Climate Change Initiative (Sea_Level_cci): New network of virtual altimetry stations for measuring sea level along the world coastlines from 2002 to 2021, v3.0",
+        "verification_flags": []
     },
     "esacci.SEALEVEL.10-days.IND.MSLTR.multi-sensor.multi-platform.MERGED.3-0.NW_AMERICA": {
         "data_type": "vectordatacube",
-        "verification_flags": [],
-        "title": "ESA Sea Level Climate Change Initiative (Sea_Level_cci): New network of virtual altimetry stations for measuring sea level along the world coastlines from 2002 to 2021, v3.0"
+        "title": "ESA Sea Level Climate Change Initiative (Sea_Level_cci): New network of virtual altimetry stations for measuring sea level along the world coastlines from 2002 to 2021, v3.0",
+        "verification_flags": []
     },
     "esacci.SEALEVEL.10-days.IND.MSLTR.multi-sensor.multi-platform.MERGED.3-0.NW_PAC": {
         "data_type": "vectordatacube",
-        "verification_flags": [],
-        "title": "ESA Sea Level Climate Change Initiative (Sea_Level_cci): New network of virtual altimetry stations for measuring sea level along the world coastlines from 2002 to 2021, v3.0"
+        "title": "ESA Sea Level Climate Change Initiative (Sea_Level_cci): New network of virtual altimetry stations for measuring sea level along the world coastlines from 2002 to 2021, v3.0",
+        "verification_flags": []
     },
     "esacci.SEALEVEL.10-days.IND.MSLTR.multi-sensor.multi-platform.MERGED.3-0.N_INDIAN": {
         "data_type": "vectordatacube",
-        "verification_flags": [],
-        "title": "ESA Sea Level Climate Change Initiative (Sea_Level_cci): New network of virtual altimetry stations for measuring sea level along the world coastlines from 2002 to 2021, v3.0"
+        "title": "ESA Sea Level Climate Change Initiative (Sea_Level_cci): New network of virtual altimetry stations for measuring sea level along the world coastlines from 2002 to 2021, v3.0",
+        "verification_flags": []
     },
     "esacci.SEALEVEL.10-days.IND.MSLTR.multi-sensor.multi-platform.MERGED.3-0.SE_AFRICA": {
         "data_type": "vectordatacube",
-        "verification_flags": [],
-        "title": "ESA Sea Level Climate Change Initiative (Sea_Level_cci): New network of virtual altimetry stations for measuring sea level along the world coastlines from 2002 to 2021, v3.0"
+        "title": "ESA Sea Level Climate Change Initiative (Sea_Level_cci): New network of virtual altimetry stations for measuring sea level along the world coastlines from 2002 to 2021, v3.0",
+        "verification_flags": []
     },
     "esacci.SEALEVEL.10-days.IND.MSLTR.multi-sensor.multi-platform.MERGED.3-0.SE_AMERICA": {
         "data_type": "vectordatacube",
-        "verification_flags": [],
-        "title": "ESA Sea Level Climate Change Initiative (Sea_Level_cci): New network of virtual altimetry stations for measuring sea level along the world coastlines from 2002 to 2021, v3.0"
+        "title": "ESA Sea Level Climate Change Initiative (Sea_Level_cci): New network of virtual altimetry stations for measuring sea level along the world coastlines from 2002 to 2021, v3.0",
+        "verification_flags": []
     },
     "esacci.SEALEVEL.10-days.IND.MSLTR.multi-sensor.multi-platform.MERGED.3-0.SE_ASIA": {
         "data_type": "vectordatacube",
-        "verification_flags": [],
-        "title": "ESA Sea Level Climate Change Initiative (Sea_Level_cci): New network of virtual altimetry stations for measuring sea level along the world coastlines from 2002 to 2021, v3.0"
+        "title": "ESA Sea Level Climate Change Initiative (Sea_Level_cci): New network of virtual altimetry stations for measuring sea level along the world coastlines from 2002 to 2021, v3.0",
+        "verification_flags": []
     },
     "esacci.SEALEVEL.10-days.IND.MSLTR.multi-sensor.multi-platform.MERGED.3-0.SW_AFRICA": {
         "data_type": "vectordatacube",
-        "verification_flags": [],
-        "title": "ESA Sea Level Climate Change Initiative (Sea_Level_cci): New network of virtual altimetry stations for measuring sea level along the world coastlines from 2002 to 2021, v3.0"
+        "title": "ESA Sea Level Climate Change Initiative (Sea_Level_cci): New network of virtual altimetry stations for measuring sea level along the world coastlines from 2002 to 2021, v3.0",
+        "verification_flags": []
     },
     "esacci.SEALEVEL.10-days.IND.MSLTR.multi-sensor.multi-platform.MERGED.3-0.SW_AMERICA": {
         "data_type": "vectordatacube",
-        "verification_flags": [],
-        "title": "ESA Sea Level Climate Change Initiative (Sea_Level_cci): New network of virtual altimetry stations for measuring sea level along the world coastlines from 2002 to 2021, v3.0"
+        "title": "ESA Sea Level Climate Change Initiative (Sea_Level_cci): New network of virtual altimetry stations for measuring sea level along the world coastlines from 2002 to 2021, v3.0",
+        "verification_flags": []
     },
     "esacci.SEALEVEL.10-days.IND.MSLTR.multi-sensor.multi-platform.MERGED.3-0.S_AUSTRALIA": {
         "data_type": "vectordatacube",
-        "verification_flags": [],
-        "title": "ESA Sea Level Climate Change Initiative (Sea_Level_cci): New network of virtual altimetry stations for measuring sea level along the world coastlines from 2002 to 2021, v3.0"
+        "title": "ESA Sea Level Climate Change Initiative (Sea_Level_cci): New network of virtual altimetry stations for measuring sea level along the world coastlines from 2002 to 2021, v3.0",
+        "verification_flags": []
     },
     "esacci.SEALEVEL.10-days.IND.MSLTR.multi-sensor.multi-platform.MERGED.3-0.W_AFRICA": {
         "data_type": "vectordatacube",
-        "verification_flags": [],
-        "title": "ESA Sea Level Climate Change Initiative (Sea_Level_cci): New network of virtual altimetry stations for measuring sea level along the world coastlines from 2002 to 2021, v3.0"
+        "title": "ESA Sea Level Climate Change Initiative (Sea_Level_cci): New network of virtual altimetry stations for measuring sea level along the world coastlines from 2002 to 2021, v3.0",
+        "verification_flags": []
     },
     "esacci.SEALEVEL.10-days.IND.MSLTR.multi-sensor.multi-platform.MERGED.3-0.W_TROPICAL_PAC": {
         "data_type": "vectordatacube",
-        "verification_flags": [],
-        "title": "ESA Sea Level Climate Change Initiative (Sea_Level_cci): New network of virtual altimetry stations for measuring sea level along the world coastlines from 2002 to 2021, v3.0"
+        "title": "ESA Sea Level Climate Change Initiative (Sea_Level_cci): New network of virtual altimetry stations for measuring sea level along the world coastlines from 2002 to 2021, v3.0",
+        "verification_flags": []
     },
     "esacci.SEALEVEL.mon.IND.MSLTR.multi-sensor.multi-platform.MERGED.2-2.ASA": {
         "data_type": "vectordatacube",
+        "title": "ESA Sea Level Climate Change Initiative (Sea_Level_cci): New network of virtual altimetry stations for measuring sea level along the world coastlines from 2002 to 2019, v2.2",
         "verification_flags": [
             "open"
-        ],
-        "title": "ESA Sea Level Climate Change Initiative (Sea_Level_cci): New network of virtual altimetry stations for measuring sea level along the world coastlines from 2002 to 2019, v2.2"
+        ]
     },
     "esacci.SEALEVEL.mon.IND.MSLTR.multi-sensor.multi-platform.MERGED.2-2.BENGUELA": {
         "data_type": "vectordatacube",
+        "title": "ESA Sea Level Climate Change Initiative (Sea_Level_cci): New network of virtual altimetry stations for measuring sea level along the world coastlines from 2002 to 2019, v2.2",
         "verification_flags": [
             "open"
-        ],
-        "title": "ESA Sea Level Climate Change Initiative (Sea_Level_cci): New network of virtual altimetry stations for measuring sea level along the world coastlines from 2002 to 2019, v2.2"
+        ]
     },
     "esacci.SEALEVEL.mon.IND.MSLTR.multi-sensor.multi-platform.MERGED.2-2.CARIBBEAN": {
         "data_type": "vectordatacube",
+        "title": "ESA Sea Level Climate Change Initiative (Sea_Level_cci): New network of virtual altimetry stations for measuring sea level along the world coastlines from 2002 to 2019, v2.2",
         "verification_flags": [
             "open"
-        ],
-        "title": "ESA Sea Level Climate Change Initiative (Sea_Level_cci): New network of virtual altimetry stations for measuring sea level along the world coastlines from 2002 to 2019, v2.2"
+        ]
     },
     "esacci.SEALEVEL.mon.IND.MSLTR.multi-sensor.multi-platform.MERGED.2-2.GULFSTREAM": {
         "data_type": "vectordatacube",
+        "title": "ESA Sea Level Climate Change Initiative (Sea_Level_cci): New network of virtual altimetry stations for measuring sea level along the world coastlines from 2002 to 2019, v2.2",
         "verification_flags": [
             "open"
-        ],
-        "title": "ESA Sea Level Climate Change Initiative (Sea_Level_cci): New network of virtual altimetry stations for measuring sea level along the world coastlines from 2002 to 2019, v2.2"
+        ]
     },
     "esacci.SEALEVEL.mon.IND.MSLTR.multi-sensor.multi-platform.MERGED.2-2.HUMBOLDT": {
         "data_type": "vectordatacube",
+        "title": "ESA Sea Level Climate Change Initiative (Sea_Level_cci): New network of virtual altimetry stations for measuring sea level along the world coastlines from 2002 to 2019, v2.2",
         "verification_flags": [
             "open"
-        ],
-        "title": "ESA Sea Level Climate Change Initiative (Sea_Level_cci): New network of virtual altimetry stations for measuring sea level along the world coastlines from 2002 to 2019, v2.2"
+        ]
     },
     "esacci.SEALEVEL.mon.IND.MSLTR.multi-sensor.multi-platform.MERGED.2-2.MED_SEA": {
         "data_type": "vectordatacube",
+        "title": "ESA Sea Level Climate Change Initiative (Sea_Level_cci): New network of virtual altimetry stations for measuring sea level along the world coastlines from 2002 to 2019, v2.2",
         "verification_flags": [
             "open"
-        ],
-        "title": "ESA Sea Level Climate Change Initiative (Sea_Level_cci): New network of virtual altimetry stations for measuring sea level along the world coastlines from 2002 to 2019, v2.2"
+        ]
     },
     "esacci.SEALEVEL.mon.IND.MSLTR.multi-sensor.multi-platform.MERGED.2-2.NE_ATL": {
         "data_type": "vectordatacube",
+        "title": "ESA Sea Level Climate Change Initiative (Sea_Level_cci): New network of virtual altimetry stations for measuring sea level along the world coastlines from 2002 to 2019, v2.2",
         "verification_flags": [
             "open"
-        ],
-        "title": "ESA Sea Level Climate Change Initiative (Sea_Level_cci): New network of virtual altimetry stations for measuring sea level along the world coastlines from 2002 to 2019, v2.2"
+        ]
     },
     "esacci.SEALEVEL.mon.IND.MSLTR.multi-sensor.multi-platform.MERGED.2-2.N_INDIAN": {
         "data_type": "vectordatacube",
+        "title": "ESA Sea Level Climate Change Initiative (Sea_Level_cci): New network of virtual altimetry stations for measuring sea level along the world coastlines from 2002 to 2019, v2.2",
         "verification_flags": [
             "open"
-        ],
-        "title": "ESA Sea Level Climate Change Initiative (Sea_Level_cci): New network of virtual altimetry stations for measuring sea level along the world coastlines from 2002 to 2019, v2.2"
+        ]
     },
     "esacci.SEALEVEL.mon.IND.MSLTR.multi-sensor.multi-platform.MERGED.2-2.SE_AFRICA": {
         "data_type": "vectordatacube",
+        "title": "ESA Sea Level Climate Change Initiative (Sea_Level_cci): New network of virtual altimetry stations for measuring sea level along the world coastlines from 2002 to 2019, v2.2",
         "verification_flags": [
             "open"
-        ],
-        "title": "ESA Sea Level Climate Change Initiative (Sea_Level_cci): New network of virtual altimetry stations for measuring sea level along the world coastlines from 2002 to 2019, v2.2"
+        ]
     },
     "esacci.SEALEVEL.mon.IND.MSLTR.multi-sensor.multi-platform.MERGED.2-2.SE_ASIA": {
         "data_type": "vectordatacube",
-        "verification_flags": [
-            "open"
-        ],
-        "title": "ESA Sea Level Climate Change Initiative (Sea_Level_cci): New network of virtual altimetry stations for measuring sea level along the world coastlines from 2002 to 2019, v2.2"
+        "title": "ESA Sea Level Climate Change Initiative (Sea_Level_cci): New network of virtual altimetry stations for measuring sea level along the world coastlines from 2002 to 2019, v2.2",
+        "verification_flags": []
     },
     "esacci.SEALEVEL.mon.IND.MSLTR.multi-sensor.multi-platform.MERGED.2-2.S_AUSTRALIA": {
         "data_type": "vectordatacube",
+        "title": "ESA Sea Level Climate Change Initiative (Sea_Level_cci): New network of virtual altimetry stations for measuring sea level along the world coastlines from 2002 to 2019, v2.2",
         "verification_flags": [
             "open"
-        ],
-        "title": "ESA Sea Level Climate Change Initiative (Sea_Level_cci): New network of virtual altimetry stations for measuring sea level along the world coastlines from 2002 to 2019, v2.2"
+        ]
     },
     "esacci.SEALEVEL.mon.IND.MSLTR.multi-sensor.multi-platform.MERGED.2-2.WAFRICA": {
         "data_type": "vectordatacube",
+        "title": "ESA Sea Level Climate Change Initiative (Sea_Level_cci): New network of virtual altimetry stations for measuring sea level along the world coastlines from 2002 to 2019, v2.2",
         "verification_flags": [
             "open"
-        ],
-        "title": "ESA Sea Level Climate Change Initiative (Sea_Level_cci): New network of virtual altimetry stations for measuring sea level along the world coastlines from 2002 to 2019, v2.2"
+        ]
     },
     "esacci.SEALEVEL.mon.IND.MSLTR.multi-sensor.multi-platform.MERGED.2-2.r1": {
         "data_type": "vectordatacube",
+        "title": "ESA Sea Level Climate Change Initiative (Sea_Level_cci): New network of virtual altimetry stations for measuring sea level along the world coastlines from 2002 to 2019, v2.2",
         "verification_flags": [
             "open"
-        ],
-        "title": "ESA Sea Level Climate Change Initiative (Sea_Level_cci): New network of virtual altimetry stations for measuring sea level along the world coastlines from 2002 to 2019, v2.2"
+        ]
     }
 }
