@@ -632,12 +632,8 @@ class CciOdp:
             self, session, dataset_names: List[str]
     ):
         await self._ensure_in_data_sources(session, dataset_names)
-        all_info_tasks = []
         for dataset_name in dataset_names:
-            all_info_tasks.append(
-                self._ensure_all_info_in_data_source(session, dataset_name)
-            )
-        await asyncio.gather(*all_info_tasks)
+            await self._ensure_all_info_in_data_source(session, dataset_name)
 
     async def _ensure_all_info_in_data_source(self, session, dataset_name: str):
         data_source = self._data_sources[dataset_name]
